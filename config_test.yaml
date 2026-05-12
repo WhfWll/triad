@@ -1,0 +1,180 @@
+# 通用配置
+scanUrl: http://192.168.3.3:8770/
+scanIp: 192.168.0.68
+timeout: 30
+maxDepth: 3
+concurrency: 1
+userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+cookie: "PHPSESSID=c80e2202e861cb3db30b58367346d555; security_level=0"
+proxy: ""
+webHook:
+crawlerMode: crawler
+scanMode: single
+
+# 日志配置
+logConfig:
+  enabled: true                    # 是否启用日志记录
+  level: "info"                    # 日志级别: debug, info, warn, error
+  format: "text"                   # 日志格式: text, json
+  filePath: "logs/scanner.log"     # 日志文件路径，为空则只输出到控制台
+  maxSize: 100                     # 日志文件最大大小(MB)
+  maxBackups: 3                    # 保留的日志文件数量
+  maxAge: 7                        # 日志文件保留天数
+  compress: true                   # 是否压缩旧日志文件
+  enableConsole: false              # 是否同时输出到控制台
+
+# 脚本列表配置
+scriptList:
+#  - "mitm_source_leak_check"
+#  - "mitm_xss_check"
+#  - "mitm_sql_check"
+#  - "mitm_ssrf_check"
+#  - "mitm_xxe_check"
+#  - "arbitrary_file_download"
+  - "mitm_fileupload_check"
+#  - "mitm_sensinfo_check"
+#  - "mitm_csp_check"
+#  - "mitm_csrf_check"
+#  - "mitm_http_check"
+#  - "mitm_command_injection_check"
+#  - "mitm_fastjson_rce_check"
+#  - "mitm_gitinfo_check"
+#  - "mitm_readmeinfo_check"
+#  - "mitm_devfile_check"
+#  - "mitm_phpinfo_check"
+#  - "mitm_cookie_httponly_check"
+#  - "cleartext_password_check"
+#  - "mitm_htaccess_File_Readable"
+#  - "mitm_accessdb_check"
+#  - "mitm_open_redirect_check"
+#  - "http_to_https_redirect_check"
+#  - "mitm_js_library_check"
+#  - "mitm_file_inclusion_check"
+#  - "mitm_dir_index_check"
+#  - "mitm_shiro_check"
+#  - "mitm_crlf_injection_check"
+#  - "weblogic_ssrf_check"
+#  - "redis_unauthorized_access_check"
+#  - "service_bruteforce_check"
+
+# 原理验证脚本配置
+principleVerifyScripts:
+  enabled: true                                    # 是否启用原理验证脚本过滤
+  scriptListFile: "scripts/principle_verify_scripts.txt"  # 外部脚本列表文件路径
+
+# 模块特定配置
+# 无头浏览器爬虫配置
+crawlerx:
+  exePath:
+  wsAddress: ws://127.0.0.1:7317
+  vue: false
+  sensitiveWord: "logout,退出"
+  localStorage:
+
+portScan:
+  scanPort: 33306
+  protocol: tcp
+  timeout: 10
+  fingerprint:
+    enabled: true
+    rulesFile: "fingerprint-rules.yml"
+
+# 子域名爆破配置
+subdomainBrute:
+  enabled: true                                    # 是否启用子域名爆破
+  timeout: "5s"                                   # DNS查询超时时间
+  concurrent: 20                                   # 并发数
+  wordlistPath: "wordlists/subdomains.txt"        # 自定义字典文件路径
+  customSubdomains:                                # 自定义子域名列表
+    - "api"
+    - "admin"
+    - "test"
+    - "dev"
+  useBuiltinDict: true                             # 是否使用内置字典
+  maxDepth: 2                                      # 最大递归深度
+  filterWildcard: true                             # 是否过滤通配符解析
+  dnsServers:                                      # 自定义DNS服务器列表
+    - "8.8.8.8"
+    - "114.114.114.114"
+    - "1.1.1.1"
+  retryCount: 3                                    # 重试次数
+  delayBetween: 50                                 # 请求间隔（毫秒）
+
+testMode:
+  principleVerify: true
+  versionMatch: true
+
+# 后渗透配置
+postExploit:
+  enabled: true                                    # 是否启用后渗透功能
+  reverseShell:
+    listenerHost: "192.168.1.100"                   # 监听主机地址
+    listenerPort: "4444"                              # 监听端口
+    shellType: "bash"                               # shell类型: bash, powershell, cmd, python
+    timeout: 30                                     # 连接超时时间(秒)
+  webshell:
+    uploadPath: "/tmp/"                             # webshell上传路径
+    shellFile: "shell.php"                          # webshell文件名
+    password: "rebeyond"                                # webshell密码
+    customShells:                                   # 自定义webshell文件路径
+      - "D:\\goproject\\webScanner\\payloads\\shells\\php_shell.php"
+      - "D:\\goproject\\webScanner\\payloads\\shells\\jsp_shell.jsp"
+      - "D:\\goproject\\webScanner\\payloads\\shells\\aspx_shell.aspx"
+  sshKey:
+    publicKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCrzyTeAlJGUNvY9cq1WdlmwV+gtV/Lvn4TXpVcZQelf+Pp+O6YoD7aXuoJ5xVZ5YRmQ8WdMbskE0cF1pTdCzFo+OSucgAEW4LSjcdehivn+lvVjo+as2EzQitz0SQNJtGflk2L7ly+2boVhJ3mIO9uOgbffbyRU6xw5Oa2uk0j7x0b1qhkPg3aFeydwiFbkhUQVNH50hKae0DZxEKjvPFoOvdAYyJk+14UqS4Fn448mmREgUeXo7NKOTzMonMB84ECXxIKcob1ZQPxQznIup0trpB+RtyePcXnQqtfwqfyPLPpqCjHcNcW5ayd9gtiE6UP+Yz8dH/tDw4li4qRVThtH6N4/GvpRGRAe6LrW8b7a2SMB2MBg0GZddZaHSdgRlMeErVeqxj7qLk78B+7hz2Twyh2brDEoFdGmokw3ZJcIhKJHGr1ZoZCxgFi/q725JhKW6rv5qJQ1kFD68UUxY4FCeOuacaeMG4Zkv+5MxwDVJWQhY9b83ZaPwXAxTjTrKk= whf@Win102021GW"
+  persistence:
+    enabled: false                                  # 是否启用持久化
+    methods:                                        # 持久化方法
+      - "crontab"                                   # Linux定时任务
+      - "registry"                                  # Windows注册表
+      - "service"                                   # 系统服务
+    backupShells: 3                                 # 备份shell数量
+  privilege:
+    enabled: false                                  # 是否启用提权
+    autoPrivesc: false                              # 是否自动提权
+    methods:                                        # 提权方法
+      - "kernel_exploit"                            # 内核漏洞利用
+      - "suid_binary"                               # SUID二进制文件
+      - "sudo_exploit"                              # sudo漏洞利用
+      - "service_exploit"                           # 服务漏洞利用
+  lateral:
+    enabled: false                                  # 是否启用横向移动
+    scanInternalNetwork: false                      # 是否扫描内网
+    credentialHarvesting: false                     # 是否收集凭据
+    networkRange: "192.168.1.0/24"                 # 内网扫描范围
+  exfiltration:
+    enabled: false                                  # 是否启用数据外带
+    methods:                                        # 外带方法
+      - "http"                                      # HTTP外带
+      - "dns"                                       # DNS外带
+      - "ftp"                                       # FTP外带
+    exfilServer: "http://192.168.1.100:8080"        # 外带服务器地址
+    maxFileSize: 10485760                          # 最大文件大小(字节)
+    targetFiles:                                    # 目标文件类型
+      - "*.txt"
+      - "*.doc"
+      - "*.pdf"
+      - "*.sql"
+      - "*.config"
+  cleanup:
+    enabled: true                                   # 是否启用清理功能
+    autoCleanup: false                              # 是否自动清理
+    cleanupDelay: 300                               # 清理延迟时间(秒)
+    removeUploaded: true                            # 是否删除上传的文件
+    clearLogs: false                                # 是否清理日志
+
+serviceBrute:
+  enabled: true
+  timeout: 300
+  targetsConcurrent: 5
+  tasksConcurrent: 3
+  userDictPath: "/path/to/usernames.txt"
+  passDictPath: "/path/to/passwords.txt"
+  enabledServices: ["ssh", "ftp", "mysql", "redis"]
+  skipServices: ["rdp"]
+  serviceConfigs:
+    ssh:
+      enabled: true
+      timeout: 300
+      usernames: ["root", "admin"]
+      passwords: ["root", "password"]

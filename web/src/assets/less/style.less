@@ -1,0 +1,378 @@
+@import './common.less';
+* {
+    padding: 0;
+    margin: 0;
+    font-family: Source Han Sans, Helvetica, pingfang, Arial, Helvetica Neue, PingFang SC, Hiragino Sans GB, sans-serif, Microsoft YaHei, SimSun !important;
+}
+
+html,
+body {
+    height: 100%;
+    background: #0f0f1a;
+}
+
+.padding-top-10 {
+    padding-top: 10px;
+}
+
+.padding-bottom-10 {
+    padding-bottom: 10px;
+}
+
+#app {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    height: 100%;
+}
+
+#app>section {
+    height: 100%;
+}
+
+.el-button--primary {
+    background: linear-gradient(135deg, #00d4aa, #00b894) !important;
+    border: none !important;
+    color: #0f0f1a !important;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+
+    &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 25px rgba(0, 212, 170, 0.25) !important;
+        background: linear-gradient(135deg, #00e0b3, #00c89e) !important;
+    }
+
+    &:active {
+        transform: translateY(0);
+    }
+}
+
+.el-button--primary.is-disabled {
+    background: rgba(0, 212, 170, 0.3) !important;
+    color: rgba(15, 15, 26, 0.4) !important;
+    box-shadow: none !important;
+}
+
+.el-button--default {
+    background: rgba(26, 26, 46, 0.8);
+    border: 1px solid rgba(0, 212, 170, 0.15);
+    color: rgba(226, 232, 240, 0.7);
+    border-radius: 8px;
+
+    &:hover {
+        border-color: #00d4aa;
+        color: #00d4aa;
+        background: rgba(0, 212, 170, 0.06);
+    }
+}
+
+.el-pagination.is-background .el-pager li:not(.disabled).active {
+    background: linear-gradient(135deg, #00d4aa, #00b894) !important;
+    color: #0f0f1a !important;
+    border: none;
+}
+
+.el-pagination.is-background .el-pager li:not(.disabled) {
+    background: rgba(26, 26, 46, 0.6);
+    color: rgba(148, 163, 184, 0.6);
+    border-radius: 6px;
+}
+
+.el-tabs__active-bar {
+    background-color: #00d4aa;
+    height: 2px;
+}
+
+.el-tabs__item {
+    color: rgba(148, 163, 184, 0.6);
+
+    &.is-active {
+        color: #00d4aa;
+    }
+
+    &:hover {
+        color: #00d4aa;
+    }
+}
+
+.clearfix:before,
+.clearfix:after {
+    content: "";
+    display: table;
+}
+
+.clearfix:after {
+    clear: both;
+    overflow: hidden;
+}
+
+.clearfix {
+    zoom: 1;
+}
+
+.el-input__inner {
+    background: rgba(15, 15, 26, 0.8) !important;
+    border: 1px solid rgba(148, 163, 184, 0.12) !important;
+    color: #e2e8f0 !important;
+    border-radius: 8px !important;
+    height: 36px !important;
+    line-height: 36px !important;
+
+    &::placeholder {
+        color: rgba(148, 163, 184, 0.3) !important;
+    }
+
+    &:focus {
+        border-color: #00d4aa !important;
+        box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.08) !important;
+    }
+}
+
+.el-input__wrapper {
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.el-textarea__inner {
+    background: rgba(15, 15, 26, 0.8) !important;
+    border: 1px solid rgba(148, 163, 184, 0.12) !important;
+    color: #e2e8f0 !important;
+    border-radius: 8px !important;
+
+    &:focus {
+        border-color: #00d4aa !important;
+    }
+}
+
+.el-select-dropdown {
+    background: #1a1a2e !important;
+    border: 1px solid rgba(0, 212, 170, 0.12) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+}
+
+.el-select-dropdown__item {
+    color: rgba(148, 163, 184, 0.7) !important;
+
+    &.hover,
+    &:hover {
+        background: rgba(0, 212, 170, 0.06) !important;
+        color: #00d4aa !important;
+    }
+
+    &.selected {
+        color: #00d4aa !important;
+        font-weight: 600;
+    }
+}
+
+.v-modal {
+    opacity: 0.4 !important;
+    background: #000 !important;
+}
+
+::-webkit-scrollbar {
+    max-width: 6px;
+    max-height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.15);
+    border-radius: 3px;
+
+    &:hover {
+        background: rgba(148, 163, 184, 0.25);
+    }
+}
+
+.el-table {
+    background: transparent !important;
+    color: rgba(226, 232, 240, 0.75) !important;
+
+    th {
+        background: rgba(26, 26, 46, 0.8) !important;
+        color: rgba(148, 163, 184, 0.7) !important;
+        font-weight: 600 !important;
+        font-size: 13px;
+        border-bottom: 1px solid rgba(0, 212, 170, 0.08) !important;
+    }
+
+    td {
+        background: transparent !important;
+        color: rgba(226, 232, 240, 0.7) !important;
+        border-bottom: 1px solid rgba(0, 212, 170, 0.06) !important;
+    }
+
+    tr {
+        background: transparent !important;
+    }
+
+    &--enable-row-hover .el-table__body tr:hover > td {
+        background: rgba(0, 212, 170, 0.04) !important;
+    }
+
+    &::before {
+        display: none;
+    }
+
+    .cell {
+        line-height: 20px;
+    }
+}
+
+.el-table__empty-text {
+    color: rgba(148, 163, 184, 0.4) !important;
+}
+
+.el-card {
+    background: #1a1a2e !important;
+    border: 1px solid rgba(0, 212, 170, 0.08) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2) !important;
+
+    .el-card__header {
+        border-bottom: 1px solid rgba(0, 212, 170, 0.08) !important;
+        color: rgba(226, 232, 240, 0.8);
+        font-weight: 600;
+    }
+}
+
+.el-dialog {
+    background: #1a1a2e !important;
+    border: 1px solid rgba(0, 212, 170, 0.12) !important;
+    border-radius: 12px !important;
+
+    .el-dialog__header {
+        border-bottom: 1px solid rgba(0, 212, 170, 0.08);
+        padding: 20px 24px;
+
+        .el-dialog__title {
+            color: rgba(226, 232, 240, 0.87);
+            font-weight: 600;
+        }
+    }
+
+    .el-dialog__body {
+        padding: 24px;
+        color: rgba(226, 232, 240, 0.7);
+    }
+
+    .el-dialog__footer {
+        border-top: 1px solid rgba(0, 212, 170, 0.08);
+        padding: 16px 24px;
+    }
+}
+
+.el-tag {
+    border-radius: 6px;
+
+    &--danger {
+        background: rgba(239, 68, 68, 0.15) !important;
+        border-color: rgba(239, 68, 68, 0.2) !important;
+        color: #fca5a5 !important;
+    }
+
+    &--warning {
+        background: rgba(245, 158, 11, 0.15) !important;
+        border-color: rgba(245, 158, 11, 0.2) !important;
+        color: #fbbf24 !important;
+    }
+
+    &--success {
+        background: rgba(0, 212, 170, 0.15) !important;
+        border-color: rgba(0, 212, 170, 0.2) !important;
+        color: #00d4aa !important;
+    }
+
+    &--info {
+        background: rgba(148, 163, 184, 0.1) !important;
+        border-color: rgba(148, 163, 184, 0.15) !important;
+        color: rgba(148, 163, 184, 0.7) !important;
+    }
+}
+
+.el-switch.is-checked .el-switch__core {
+    border-color: #00d4aa !important;
+    background-color: #00d4aa !important;
+}
+
+.el-radio__input.is-checked .el-radio__inner {
+    border-color: #00d4aa !important;
+    background: #00d4aa !important;
+}
+
+.el-radio__input.is-checked + .el-radio__label {
+    color: #00d4aa !important;
+}
+
+.el-checkbox__input.is-checked .el-checkbox__inner {
+    background-color: #00d4aa !important;
+    border-color: #00d4aa !important;
+}
+
+.el-checkbox__input.is-checked + .el-checkbox__label {
+    color: #00d4aa !important;
+}
+
+.el-tooltip__popper.is-dark {
+    background: #1a1a2e !important;
+    border: 1px solid rgba(0, 212, 170, 0.12) !important;
+    color: rgba(226, 232, 240, 0.8) !important;
+    border-radius: 6px !important;
+}
+
+.el-notification {
+    background: #1a1a2e !important;
+    border: 1px solid rgba(0, 212, 170, 0.12) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+
+    .el-notification__title {
+        color: rgba(226, 232, 240, 0.87) !important;
+    }
+
+    .el-notification__content {
+        color: rgba(148, 163, 184, 0.7) !important;
+    }
+}
+
+.el-loading-mask {
+    background: rgba(15, 15, 26, 0.7) !important;
+}
+
+.el-date-editor {
+    .el-range-input {
+        background: transparent !important;
+        color: #e2e8f0 !important;
+    }
+
+    .el-range-separator {
+        color: rgba(148, 163, 184, 0.4) !important;
+    }
+}
+
+.el-date-table td.in-range div {
+    background: rgba(0, 212, 170, 0.08) !important;
+}
+
+.el-date-table td.today span {
+    color: #00d4aa !important;
+}
+
+.el-picker-panel {
+    background: #1a1a2e !important;
+    border: 1px solid rgba(0, 212, 170, 0.12) !important;
+}
+
+.el-link.el-link--default {
+    color: rgba(148, 163, 184, 0.7);
+
+    &:hover {
+        color: #00d4aa;
+    }
+}

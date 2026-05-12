@@ -1,0 +1,38 @@
+stages:
+  - build
+
+build_for_test:
+  stage: build
+  only:
+    - dev
+  tags:
+    - test
+  script:
+    - go env -w GO111MODULE=on
+    - go env -w GOPROXY=https://goproxy.cn,https://goproxy.io,direct
+    - go env -w GOINSECURE=gitlabee.4dogs.cn
+    - go env -w GOPRIVATE=gitlabee.4dogs.cn
+    - go env -w GONOPROXY=gitlabee.4dogs.cn
+    - go env -w GONOSUMDB=gitlabee.4dogs.cn
+    - go build -o smart smart.go
+    - mv /opt/laozhi/smart/smart /opt/laozhi/smart/smart.bak
+    - cp smart /opt/laozhi/smart/
+    - supervisord ctl restart smart
+
+build_for_dev:
+  stage: build
+  only:
+    - /^dev_.*$/
+  tags:
+    - dev
+  script:
+    - go env -w GO111MODULE=on
+    - go env -w GOPROXY=https://goproxy.cn,https://goproxy.io,direct
+    - go env -w GOINSECURE=gitlabee.4dogs.cn
+    - go env -w GOPRIVATE=gitlabee.4dogs.cn
+    - go env -w GONOPROXY=gitlabee.4dogs.cn
+    - go env -w GONOSUMDB=gitlabee.4dogs.cn
+    - go build -o smart smart.go
+    - mv /opt/laozhi/smart/smart /opt/laozhi/smart/smart.bak
+    - cp smart /opt/laozhi/smart/
+    - supervisord ctl restart smart

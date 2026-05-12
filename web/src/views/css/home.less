@@ -1,0 +1,347 @@
+.app-shell {
+  height: 100vh;
+  display: flex;
+  background: #0f0f1a;
+  color: @baseFontColor;
+}
+
+.sidebar {
+  width: 240px;
+  background: #12121f;
+  border-right: 1px solid rgba(0, 212, 170, 0.08);
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 100;
+  overflow: hidden;
+
+  &.collapsed {
+    width: 64px;
+  }
+}
+
+.sidebar-header {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  border-bottom: 1px solid rgba(0, 212, 170, 0.08);
+  flex-shrink: 0;
+}
+
+.logo-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.logo-icon {
+  flex-shrink: 0;
+}
+
+.logo-text {
+  font-size: 20px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #00d4aa, #7c3aed);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 1px;
+}
+
+.sidebar-menu {
+  flex: 1;
+  overflow: hidden;
+  padding: 8px 0;
+
+  :deep(.el-scrollbar__wrap) {
+    overflow-x: hidden;
+  }
+}
+
+.sidebar-footer {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 1px solid rgba(0, 212, 170, 0.08);
+  flex-shrink: 0;
+}
+
+.collapse-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  cursor: pointer;
+  color: rgba(148, 163, 184, 0.5);
+  transition: all 0.2s;
+  font-size: 18px;
+
+  &:hover {
+    color: #00d4aa;
+    background: rgba(0, 212, 170, 0.1);
+  }
+}
+
+.sidebar {
+  :deep(.el-menu) {
+    border-right: none;
+  }
+
+  :deep(.el-menu-item),
+  :deep(.el-submenu__title) {
+    height: 44px;
+    line-height: 44px;
+    font-size: 14px;
+    border-radius: 0;
+    margin: 2px 0;
+    padding-left: 20px !important;
+    transition: all 0.2s;
+
+    i {
+      margin-right: 14px;
+      font-size: 18px;
+      color: rgba(148, 163, 184, 0.5);
+    }
+
+    &:hover {
+      background: rgba(0, 212, 170, 0.06) !important;
+      color: rgba(226, 232, 240, 0.87) !important;
+    }
+  }
+
+  :deep(.el-menu-item.is-active) {
+    background: rgba(0, 212, 170, 0.1) !important;
+    color: #00d4aa !important;
+    border-right: 2px solid #00d4aa;
+
+    i {
+      color: #00d4aa !important;
+    }
+  }
+
+  :deep(.el-submenu.is-active > .el-submenu__title) {
+    color: #00d4aa;
+  }
+
+  :deep(.el-submenu .el-menu-item) {
+    padding-left: 56px !important;
+    font-size: 13px;
+    height: 40px;
+    line-height: 40px;
+  }
+
+  :deep(.el-submenu .el-menu-item.is-active) {
+    background: rgba(0, 212, 170, 0.1) !important;
+    color: #00d4aa !important;
+  }
+
+  :deep(.el-menu--collapse) {
+    width: 64px;
+
+    .el-submenu__title span,
+    .el-menu-item span {
+      display: none;
+    }
+
+    .el-submenu__title i,
+    .el-menu-item i {
+      margin-right: 0;
+    }
+  }
+
+  :deep(.el-scrollbar__bar.is-horizontal) {
+    display: none;
+  }
+}
+
+.main-area {
+  flex: 1;
+  margin-left: 240px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &.expanded {
+    margin-left: 64px;
+  }
+}
+
+.top-header {
+  height: 56px;
+  background: rgba(18, 18, 31, 0.95);
+  border-bottom: 1px solid rgba(0, 212, 170, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(8px);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+}
+
+.page-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(226, 232, 240, 0.87);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: all 0.2s;
+
+  &:hover {
+    background: rgba(0, 212, 170, 0.06);
+  }
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #00d4aa, #7c3aed);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 16px;
+}
+
+.username {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(226, 232, 240, 0.8);
+}
+
+.content-area {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  background: #0f0f1a;
+}
+
+:deep(.theme-dialog) {
+  .el-dialog {
+    background: #1a1a2e;
+    border: 1px solid rgba(0, 212, 170, 0.12);
+    border-radius: 12px;
+
+    .el-dialog__header {
+      border-bottom: 1px solid rgba(0, 212, 170, 0.08);
+      padding: 20px 24px;
+
+      .el-dialog__title {
+        color: rgba(226, 232, 240, 0.87);
+        font-weight: 600;
+      }
+    }
+
+    .el-dialog__body {
+      padding: 24px;
+      color: rgba(226, 232, 240, 0.7);
+    }
+
+    .el-dialog__footer {
+      border-top: 1px solid rgba(0, 212, 170, 0.08);
+      padding: 16px 24px;
+    }
+  }
+}
+
+.logout-confirm {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+
+  i {
+    font-size: 24px;
+    color: #f59e0b;
+  }
+}
+
+:deep(.el-dropdown-menu) {
+  background: #1a1a2e;
+  border: 1px solid rgba(0, 212, 170, 0.12);
+  border-radius: 8px;
+  padding: 6px;
+
+  .el-dropdown-menu__item {
+    color: rgba(226, 232, 240, 0.7);
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 13px;
+
+    i {
+      margin-right: 8px;
+      color: rgba(148, 163, 184, 0.5);
+    }
+
+    &:hover {
+      background: rgba(0, 212, 170, 0.08);
+      color: #00d4aa;
+    }
+
+    &.is-disabled {
+      color: rgba(148, 163, 184, 0.3);
+    }
+  }
+
+  .popper__arrow {
+    display: none;
+  }
+}
+
+:deep(.el-dialog__wrapper) {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+:deep(.el-message) {
+  background: #1a1a2e !important;
+  border: 1px solid rgba(0, 212, 170, 0.15) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+
+  .el-message__content {
+    color: rgba(226, 232, 240, 0.87) !important;
+  }
+}
+
+:deep(.el-message--success) {
+  .el-message__icon {
+    color: #00d4aa !important;
+  }
+}

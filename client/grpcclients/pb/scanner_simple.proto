@@ -1,0 +1,95 @@
+syntax = "proto3";
+
+package scanner;
+
+option go_package = "webScanner/common/grpcserver/pb";
+
+// 简化的扫描服务
+service ScannerService {
+  // 健康检查
+  rpc HealthCheck(HealthRequest) returns (HealthResponse);
+  
+  // 执行扫描
+  rpc ExecuteScan(ScanRequest) returns (ScanResponse);
+  
+  // 获取扫描状态
+  rpc GetScanStatus(StatusRequest) returns (StatusResponse);
+  
+  // 获取扫描结果
+  rpc GetScanResults(ResultRequest) returns (ResultResponse);
+}
+
+// 健康检查
+message HealthRequest {
+  string node_id = 1;
+}
+
+message HealthResponse {
+  bool alive = 1;
+  string status = 2;
+  string version = 3;
+}
+
+// 扫描请求 - 使用JSON字符串简化复杂配置
+message ScanRequest {
+  string task_id = 1;
+  string target = 2;
+  string config_json = 3; // 配置以JSON格式传递
+}
+
+message ScanResponse {
+  bool success = 1;
+  string message = 2;
+  string task_id = 3;
+}
+
+// 状态查询
+message StatusRequest {
+  string task_id = 1;
+}
+
+message StatusResponse {
+  string task_id = 1;
+  string status = 2;
+  int32 progress = 3;
+  string message = 4;
+}
+
+// 结果查询
+message ResultRequest {
+  string task_id = 1;
+}
+
+// 检测结果结构
+message DetectionResult {
+  string url = 1;
+  string parameter = 2;
+  string payload = 3;
+  string payload_success_flag = 4;
+  string details = 5;
+  string script_name = 6;
+  bytes request_raw = 7;
+  bytes response_raw = 8;
+}
+
+// 扫描任务信息
+message ScanTaskInfo {
+  string task_id = 1;
+  string target = 2;
+  string status = 3;
+  int32 progress = 4;
+  string message = 5;
+  string start_time = 6;
+  string end_time = 7;
+  string webhook_url = 8;
+}
+
+message ResultResponse {
+  string task_id = 1;
+  string results_json = 2; // 结果以JSON格式返回
+  int32 total_count = 3;
+  // 新增结构化字段
+  ScanTaskInfo task_info = 4;
+  repeated DetectionResult detection_results = 5;
+  repeated string logs = 6;
+}

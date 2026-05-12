@@ -1,0 +1,37 @@
+stages:
+  - build
+
+build_for_test:
+  stage: build
+  only:
+    - dev
+  tags:
+    - test
+  script:
+    - yarn install
+    - yarn build
+    - rm -rf /tmp/smart_vue.bak
+    - mv /opt/laozhi/nginx/smart_vue /tmp/smart_vue.bak
+    - mkdir -p /opt/laozhi/nginx/smart_vue/
+    - cp -r dist/* /opt/laozhi/nginx/smart_vue/
+    - chown -R dogs:dogs /opt/laozhi/nginx/smart_vue
+
+build_for_dev:
+  stage: build
+  only:
+    - /^dev_.*$/
+  tags:
+    - dev
+  script:
+    - yarn install
+    - yarn build
+    - rm -rf /tmp/smart_vue.bak
+    - mv /opt/laozhi/nginx/smart_vue /tmp/smart_vue.bak
+    - mkdir -p /opt/laozhi/nginx/smart_vue/
+    - cp -r dist/* /opt/laozhi/nginx/smart_vue/
+    - chown -R dogs:dogs /opt/laozhi/nginx/smart_vue
+
+
+
+
+  
