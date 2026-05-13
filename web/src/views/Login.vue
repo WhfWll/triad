@@ -94,6 +94,7 @@ export default {
     };
   },
   created() {
+    this.getCaptcha();
     if (process.env.VUE_APP_FREELOGIN == 1) {
       let obj = this.getUrlParams(window.location.href);
       if (obj && obj.sso) {
@@ -132,7 +133,7 @@ export default {
               localStorage.setItem('user_id-par', data.uid);
               localStorage.setItem('token', data.token);
               localStorage.setItem('role', this.$commonjs.encryptCBC(role, this.$commonjs.myKey));
-              localStorage.setItem('user', this.$commonjs.encryptCBC(data.username, this.$commonjs.myKey));
+              localStorage.setItem('user', this.$commonjs.encryptCBC(loginParams.userName || loginParams.token || 'user', this.$commonjs.myKey));
               this.$router.push({ path: '/index' });
             }
           });
@@ -153,7 +154,19 @@ export default {
       };
     },
     changevCode() {
-      this.check_code = '/api/smart/user/logincaptcha?time=' + new Date().getTime();
+      this.getCaptcha();
+    },
+    getCaptcha() {
+      this.$ajax({
+        url: '/smart/user/logincaptcha',
+        method: 'GET',
+        params: { time: new Date().getTime() },
+      }).then(res => {
+        if (res.data.code === 200) {
+          this.check_code = res.data.data.data;
+          this.captcha_id = res.data.data.captchaId;
+        }
+      });
     },
     handleSubmit() {
       this.$refs.ruleForm2.validate(valid => {
@@ -162,9 +175,9 @@ export default {
         this.errorbox.errshow = false;
         var loginParams = {
           username: this.ruleForm2.username,
-          password: this.ruleForm2.password,
-          vcode: this.ruleForm2.vcode,
-          captcha_id: this.captcha_id,
+          password: this.$commonjs.encryptCBC(this.ruleForm2.password, this.$commonjs.myKey),
+          checkCode: this.ruleForm2.vcode,
+          captchaId: this.captcha_id,
         };
         this.$ajax({
           url: '/smart/user/login',
@@ -180,7 +193,7 @@ export default {
               localStorage.setItem('user_id-par', data.uid);
               localStorage.setItem('token', data.token);
               localStorage.setItem('role', this.$commonjs.encryptCBC(role, this.$commonjs.myKey));
-              localStorage.setItem('user', this.$commonjs.encryptCBC(data.username, this.$commonjs.myKey));
+              localStorage.setItem('user', this.$commonjs.encryptCBC(this.ruleForm2.username, this.$commonjs.myKey));
               if (role == 3) {
                 this.$router.push({ path: '/log' });
               } else {
