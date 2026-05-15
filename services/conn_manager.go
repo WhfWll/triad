@@ -1,12 +1,15 @@
 package services
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net"
+	"smart/tools/enums"
 	"sync"
 	"time"
 
+	"github.com/masterzen/winrm"
 	"github.com/pkg/sftp"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
@@ -31,10 +34,11 @@ type HostConnManager struct {
 }
 
 type HostConnection struct {
-	Config     *HostConnConfig
-	SSHClient  *ssh.Client
-	SFTPClient *sftp.Client
-	LastUsed   time.Time
+	Config      *HostConnConfig
+	SSHClient   *ssh.Client
+	SFTPClient  *sftp.Client
+	WinRMClient *winrm.Client
+	LastUsed    time.Time
 }
 
 var globalConnManager *HostConnManager
@@ -60,16 +64,29 @@ func (m *HostConnManager) GetConnection(ctx context.Context, config *HostConnCon
 	conn, exists := m.connPool[key]
 	m.mu.RUnlock()
 
-	if exists && conn.SSHClient != nil {
-		_, _, err := conn.SSHClient.SendRequest("keepalive@openssh.com", true, nil)
-		if err == nil {
+	if exists {
+		if conn.SSHClient != nil {
+			_, _, err := conn.SSHClient.SendRequest("keepalive@openssh.com", true, nil)
+			if err == nil {
+				conn.LastUsed = time.Now()
+				return conn, nil
+			}
+			log.Warnf("SSH connection to %s expired, reconnecting", key)
+		} else if conn.WinRMClient != nil {
 			conn.LastUsed = time.Now()
 			return conn, nil
 		}
-		log.Warnf("SSH connection to %s expired, reconnecting", key)
 		m.Close(key)
 	}
 
+	if config.OSType == enums.BaselineOSTypeWindows {
+		return m.createWinRMConnection(ctx, config, key)
+	}
+
+	return m.createSSHConnection(ctx, config, key)
+}
+
+func (m *HostConnManager) createSSHConnection(ctx context.Context, config *HostConnConfig, key string) (*HostConnection, error) {
 	timeout := config.Timeout
 	if timeout == 0 {
 		timeout = 30 * time.Second
@@ -104,7 +121,7 @@ func (m *HostConnManager) GetConnection(ctx context.Context, config *HostConnCon
 		log.Warnf("sftp init failed (non-fatal): %v", err)
 	}
 
-	conn = &HostConnection{
+	conn := &HostConnection{
 		Config:     config,
 		SSHClient:  sshClient,
 		SFTPClient: sftpClient,
@@ -118,9 +135,57 @@ func (m *HostConnManager) GetConnection(ctx context.Context, config *HostConnCon
 	return conn, nil
 }
 
+func (m *HostConnManager) createWinRMConnection(ctx context.Context, config *HostConnConfig, key string) (*HostConnection, error) {
+	timeout := config.Timeout
+	if timeout == 0 {
+		timeout = 30 * time.Second
+	}
+
+	winrmPort := config.Port
+	if winrmPort == 0 {
+		if config.UseHTTPS {
+			winrmPort = 5986
+		} else {
+			winrmPort = 5985
+		}
+	}
+
+	endpoint := winrm.NewEndpoint(
+		config.Host,
+		winrmPort,
+		config.UseHTTPS,
+		config.InsecureSkipVerify,
+		nil,
+		nil,
+		nil,
+		timeout,
+	)
+
+	winrmClient, err := winrm.NewClient(endpoint, config.Username, config.Password)
+	if err != nil {
+		return nil, fmt.Errorf("winrm client create failed: %v", err)
+	}
+
+	conn := &HostConnection{
+		Config:      config,
+		WinRMClient: winrmClient,
+		LastUsed:    time.Now(),
+	}
+
+	m.mu.Lock()
+	m.connPool[key] = conn
+	m.mu.Unlock()
+
+	return conn, nil
+}
+
 func (m *HostConnManager) ExecuteCommand(ctx context.Context, conn *HostConnection, command string) (string, error) {
+	if conn.WinRMClient != nil {
+		return m.executeWinRMCommand(ctx, conn, command)
+	}
+
 	if conn.SSHClient == nil {
-		return "", fmt.Errorf("ssh client is nil")
+		return "", fmt.Errorf("no valid connection (SSH or WinRM)")
 	}
 
 	session, err := conn.SSHClient.NewSession()
@@ -135,6 +200,31 @@ func (m *HostConnManager) ExecuteCommand(ctx context.Context, conn *HostConnecti
 	}
 
 	return string(output), nil
+}
+
+func (m *HostConnManager) executeWinRMCommand(ctx context.Context, conn *HostConnection, command string) (string, error) {
+	var stdout, stderr bytes.Buffer
+
+	done := make(chan error)
+	go func() {
+		defer close(done)
+		_, err := conn.WinRMClient.Run(command, &stdout, &stderr)
+		done <- err
+	}()
+
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	case err := <-done:
+		output := stdout.String()
+		if stderr.Len() > 0 {
+			output += "\nSTDERR: " + stderr.String()
+		}
+		if err != nil {
+			return output, fmt.Errorf("winrm execute command failed: %v", err)
+		}
+		return output, nil
+	}
 }
 
 func (m *HostConnManager) ExecuteCommands(ctx context.Context, conn *HostConnection, commands []string) (map[string]string, error) {

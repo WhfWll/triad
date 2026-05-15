@@ -1,0 +1,67 @@
+[
+  {
+    "id": 1001,
+    "name": "检查自定义SSH端口",
+    "description": "SSH服务应使用非默认端口",
+    "category": 9,
+    "risk": 2,
+    "osType": 1,
+    "commands": ["grep '^Port' /etc/ssh/sshd_config"],
+    "expectedValue": "22",
+    "matchType": "not_contains",
+    "fixSuggestion": "在/etc/ssh/sshd_config中修改Port配置",
+    "riskDescription": "使用默认SSH端口会增加被暴力破解的风险"
+  },
+  {
+    "id": 1002,
+    "name": "检查自定义防火墙规则",
+    "description": "应限制不必要的入站连接",
+    "category": 3,
+    "risk": 2,
+    "osType": 1,
+    "commands": ["firewall-cmd --list-all 2>/dev/null | grep services"],
+    "expectedValue": "ssh http https",
+    "matchType": "contains",
+    "fixSuggestion": "使用firewall-cmd配置防火墙规则",
+    "riskDescription": "开放过多端口会增加攻击面"
+  },
+  {
+    "id": 1003,
+    "name": "检查自定义密码复杂度",
+    "description": "密码应包含大小写字母、数字和特殊字符",
+    "category": 1,
+    "risk": 2,
+    "osType": 1,
+    "commands": ["grep 'pam_cracklib' /etc/pam.d/passwd 2>/dev/null | grep -E '(minlen|dcredit|ucredit|lcredit|ocredit)'"],
+    "expectedValue": "minlen=12",
+    "matchType": "contains",
+    "fixSuggestion": "配置pam_cracklib模块要求更强的密码复杂度",
+    "riskDescription": "弱密码容易被暴力破解"
+  },
+  {
+    "id": 1004,
+    "name": "检查自定义日志轮转",
+    "description": "日志文件应定期轮转",
+    "category": 6,
+    "risk": 3,
+    "osType": 1,
+    "commands": ["ls /etc/logrotate.d/ 2>/dev/null | wc -l"],
+    "expectedValue": "0",
+    "matchType": "not_contains",
+    "fixSuggestion": "配置logrotate进行日志轮转",
+    "riskDescription": "日志文件过大会占用大量磁盘空间"
+  },
+  {
+    "id": 1005,
+    "name": "检查自定义备份策略",
+    "description": "重要数据应定期备份",
+    "category": 99,
+    "risk": 3,
+    "osType": 1,
+    "commands": ["crontab -l 2>/dev/null | grep -i backup || find /etc/cron.d -name '*backup*' 2>/dev/null | head -1"],
+    "expectedValue": "",
+    "matchType": "not_contains",
+    "fixSuggestion": "配置定期备份任务",
+    "riskDescription": "无备份策略会导致数据丢失风险"
+  }
+]

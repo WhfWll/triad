@@ -42,17 +42,22 @@ type BaselineCheckTask struct {
 }
 
 type BaselineCheckReport struct {
-	TaskID      int
-	TargetID    int
-	TargetIP    string
-	OSType      int
-	TotalRules  int
-	PassCount   int
-	FailCount   int
-	ErrorCount  int
-	Results     []mysqls.BaselineCheckResult
-	StartTime   time.Time
-	EndTime     time.Time
+	TaskID          int
+	TargetID        int
+	TargetIP        string
+	OSType          int
+	TotalRules      int
+	PassCount       int
+	FailCount       int
+	ErrorCount      int
+	CriticalCount   int
+	HighRiskCount   int
+	MiddleRiskCount int
+	LowRiskCount    int
+	ComplianceScore float64
+	Results         []mysqls.BaselineCheckResult
+	StartTime       time.Time
+	EndTime         time.Time
 }
 
 func (c *HostBaselineChecker) RunBaselineCheck(ctx context.Context, task *BaselineCheckTask) (*BaselineCheckReport, error) {
@@ -65,13 +70,13 @@ func (c *HostBaselineChecker) RunBaselineCheck(ctx context.Context, task *Baseli
 	}
 
 	connConfig := &HostConnConfig{
-		Host:     task.Host,
-		Port:     task.Port,
-		Username: task.Username,
-		Password: task.Password,
+		Host:       task.Host,
+		Port:       task.Port,
+		Username:   task.Username,
+		Password:   task.Password,
 		PrivateKey: task.Key,
-		OSType:   task.OSType,
-		Timeout:  30 * time.Second,
+		OSType:     task.OSType,
+		Timeout:    30 * time.Second,
 	}
 
 	conn, err := c.connManager.GetConnection(ctx, connConfig)
@@ -92,6 +97,9 @@ func (c *HostBaselineChecker) RunBaselineCheck(ctx context.Context, task *Baseli
 	}
 
 	report.TotalRules = len(rules)
+
+	totalWeight := 0.0
+	deduction := 0.0
 
 	for _, rule := range rules {
 		select {
@@ -115,6 +123,9 @@ func (c *HostBaselineChecker) RunBaselineCheck(ctx context.Context, task *Baseli
 			RiskDescription: rule.RiskDescription,
 		}
 
+		ruleWeight := getRiskWeight(rule.Risk)
+		totalWeight += ruleWeight
+
 		allOutput := ""
 		checkErr := false
 		for _, cmd := range rule.Commands {
@@ -136,13 +147,22 @@ func (c *HostBaselineChecker) RunBaselineCheck(ctx context.Context, task *Baseli
 			} else {
 				result.CheckResult = enums.BaselineCheckResultFail
 				report.FailCount++
+				deduction += ruleWeight
+				c.updateRiskCount(report, rule.Risk)
 			}
 		} else {
 			report.ErrorCount++
+			deduction += ruleWeight * 0.5
 		}
 
 		result.CreateTime = time.Now()
 		report.Results = append(report.Results, result)
+	}
+
+	if totalWeight > 0 {
+		report.ComplianceScore = ((totalWeight - deduction) / totalWeight) * 100
+	} else {
+		report.ComplianceScore = 100.0
 	}
 
 	report.EndTime = time.Now()
@@ -157,4 +177,34 @@ func (c *HostBaselineChecker) RunBaselineCheck(ctx context.Context, task *Baseli
 	}
 
 	return report, nil
+}
+
+func getRiskWeight(risk int) float64 {
+	switch risk {
+	case enums.BaselineRiskCritical:
+		return 5.0
+	case enums.BaselineRiskHigh:
+		return 3.0
+	case enums.BaselineRiskMiddle:
+		return 2.0
+	case enums.BaselineRiskLow:
+		return 1.0
+	case enums.BaselineRiskInfo:
+		return 0.5
+	default:
+		return 1.0
+	}
+}
+
+func (c *HostBaselineChecker) updateRiskCount(report *BaselineCheckReport, risk int) {
+	switch risk {
+	case enums.BaselineRiskCritical:
+		report.CriticalCount++
+	case enums.BaselineRiskHigh:
+		report.HighRiskCount++
+	case enums.BaselineRiskMiddle:
+		report.MiddleRiskCount++
+	case enums.BaselineRiskLow:
+		report.LowRiskCount++
+	}
 }

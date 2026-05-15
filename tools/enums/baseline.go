@@ -160,10 +160,11 @@ func (baseline) GetCategoryName(category int) string {
 
 func (baseline) GetBaselineRiskName(risk int) string {
 	m := map[int]string{
-		BaselineRiskHigh:   "高危",
-		BaselineRiskMiddle: "中危",
-		BaselineRiskLow:    "低危",
-		BaselineRiskInfo:   "信息",
+		BaselineRiskCritical: "严重",
+		BaselineRiskHigh:     "高危",
+		BaselineRiskMiddle:   "中危",
+		BaselineRiskLow:      "低危",
+		BaselineRiskInfo:     "信息",
 	}
 	if v, ok := m[risk]; ok {
 		return v
