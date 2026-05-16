@@ -1,0 +1,13 @@
+34: '        <el-table-column prop="vulnCount" label="发现漏洞�?>'
+41: '        <el-table-column prop="status" label="状�?>'
+68: '    <el-dialog title="新建专项应用检测任�? :visible.sync="dialogVisible" width="600px">'
+71: '          <el-input v-model="taskForm.name" placeholder="请输入任务名�?></el-input>'
+78: '            <el-option label="云时�? :value="4"></el-option>'
+79: '            <el-option label="亿赛�? :value="5"></el-option>'
+94: '        <el-form-item label="检测类�? prop="checkTypes">'
+95: '          <el-select v-model="taskForm.checkTypes" multiple placeholder="请选择检测类�?>'
+116: '    <el-dialog title="检测结果详�? :visible.sync="detailVisible" width="900px">'
+199: "        name: [{ required: true, message: '请输入任务名�?, trigger: 'blur' }],"
+286: "      const map = { 1: '万户OA', 2: '用友NC', 3: '蓝凌EKP', 4: '云时�?, 5: '亿赛�?, 6: 'D-Link', 7: '通达OA', 8: 'WordPress', 9: 'ThinkPHP', 10: 'Spring Boot', 11: '通用CMS' }"
+302: "      const map = { 1: '等待检�?, 2: '检测中', 3: '已完�? }"
+310: "      const map = { 1: '远程代码执行', 2: '未授权访�?, 3: 'SQL注入', 4: '文件上传', 5: '弱口�?, 6: 'XSS', 7: 'SSRF', 8: '信息泄露' }"

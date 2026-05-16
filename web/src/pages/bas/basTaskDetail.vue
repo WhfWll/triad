@@ -1,7 +1,7 @@
 <template>
     <div> 
         <div class="main-title">
-            <router-link :underline="false" class="classA" :to="{ path: '/bastask' }" >模拟任务
+            <router-link :underline="false" class="classA" :to="{ path: '/bastask' }" >安全配置核查
             </router-link>  
             <label class="currentpagetitle">
                 <el-tooltip class="item" effect="dark" :content="name+'详情-测试目标'"   placement="bottom">

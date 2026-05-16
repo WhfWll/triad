@@ -113,6 +113,46 @@ func (e *BaselineEngine) LoadRules(data []byte) error {
 	return nil
 }
 
+// ImportRules 导入规则列表到引擎（运行时热加载），按 name+category+osType 去重
+func (e *BaselineEngine) ImportRules(rules []BaselineRule) (int, int) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	// 构建已有规则唯一键集合
+	existing := make(map[string]bool, len(e.rules))
+	for _, r := range e.rules {
+		key := ruleCompositeKey(r.Name, r.Category, r.OSType)
+		existing[key] = true
+	}
+
+	skipped := 0
+	imported := 0
+	for _, rule := range rules {
+		if rule.Name == "" || len(rule.Commands) == 0 {
+			skipped++
+			continue
+		}
+		key := ruleCompositeKey(rule.Name, rule.Category, rule.OSType)
+		if existing[key] {
+			skipped++
+			continue
+		}
+		if rule.OSType < 1 || rule.OSType > 4 {
+			rule.OSType = 1
+		}
+		existing[key] = true
+		e.rules = append(e.rules, rule)
+		e.rulesMap[rule.OSType] = append(e.rulesMap[rule.OSType], rule)
+		imported++
+	}
+	return imported, skipped
+}
+
+// ruleCompositeKey 生成规则唯一键：name|category|osType
+func ruleCompositeKey(name string, category, osType int) string {
+	return fmt.Sprintf("%s|%d|%d", name, category, osType)
+}
+
 func (e *BaselineEngine) GetRulesByOSType(osType int) []BaselineRule {
 	e.mu.RLock()
 	defer e.mu.RUnlock()

@@ -1,203 +1,94 @@
-import request from '@/utils/request'
+import axios from '@/axios/http'
 
 const security = {
-  // 恶意代码检测
+  // 恶意代码检测 (后端路由: /smart/malware/*)
   runMalwareScan: (data) => {
-    return request({
-      url: '/api/smart/baseline/malware/scan',
-      method: 'post',
-      data
-    })
+    return axios.postJson('/smart/malware/scan', data)
   },
   getMalwareList: (params) => {
-    return request({
-      url: '/api/smart/baseline/malware/list',
-      method: 'get',
-      params
-    })
+    return axios.get('/smart/malware/result', params)
   },
-  getMalwareDetail: (params) => {
-    return request({
-      url: '/api/smart/baseline/malware/detail',
-      method: 'get',
-      params
-    })
-  },
-  delMalwareTask: (params) => {
-    return request({
-      url: '/api/smart/baseline/malware/del',
-      method: 'get',
-      params
-    })
+  getMalwareTaskList: (params) => {
+    return axios.get('/smart/malware/tasks', params)
   },
 
-  // 数据库安全检查
+  // 数据库安全检查 (后端路由: /smart/db/*)
   runDBCheck: (data) => {
-    return request({
-      url: '/api/smart/baseline/db/check',
-      method: 'post',
-      data
-    })
+    return axios.postJson('/smart/db/check', data)
   },
   getDBCheckList: (params) => {
-    return request({
-      url: '/api/smart/baseline/db/list',
-      method: 'get',
-      params
-    })
-  },
-  getDBCheckDetail: (params) => {
-    return request({
-      url: '/api/smart/baseline/db/detail',
-      method: 'get',
-      params
-    })
-  },
-  delDBCheckTask: (params) => {
-    return request({
-      url: '/api/smart/baseline/db/del',
-      method: 'get',
-      params
-    })
+    return axios.get('/smart/db/result', params)
   },
 
-  // 敏感数据发现
+  // 敏感数据发现 (后端路由: /smart/sensitive/*)
   runSensitiveScan: (data) => {
-    return request({
-      url: '/api/smart/baseline/sensitive/scan',
-      method: 'post',
-      data
-    })
+    return axios.postJson('/smart/sensitive/scan', data)
   },
   getSensitiveDataList: (params) => {
-    return request({
-      url: '/api/smart/baseline/sensitive/list',
-      method: 'get',
-      params
-    })
-  },
-  getSensitiveDetail: (params) => {
-    return request({
-      url: '/api/smart/baseline/sensitive/detail',
-      method: 'get',
-      params
-    })
+    return axios.get('/smart/sensitive/result', params)
   },
   getSensitiveStat: (params) => {
-    return request({
-      url: '/api/smart/baseline/sensitive/stat',
-      method: 'get',
-      params
-    })
-  },
-  delSensitiveTask: (params) => {
-    return request({
-      url: '/api/smart/baseline/sensitive/del',
-      method: 'get',
-      params
-    })
+    return axios.get('/smart/sensitive/stat', params)
   },
 
-  // 基线检查
+  // 基线检查 (后端路由: /smart/baseline/*)
   runBaselineCheck: (data) => {
-    return request({
-      url: '/api/smart/baseline/check',
-      method: 'post',
-      data
-    })
+    return axios.postJson('/smart/baseline/check', data)
+  },
+  runBaselineBatchCheck: (data) => {
+    return axios.postJson('/smart/baseline/check/batch', data)
+  },
+  getBaselineBatchProgress: (params) => {
+    return axios.get('/smart/baseline/check/progress', params)
   },
   getBaselineList: (params) => {
-    return request({
-      url: '/api/smart/baseline/list',
-      method: 'get',
-      params
-    })
-  },
-  getBaselineDetail: (params) => {
-    return request({
-      url: '/api/smart/baseline/detail',
-      method: 'get',
-      params
-    })
+    return axios.get('/smart/baseline/result', params)
   },
   getBaselineStat: (params) => {
-    return request({
-      url: '/api/smart/baseline/stat',
-      method: 'get',
-      params
-    })
+    return axios.get('/smart/baseline/stat', params)
+  },
+  getBaselineTaskList: (params) => {
+    return axios.get('/smart/baseline/tasks', params)
   },
   getBaselineRules: () => {
-    return request({
-      url: '/api/smart/baseline/rules',
-      method: 'get'
-    })
+    return axios.get('/smart/baseline/rules')
   },
-  getBaselineEnums: () =&gt; {
-    return request({
-      url: '/api/smart/baseline/enums',
-      method: 'get'
-    })
+  getBaselineRulesFromDB: () => {
+    return axios.get('/smart/baseline/rules/db')
   },
-
-  // 专项应用检测
-  runAppSpecificScan: (data) =&gt; {
-    return request({
-      url: '/api/smart/appspecific/scan',
-      method: 'post',
-      data
-    })
+  getBaselineRuleDetail: (params) => {
+    return axios.get('/smart/baseline/rule/detail', params)
   },
-  getAppSpecificList: (params) =&gt; {
-    return request({
-      url: '/api/smart/appspecific/list',
-      method: 'get',
-      params
-    })
+  createBaselineRule: (data) => {
+    return axios.postJson('/smart/baseline/rule/create', data)
   },
-  getAppSpecificDetail: (params) =&gt; {
-    return request({
-      url: '/api/smart/appspecific/detail',
-      method: 'get',
-      params
-    })
+  updateBaselineRule: (data) => {
+    return axios.postJson('/smart/baseline/rule/update', data)
   },
-  delAppSpecificTask: (params) =&gt; {
-    return request({
-      url: '/api/smart/appspecific/del',
-      method: 'get',
-      params
-    })
+  deleteBaselineRule: (params) => {
+    return axios.get('/smart/baseline/rule/delete', params)
+  },
+  importBaselineRules: (data) => {
+    return axios.postJson('/smart/baseline/rules/import', data)
+  },
+  getBaselineEnums: () => {
+    return axios.get('/smart/baseline/enums')
   },
 
-  // 动态扫描
-  runDynamicScan: (data) =&gt; {
-    return request({
-      url: '/api/smart/dynamicscan/scan',
-      method: 'post',
-      data
-    })
+  // 专项应用检测 (后端暂无接口)
+  getAppSpecificList: () => {
+    return Promise.resolve({ code: 200, data: { list: [], total: 0 } })
   },
-  getDynamicScanList: (params) =&gt; {
-    return request({
-      url: '/api/smart/dynamicscan/list',
-      method: 'get',
-      params
-    })
+  runAppSpecificScan: () => {
+    return Promise.resolve({ code: 200, msg: '功能开发中' })
   },
-  getDynamicScanDetail: (params) =&gt; {
-    return request({
-      url: '/api/smart/dynamicscan/detail',
-      method: 'get',
-      params
-    })
+
+  // 动态扫描 (后端暂无接口)
+  getDynamicScanList: () => {
+    return Promise.resolve({ code: 200, data: { list: [], total: 0 } })
   },
-  delDynamicScanTask: (params) =&gt; {
-    return request({
-      url: '/api/smart/dynamicscan/del',
-      method: 'get',
-      params
-    })
+  runDynamicScan: () => {
+    return Promise.resolve({ code: 200, msg: '功能开发中' })
   }
 }
 

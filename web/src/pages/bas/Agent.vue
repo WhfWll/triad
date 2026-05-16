@@ -3,26 +3,26 @@
         <div class="main-title  ">
             Agent管理
         </div>
-        <div class="nodelist div-list">
+        <div class="list_box">
             <div class="search-box">
                 <div class="operationbutton">
-                    <xz-button type="primary"  size="small" style="margin-right:8px" @click="downloadagent">下载agent</xz-button> 
+                    <el-button type="primary" size="small" style="margin-right:8px" @click="downloadagent">下载agent</el-button> 
                 </div>
                 <div class="serach-condition">
                     
                     <div class="search-text">
                         <el-input placeholder="搜索关键字" @keydown.enter.native="handlesearch" v-model="search_item.search" class="input-with-select"
                             size="small" clearable> </el-input>
-                        <xz-button type="primary" @click="handlesearch" :disabled="false" size="small">搜索</xz-button>
+                        <el-button type="primary" @click="handlesearch" size="small">搜索</el-button>
                     </div>
                     <div>
-                        <xz-button type="primary" @click="handleReset" :disabled="false" size="small">重置</xz-button>
+                        <el-button type="primary" @click="handleReset" size="small">重置</el-button>
                     </div>
                 </div>
             </div>
 
 
-            <el-table ref="multipleTable" :data="tableData" tooltip-effect="dark" v-model="Loading" style="width: 100%"
+            <el-table ref="multipleTable" :data="tableData" tooltip-effect="dark" v-model="Loading" style="width: 100%" class="myTable"
                 @selection-change="handleSelectionChange" @cell-mouse-enter="mouseenter" @cell-mouse-leave="mouseleave">
                 <el-table-column type="selection" width="55">
                 </el-table-column>
@@ -284,15 +284,9 @@
 
     </div>
 </template>
-<style  scoped lang="less">
-.div-list{ 
-    padding: 24px;
-    background: #fff;
-    min-height: calc(100% - 39px);
-    box-sizing: border-box;
-    box-shadow: 0px 2px 4px 0px rgba(76,122,227,0.12);
-    border-radius: 4px;
-}
+<style scoped lang="less">
+@import './css/bas-list-page.less';
+
 .info_box {
     padding: 24px;
 }
@@ -385,7 +379,6 @@
 </style>
 <script>
 import DelButton from "@/components/DelButton.vue";
-import XzButton from "@/components/XzButton.vue";
 // import {node} from '@/api/system.js';
 import bas from '@/api/bas.js'
 import jsFileDownload from 'js-file-download'
@@ -393,7 +386,6 @@ var echarts = require('echarts');
 export default {
     name:"node",
     components:{
-        XzButton,
         DelButton
     },
     data(){

@@ -469,46 +469,99 @@ const routes = [
   }, 
  
   {
+    path: '/bastask',
+    redirect: '/hostsec/tasks',
+  },
+  {
+    path: '/bastaskDetail',
+    redirect: '/hostsec/tasks',
+  },
+  {
+    path: '/createbas',
+    redirect: '/hostsec/tasks',
+  },
+  {
     path: '/scriptLibrary',
+    redirect: '/hostsec/tasks',
+  },
+  {
+    path: '/evaluationScheme',
+    redirect: '/hostsec/tasks',
+  },
+  {
+    path: '/createscheme',
+    redirect: '/hostsec/tasks',
+  },
+  {
+    path: '/agent',
+    redirect: '/hostsec/tasks',
+  },
+  {
+    path: '/security',
     component: Home,
-    name: 'scriptLibrary',
-    children: [ 
+    name: 'security',
+    children: [
       {
-        path: '/scriptLibrary',
-        name: 'scriptLibrary',
-        component: () => import('@/pages/bas/scriptLibrary.vue'),
-      },{
-        path:'/evaluationScheme',
-        name: 'evaluationScheme',
-        component: () => import('@/pages/bas/evaluationScheme.vue'),
+        path: '/hostsec/tasks',
+        name: 'hostsecTasks',
+        component: () => import('@/pages/security/HostSecurityHub.vue'),
       },
       {
-        path:'/createscheme',
-        name: 'createscheme',
-        component: () => import('@/pages/bas/CreateScheme.vue'),
+        path: '/hostsec/rules',
+        name: 'hostsecRules',
+        component: () => import('@/pages/security/HostDetectionRules.vue'),
       },
       {
-        path:'/createbas',
-        name: 'createbas',
-        component: () => import('@/pages/bas/CreatebasTask.vue'),
+        path: '/appsec/tasks',
+        name: 'appsecTasks',
+        component: () => import('@/pages/security/AppSecTaskHub.vue'),
       },
       {
-        path:'/bastask',
-        name:'bastask',
-        component: () => import('@/pages/bas/basTask.vue'),
+        path: '/appsec/rules',
+        name: 'appsecRules',
+        component: () => import('@/pages/security/AppDetectionRules.vue'),
       },
       {
-        path:'/bastaskDetail',
-        name:'bastaskDetail',
-        component: () => import('@/pages/bas/basTaskDetail.vue'),
+        path: '/datasec/tasks',
+        name: 'datasecTasks',
+        component: () => import('@/pages/security/DataSecTaskHub.vue'),
       },
       {
-        path:'/agent',
-        name:'agent',
-        component: () => import('@/pages/bas/Agent.vue'),
+        path: '/datasec/rules',
+        name: 'datasecRules',
+        component: () => import('@/pages/security/DataDetectionRules.vue'),
+      },
+      {
+        path: '/hostsecurityhub',
+        redirect: '/hostsec/tasks',
+      },
+      {
+        path: '/hostbaseline',
+        name: 'hostbaseline',
+        component: () => import('@/pages/security/HostBaselineAudit.vue'),
+      },
+      {
+        path: '/malware',
+        name: 'malware',
+        component: () => import('@/pages/security/MalwareScan.vue'),
+      },
+      {
+        path: '/dbcheck',
+        redirect: '/datasec/tasks?tab=db',
+      },
+      {
+        path: '/sensitive',
+        redirect: '/datasec/tasks?tab=sensitive',
+      },
+      {
+        path: '/appspecific',
+        redirect: '/appsec/tasks?tab=app',
+      },
+      {
+        path: '/dynamicscan',
+        redirect: '/appsec/tasks?tab=dyn',
       },
     ],
- 
   },
   {
     path: '/campaign',

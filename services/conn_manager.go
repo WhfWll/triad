@@ -22,6 +22,8 @@ type HostConnConfig struct {
 	Password           string
 	PrivateKey         string
 	OSType             int
+	// Transport 有效值：HostTransportSSH、HostTransportWinRM；0 表示由 GetConnection 按 OSType 推断（兼容旧调用）
+	Transport int
 	Timeout            time.Duration
 	WinRM_PORT         int
 	UseHTTPS           bool
@@ -53,12 +55,36 @@ func GetHostConnManager() *HostConnManager {
 	return globalConnManager
 }
 
-func connPoolKey(host string, port int, username string) string {
-	return fmt.Sprintf("%s:%d@%s", username, port, host)
+func connPoolKey(host string, port int, username string, transport int) string {
+	return fmt.Sprintf("t%d|%s:%d@%s", transport, username, port, host)
 }
 
 func (m *HostConnManager) GetConnection(ctx context.Context, config *HostConnConfig) (*HostConnection, error) {
-	key := connPoolKey(config.Host, config.Port, config.Username)
+	transport := config.Transport
+	if transport != enums.HostTransportSSH && transport != enums.HostTransportWinRM {
+		if config.OSType == enums.BaselineOSTypeWindows {
+			transport = enums.HostTransportWinRM
+		} else {
+			transport = enums.HostTransportSSH
+		}
+		config.Transport = transport
+	}
+
+	if transport == enums.HostTransportWinRM {
+		if config.Port <= 0 {
+			if config.UseHTTPS {
+				config.Port = 5986
+			} else {
+				config.Port = 5985
+			}
+		}
+	} else {
+		if config.Port <= 0 {
+			config.Port = 22
+		}
+	}
+
+	key := connPoolKey(config.Host, config.Port, config.Username, transport)
 
 	m.mu.RLock()
 	conn, exists := m.connPool[key]
@@ -79,7 +105,7 @@ func (m *HostConnManager) GetConnection(ctx context.Context, config *HostConnCon
 		m.Close(key)
 	}
 
-	if config.OSType == enums.BaselineOSTypeWindows {
+	if transport == enums.HostTransportWinRM {
 		return m.createWinRMConnection(ctx, config, key)
 	}
 

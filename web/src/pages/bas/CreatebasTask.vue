@@ -1,7 +1,7 @@
 <template>
-    <div>
+    <div class="create-bas-task">
         <div class="main-title">
-            <router-link :underline="false" class="classA" :to="{ path: '/bastask' }" >模拟任务
+            <router-link :underline="false" class="classA" :to="{ path: '/bastask' }" >安全配置核查
             </router-link>  
             <label class="currentpagetitle">
                 <el-tooltip class="item" effect="dark"  :content="title"  placement="bottom">
@@ -9,13 +9,15 @@
                 </el-tooltip>
             </label>
         </div>  
-        <BannerBox tips="" style="margin-bottom: 8px;">  
-            <el-button type="primary" size="small" @click="btnSave" >保存</el-button>   
-            <el-button   size="small" @click="clearTask">取消</el-button>  
-        </BannerBox>
-        <div class="createtask_box">
-            <el-form :model="taskform" ref="form" :rules="rules" style="height: 100%">
-                <el-form-item label="" prop="template"  >
+        <div class="list_box">
+            <div class="search-box create-bas-task__toolbar">
+                <div class="operationbutton">
+                    <el-button type="primary" size="small" @click="btnSave">保存</el-button>
+                    <el-button size="small" class="btn-cancel" @click="clearTask">取消</el-button>
+                </div>
+            </div>
+            <el-form :model="taskform" ref="form" :rules="rules" class="create-bas-task__form">
+                <el-form-item label="" prop="template">
                     <label class="dialog_item_label">评估方案</label>
                     <el-select 
                         :disabled="Boolean($route.query.disabled)"
@@ -26,24 +28,24 @@
                         <el-option v-for="(item, index) in templatelist" :key="index" :label="item.name"
                             :value="item.id"></el-option>
                     </el-select> 
-                    <div class="template-desc" >{{ template_desc }}</div>
+                    <div class="template-desc">{{ template_desc }}</div>
                 </el-form-item> 
-                <div>
+                <div class="create-bas-task__targets">
                     <label class="dialog_item_label">任务目标</label>  
-                    <div class="div_width"   style="margin-top:16px;margin-bottom:16px;width:730px" >
-                        <el-table :data="targetnodeList" size="small" style="width: 100%" 
-                            @selection-change="handleSelectionChange" 
-                             :max-height="500">
-                            <el-table-column  
-                                width="55" 
-                                type="selection"  >
-                            </el-table-column>  
-                            <el-table-column  prop="ip" label="Agent IP">  
-                            </el-table-column>  
+                    <div class="div_width">
+                        <el-table
+                            :data="targetnodeList"
+                            size="small"
+                            style="width: 100%"
+                            class="myTable"
+                            @selection-change="handleSelectionChange"
+                            :max-height="500">
+                            <el-table-column width="55" type="selection"></el-table-column>  
+                            <el-table-column prop="ip" label="Agent IP"></el-table-column>  
                         </el-table>
                     </div>
                 </div>
-                <el-form-item label="" prop="taskname"  class="taskNameClass">
+                <el-form-item label="" prop="taskname" class="taskNameClass">
                     <label class="dialog_item_label">任务名称</label>
                     <el-input :disabled="Boolean($route.query.disabled)" 
                         v-model="taskform.taskname"   
@@ -56,26 +58,89 @@
         </div>
     </div>
 </template>
-<!-- <style lang="less" scoped>
-@import './css/createscene.less';
-</style> -->
 <style lang="less" scoped>
-.createtask_box{
-    padding: 24px;
-    background: #fff;
-    min-height: calc(100% - 39px);
-    box-sizing: border-box;
-    box-shadow: 0px 2px 4px 0px rgba(76, 122, 227, 0.12);
+@import './css/bas-list-page.less';
+
+.create-bas-task__toolbar {
+    margin-bottom: 8px;
+}
+
+.classA {
+    color: #00d4aa;
+    margin-right: 12px;
+    text-decoration: none;
+    &:hover {
+        color: #33e4c4;
+    }
+}
+
+.currentpagetitle {
+    color: rgba(226, 232, 240, 0.87);
+    font-weight: 600;
+}
+
+.dialog_item_label {
+    display: block;
+    color: #94a3b8;
+    font-size: 14px;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.template-desc {
+    color: rgba(148, 163, 184, 0.85);
+    font-size: 13px;
+    margin-top: 10px;
+    line-height: 1.5;
+    max-width: 620px;
+}
+
+.create-bas-task__targets {
+    margin-bottom: 20px;
+}
+
+.div_width {
+    margin-top: 4px;
+    margin-bottom: 8px;
+    max-width: 730px;
+}
+
+/deep/ .create-bas-task__form .el-form-item {
+    margin-bottom: 20px;
+}
+
+/deep/ .operationbutton .btn-cancel {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(0, 212, 170, 0.25);
+    color: #94a3b8;
+    &:hover,
+    &:focus {
+        background: rgba(0, 212, 170, 0.1);
+        border-color: rgba(0, 212, 170, 0.45);
+        color: #e2e8f0;
+    }
+}
+
+/deep/ .form_item_width .el-input__inner {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(0, 212, 170, 0.2);
+    color: #e2e8f0;
+    border-radius: 4px;
+}
+
+/deep/ .form_item_width .el-input__inner::placeholder {
+    color: rgba(148, 163, 184, 0.45);
+}
+
+/deep/ .form_item_width .el-input.is-disabled .el-input__inner {
+    background: rgba(255, 255, 255, 0.03);
+    color: rgba(148, 163, 184, 0.55);
 }
 </style>
 <script>
 import bas from '@/api/bas.js'
-import BannerBox from "@/components/BannerBox.vue";
 export default {
     name:'createbastask',
-    components: { 
-        BannerBox
-    },
     data(){
         return{
             title:'新增任务',
@@ -131,13 +196,14 @@ export default {
                 search:''
             });
             if(res.code == 200){ 
-                this.templatelist = res.data.list; 
+                const list = res.data && Array.isArray(res.data.list) ? res.data.list : [];
+                this.templatelist = list;
                 // 设置默认值
-                this.templatelist.forEach(item =>{
-                    if( item.isDefault==1){
-                        this.taskform.template = item.id 
+                list.forEach(item => {
+                    if (item.isDefault == 1) {
+                        this.taskform.template = item.id;
                     }
-                })
+                });
             }else{ 
                 this.$message({
                     message: res.msg,
@@ -148,8 +214,7 @@ export default {
         async getSelectlist(){
             const res = await bas.getSelectNodelist();
             if(res.code == 200){
-                this.targetnodeList = res.data.list;
- 
+                this.targetnodeList = res.data && Array.isArray(res.data.list) ? res.data.list : [];
             }else{
 
             }

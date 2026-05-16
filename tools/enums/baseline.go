@@ -8,6 +8,19 @@ const (
 	BaselineOSTypeEmbedded = 4 // 嵌入式OS
 )
 
+// 主机远程连接方式（SSH / WinRM；用于安全配置核查等）
+const (
+	HostTransportAuto  = 0 // 按操作系统：Windows→WinRM，其它→SSH
+	HostTransportSSH   = 1
+	HostTransportWinRM = 2
+)
+
+// 主机远程检查场景（写入 baseline_check_result.scan_scene；漏洞检测与配置核查共用规则库）
+const (
+	HostScanSceneBaseline = 1 // 安全配置核查
+	HostScanSceneHostVuln = 2 // 主机漏洞检测
+)
+
 // 基线检查 - 检测结果
 const (
 	BaselineCheckResultPass  = 1 // 通过
@@ -121,6 +134,29 @@ func (baseline) GetOSTypeName(osType int) string {
 	return "未知"
 }
 
+func (baseline) GetHostScanSceneName(scene int) string {
+	switch scene {
+	case HostScanSceneHostVuln:
+		return "主机漏洞检测"
+	case HostScanSceneBaseline:
+		return "安全配置核查"
+	default:
+		return "安全配置核查"
+	}
+}
+
+func (baseline) GetHostTransportName(t int) string {
+	m := map[int]string{
+		HostTransportAuto:  "自动（按操作系统）",
+		HostTransportSSH:  "SSH",
+		HostTransportWinRM: "WinRM",
+	}
+	if v, ok := m[t]; ok {
+		return v
+	}
+	return "未知"
+}
+
 func (baseline) GetCheckResultName(result int) string {
 	m := map[int]string{
 		BaselineCheckResultPass:  "通过",
@@ -165,6 +201,19 @@ func (baseline) GetBaselineRiskName(risk int) string {
 		BaselineRiskMiddle:   "中危",
 		BaselineRiskLow:      "低危",
 		BaselineRiskInfo:     "信息",
+	}
+	if v, ok := m[risk]; ok {
+		return v
+	}
+	return "未知"
+}
+
+func (baseline) GetMalwareRiskName(risk int) string {
+	m := map[int]string{
+		MalwareRiskCritical: "严重",
+		MalwareRiskHigh:     "高危",
+		MalwareRiskMiddle:   "中危",
+		MalwareRiskLow:      "低危",
 	}
 	if v, ok := m[risk]; ok {
 		return v

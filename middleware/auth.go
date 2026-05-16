@@ -218,6 +218,11 @@ func fail(c *gin.Context, code int, err error) {
 
 // 业务权限限制
 func businessAuth(ctx context.Context, uri string, userType int) (bool, error) {
+	// 超级管理员（type=4）拥有所有权限
+	if userType == enums.UserRoleSuperAdmin {
+		return true, nil
+	}
+
 	var (
 		mapSetSer services.MapSet
 	)

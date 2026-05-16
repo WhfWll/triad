@@ -1,0 +1,2801 @@
+Total English-named rules remaining: 2781
+
+
+============================================================
+osType=1 (1130 rules)
+============================================================
+  Ensure auditd Collects File Deletion Events by User
+  Ensure auditd Collects File Deletion Events by User - rename
+  Ensure auditd Collects File Deletion Events by User - renameat
+  Ensure auditd Collects File Deletion Events by User - renameat2
+  Ensure auditd Collects File Deletion Events by User - rmdir
+  Ensure auditd Collects File Deletion Events by User - unlink
+  Ensure auditd Collects File Deletion Events by User - unlinkat
+  Remove Default Configuration to Disable Syscall Auditing
+  Ensure auditd Collects Changes to Cron Jobs - /etc/cron.d/
+  Record Events that Modify User/Group Information via open syscall - /etc/group
+  Record Events that Modify User/Group Information via openat syscall - /etc/group
+  Record Events that Modify User/Group Information via open_by_handle_at syscall - /etc/group
+  Record Events that Modify User/Group Information via open syscall - /etc/gshadow
+  Record Events that Modify User/Group Information via openat syscall - /etc/gshadow
+  Record Events that Modify User/Group Information via open_by_handle_at syscall - /etc/gshadow
+  Record Events that Modify User/Group Information via open syscall - /etc/passwd
+  Record Events that Modify User/Group Information via openat syscall - /etc/passwd
+  Record Events that Modify User/Group Information via open_by_handle_at syscall - /etc/passwd
+  Record Events that Modify User/Group Information via open syscall - /etc/shadow
+  Record Events that Modify User/Group Information via openat syscall - /etc/shadow
+  Record Events that Modify User/Group Information via open_by_handle_at syscall - /etc/shadow
+  Record Events that Modify the System's Mandatory Access Controls
+  Record Events that Modify the System's Mandatory Access Controls (/etc/apparmor)
+  Record Events that Modify the System's Mandatory Access Controls (/etc/apparmor.d)
+  Record Events that Modify the System's Mandatory Access Controls (/etc/selinux)
+  Record Events that Modify the System's Mandatory Access Controls in usr/share
+  Record Events that Modify the System's Mandatory Access Controls in /var/lib/selinux
+  Record Events that Modify the System's Network Environment
+  Record Events that Modify the System's Network Environment - /etc/hosts
+  Record Events that Modify the System's Network Environment - /etc/issue
+  Record Events that Modify the System's Network Environment - /etc/issue.net
+  Record Events that Modify the System's Network Environment - /etc/NetworkManager/system-connections/
+  Record Events that Modify the System's Network Environment - /etc/sysconfig/network
+  Record Events that Modify the System's Network Environment - /etc/hostname
+  Record Events that Modify the System's Network Environment - /etc/NetworkManager/
+  Record Events that Modify the System's Network Environment - /etc/sysconfig/network-scripts
+  Record Events that Modify the System's Network Environment - setdomainname
+  Record Events that Modify the System's Network Environment - sethostname
+  Record Attempts to Alter Process and Session Initiation Information btmp
+  Record Attempts to Alter Process and Session Initiation Information utmp
+  Record Attempts to Alter Process and Session Initiation Information wtmp
+  Record Events When Executables Are Run As Another User
+  Record Events When Privileged Executables Are Run
+  Record Events that Modify User/Group Information
+  Record Events that Modify User/Group Information - /etc/group
+  Record Events that Modify User/Group Information - /etc/gshadow
+  Record Events that Modify User/Group Information - /etc/nsswitch.conf
+  Record Events that Modify User/Group Information - /etc/security/opasswd
+  Record Events that Modify User/Group Information - /etc/pam.d/
+  Record Events that Modify User/Group Information - /etc/pam.conf
+  Record Events that Modify User/Group Information - /etc/passwd
+  Record Events that Modify User/Group Information - /etc/shadow
+  Ensure auditd Collects records for events that affect "/var/log/journal"
+  Ensure auditd Collects Changes to Cron Jobs - /var/spool/cron
+  Record Attempts to perform maintenance activities
+  Record Attempts to Alter Time Through clock_settime
+  Record Attempts to Alter the localtime File
+  Record Access Events to Audit Log Directory
+  Set type of computer node name logging in audit logs
+  Enable Auditing for Processes Which Start Prior to the Audit Daemon
+  Verify that audit tools Have Mode 0755 or less
+  Verify Permissions on /etc/audit/auditd.conf
+  Verify Permissions on /etc/audit/audit.rules
+  Verify Permissions on /etc/audit/rules.d/*.rules
+  Enable Auditing for Processes Which Start Prior to the Audit Daemon
+  Install audispd-plugins Package
+  Enable auditd Service
+  Disable Apport Service
+  Uninstall avahi-autoipd Server Package
+  Uninstall avahi Server Package
+  Disable Avahi Server Software
+  Uninstall Automatic Bug Reporting Tool (abrt)
+  Install the psacct package
+  Disable Automatic Bug Reporting Tool (abrtd)
+  Disable Advanced Configuration and Power Interface (acpid)
+  Disable Certmonger Service (certmonger)
+  Disable Cockpit Management Server
+  Disable CPU Speed (cpupower)
+  Disable KDump Kernel Crash Analyzer (kdump)
+  Disable Software RAID Monitor (mdmonitor)
+  Disable Network Console (netconsole)
+  Disable ntpdate Service (ntpdate)
+  Disable Odd Job Daemon (oddjobd)
+  Disable Portreserve (portreserve)
+  Enable Process Accounting (psacct)
+  Disable Apache Qpid (qpidd)
+  Disable Quota Netlink (quota_nld)
+  Disable Network Router Discovery Daemon (rdisc)
+  Disable Red Hat Network Service (rhnsd)
+  Disable Red Hat Subscription Manager Daemon (rhsmcertd)
+  Disable Cyrus SASL Authentication Daemon (saslauthd)
+  Disable System Statistics Reset Service (sysstat)
+  Verify Group Who Owns Crontab
+  Verify Group Who Owns cron.d
+  Verify Group Who Owns cron.daily
+  Verify Group Who Owns cron.deny
+  Verify Group Who Owns cron.hourly
+  Verify Group Who Owns cron.monthly
+  Verify Group Who Owns cron.weekly
+  Verify Group Who Owns cron.yearly
+  Verify Owner on crontab
+  Verify Owner on cron.d
+  Verify Owner on cron.daily
+  Verify Owner on cron.deny
+  Verify Owner on cron.hourly
+  Verify Owner on cron.monthly
+  Verify Owner on cron.weekly
+  Verify Owner on cron.yearly
+  Verify Permissions on crontab
+  Verify Permissions on cron.d
+  Verify Permissions on cron.daily
+  Verify Permissions on cron.hourly
+  Verify Permissions on cron.monthly
+  Verify Permissions on cron.weekly
+  Verify Permissions on cron.yearly
+  Ensure that /etc/at.allow exists
+  Ensure that /etc/at.deny does not exist
+  Ensure that /etc/cron.allow exists
+  Ensure that /etc/cron.deny does not exist
+  Verify Group Who Owns /etc/at.allow file
+  Verify Group Who Owns /etc/at.deny file
+  Verify User Who Owns /etc/at.allow file
+  Verify User Who Owns /etc/at.deny file
+  Verify User Who Owns /etc/cron.allow file
+  Verify Permissions on /etc/at.allow file
+  Verify Permissions on /etc/cron.allow file
+  Disable At Service (atd)
+  Enable cron Service
+  Enable cron Service
+  Uninstall the inet-based telnet server
+  Uninstall the nis package
+  Uninstall the ntpdate package
+  Uninstall the ssl compliant telnet server
+  Uninstall the telnet server
+  Uninstall DHCP Client Package
+  Disable DHCP Client in ifcfg
+  Uninstall kea Package
+  Disable DHCPD6 Service
+  Disable DHCP Service
+  Uninstall bind Package
+  Disable named Service
+  Uninstall dnsmasq Package
+  Uninstall unbound Package
+  Disable dnsmasq Service
+  Install the docker Package
+  Enable the Docker service
+  Install fapolicyd Package
+  Enable the File Access Policy Service
+  Uninstall vsftpd Package
+  Disable vsftpd Service
+  Enable Logging of All FTP Transactions
+  Install vsftpd Package
+  Remove ftp Package
+  Remove tnftp Package
+  Uninstall placeholder_value Package
+  Disable placeholder_value Service
+  Uninstall nginx Package
+  Disable nginx Service
+  Set Permissions on the /var/log/httpd/ Directory
+  Set Permissions on All Configuration Files Inside /etc/httpd/conf.d/
+  Set Permissions on All Configuration Files Inside /etc/httpd/conf/
+  Disable Anonymous FTP Access
+  Enable HTTPD Error Logging
+  Enable HTTPD LogLevel
+  Enable HTTPD System Logging
+  Enable log_config_module For HTTPD Logging
+  Enable Transport Layer Security (TLS) Encryption
+  Remove .java And .jpp Files
+  Ensure Web Content Located on Separate partition
+  Uninstall cyrus-imapd Package
+  Disable Dovecot Service
+  Disable Kerberos by removing host keytab
+  Remove the Kerberos Server Package
+  Uninstall 389-ds-base Package
+  Enable the LDAP Client For Use in Authconfig
+  Disable LDAP Server (slapd)
+  Uninstall Sendmail Package
+  Disable Postfix Network Listening
+  Enable Postfix Service
+  Disable Network File Systems (netfs)
+  Uninstall rpcbind Package
+  Disable Network File System Lock Service (nfslock)
+  Disable rpcbind Service
+  Disable Secure RPC Client Service (rpcgssd)
+  Disable RPC ID Mapping Service (rpcidmapd)
+  Disable Network File System (nfs)
+  Disable Secure RPC Server Service (rpcsvcgssd)
+  Ensure All-Squashing Disabled On All Exports
+  Uninstall nfs-common Package
+  Uninstall nfs-kernel-server Package
+  Uninstall nfs-utils Package
+  Disable chrony daemon from acting as server
+  Disable network management of chrony daemon
+  Verify Group Who Owns /etc/chrony.keys File
+  Verify User Who Owns /etc/chrony.keys File
+  Verify Permissions On /etc/chrony.keys File
+  Remove the ntp service
+  Install the systemd_timesyncd Service
+  Remove the systemd_timesyncd Service
+  Enable the NTP Daemon
+  Enable the NTP Daemon
+  Disable systemd_timesyncd Service
+  Enable systemd_timesyncd Service
+  Verify Group Ownership of /etc/hosts.allow
+  Verify Group Ownership of /etc/hosts.deny
+  Verify Ownership of /etc/hosts.allow
+  Verify Ownership of /etc/hosts.deny
+  Verify Permissions on /etc/hosts.allow
+  Verify Permissions on /etc/hosts.deny
+  Install tcp_wrappers Package
+  Uninstall tcpd Package
+  Uninstall xinetd package if not used by network services
+  Disable xinetd Service
+  Remove NIS Client
+  Uninstall ypserv Package
+  Disable ypbind Service
+  Disable ypserv Service
+  Uninstall rsync Package
+  Remove Host-Based Authentication Files
+  Remove User Host-Based Authentication Files
+  Uninstall rsh-server Package
+  Uninstall rsh Package
+  Disable rexec Service
+  Disable rlogin Service
+  Disable rsh Service
+  Uninstall talk-server Package
+  Uninstall talk Package
+  Remove telnet Clients
+  Uninstall telnet-server Package
+  Remove telnet Clients
+  Disable telnet Service
+  Remove tftp Daemon
+  Disable placeholder_value Service
+  Ensure tftp Daemon Uses Secure Mode
+  Ensure tftp systemd Service Uses Secure Mode
+  Disable Printer Browsing Entirely if Possible
+  Uninstall CUPS Package
+  Disable the CUPS Service
+  Uninstall squid Package
+  Disable Squid
+  Remove the FreeRadius Server Package
+  Enable the Hardware RNG Entropy Gatherer Service
+  Uninstall quagga Package
+  Disable Quagga Service
+  Install the Samba Common Package
+  Uninstall Samba Package
+  Disable Samba
+  Disable snmpd Service
+  Verify Group Who Owns SSH Server Configuration Files
+  Verify Owner on SSH Server Configuration Files
+  Verify Permissions on SSH Server Config File
+  Verify Group Ownership on SSH Server Private *_key Key Files
+  Verify Group Ownership on SSH Server Public *.pub Key Files
+  Verify Group Who Owns SSH Server config file
+  Verify Group Who Owns SSH Server Configuration Files
+  Verify Ownership on SSH Server Private *_key Key Files
+  Verify Ownership on SSH Server Public *.pub Key Files
+  Verify Owner on SSH Server config file
+  Verify Owner on SSH Server Configuration Files
+  Verify Permissions on SSH Server config file
+  Verify Permissions on SSH Server Config File
+  Verify Permissions on SSH Server Private *_key Key Files
+  Verify Permissions on SSH Server Public *.pub Key Files
+  Install OpenSSH client software
+  Install the OpenSSH Server Package
+  Remove the OpenSSH Server Package
+  Install the OpenSSH Client and Server Package
+  Remove the OpenSSH Client and Server Package
+  Disable SSH Server If Possible
+  Enable the OpenSSH Service
+  Disable Host-Based Authentication
+  Enable SSH Server firewalld Firewall Exception
+  Disable Compression Or Set Compression to delayed
+  Disable SSH Access via Empty Passwords
+  Disable SSH Forwarding
+  Disable GSSAPI Authentication
+  Disable Kerberos Authentication
+  Disable PubkeyAuthentication Authentication
+  Disable SSH Support for .rhosts Files
+  Disable SSH Support for Rhosts RSA Authentication
+  Disable SSH Root Login
+  Disable SSH root Login with a Password (Insecure)
+  Disable SSH TCP Forwarding
+  Disable SSH Support for User Known Hosts
+  Disable X11 Forwarding
+  Enable GSSAPI Authentication
+  Enable PAM
+  Enable Public Key Authentication
+  Enable Use of Strict Mode Checking
+  Enable SSH Warning Banner
+  Enable SSH Warning Banner
+  Enable Encrypted X11 Forwarding
+  Enable SSH Print Last Log
+  Set SSH Client Alive Interval
+  Set SSH Client Alive Count Max
+  Set SSH authentication attempt limit
+  Set SSH MaxSessions limit
+  Enable Use of Privilege Separation
+  Install sssd-ipa Package
+  Install the SSSD Package
+  Enable the SSSD Service
+  Enable Certmap in SSSD
+  Enable Smartcards in SSSD
+  Install usbguard Package
+  Enable the USBGuard Service
+  Remove the X Windows Package Group
+  Remove the X Windows Xwayland Package
+  Disable graphical user interface
+  Disable Graphical Environment Startup By Setting Default Target
+  Ensure Local Login Warning Banner Is Configured Properly
+  Ensure Remote Login Warning Banner Is Configured Properly
+  Ensure Message Of The Day Is Configured Properly
+  Enable the SSH login confirmation banner
+  Verify Group Ownership of System Login Banner
+  Verify Group Ownership of System Login Banner for Remote Connections
+  Verify Group Ownership of Message of the Day Banner
+  Verify ownership of System Login Banner
+  Verify ownership of System Login Banner for Remote Connections
+  Verify ownership of Message of the Day Banner
+  Verify permissions on System Login Banner
+  Verify permissions on System Login Banner for Remote Connections
+  Verify permissions on Message of the Day Banner
+  Enable GNOME3 Login Warning Banner
+  Ensure Active Authselect Profile Includes PAM Modules
+  Ensure PAM Displays Last Logon/Access Notification
+  Set Up a Private Namespace in PAM Configuration
+  Ensure Root Account Lockout on Failed Password Attempts
+  Set Interval For Counting Failed Password Attempts
+  Set Root Lockout Time for Failed Password Attempts
+  Set Lockout Time for Failed Password Attempts
+  Set Lockout Time for Failed Password Attempts
+  Set Deny For Failed Password Attempts
+  Set Lockout Time for Failed Password Attempts using pam_tally2
+  Ensure Password History Is Enforced for the Root User
+  Install authselect Package
+  Install nss-sss Package
+  Install pam Package
+  Install pam-modules Package
+  Install pam-runtime Package
+  Install pam-sss Package
+  Set Password Strength Minimum Digit Characters
+  Set Password Strength Minimum Different Characters
+  Set Password Strength Minimum Lowercase Characters
+  Set Password Minimum Length
+  Set Password Strength Minimum Special Characters
+  Set Password Retry Limit
+  Set Password Strength Minimum Uppercase Characters
+  Ensure PAM Enforces Password Requirements - Minimum Digit Characters
+  Ensure PAM Enforces Password Requirements - Prevent the Use of Dictionary Words
+  Ensure PAM Enforces Password Requirements - Minimum Different Characters
+  Ensure PAM Enforces Password Requirements - Enforce for Local Accounts Only
+  Ensure PAM Enforces Password Requirements - Enforce for root User
+  Ensure PAM Enforces Password Requirements - Enforcing
+  Ensure PAM Enforces Password Requirements - Minimum Lowercase Characters
+  Ensure PAM Enforces Password Requirements - Maximum Consecutive Repeating Characters from Same Character Class
+  Set Password Maximum Consecutive Repeating Characters
+  Ensure PAM Enforces Password Requirements - Minimum Different Categories
+  Ensure PAM Enforces Password Requirements - Minimum Length
+  Ensure PAM Enforces Password Requirements - Minimum Special Characters
+  Ensure PAM Enforces Password Requirements - Authentication Retry Prompts Permitted Per-Session in placeholder_value
+  Ensure PAM Enforces Password Requirements - Authentication Retry Prompts Permitted Per-Session
+  Ensure PAM Enforces Password Requirements - Minimum Uppercase Characters
+  Set Password Hashing Algorithm for PAM
+  Set Password Hashing Algorithm in /etc/libuser.conf
+  Set Password Hashing Algorithm in placeholder_value
+  Set PAM Password Hashing Algorithm - password-auth
+  Set PAM Password Hashing Algorithm - system-auth
+  Set Password Hashing Rounds in placeholder_value
+  Set yescrypt Cost Factor in placeholder_value
+  Disable Ctrl-Alt-Del Burst Action
+  Disable Ctrl-Alt-Del Reboot Activation
+  Install the screen Package
+  Install the tmux Package
+  Install Smart Card Packages For Multifactor Authentication
+  Install the pcsc-lite-ccid package
+  Install the pcsc-lite package
+  Enable the pcscd Service
+  Enable Smart Card Logins in PAM
+  Disable debug-shell SystemD Service
+  Set Account Expiration Following Inactivity in password-auth
+  Set Account Expiration Following Inactivity in system-auth
+  Set Account Expiration Following Inactivity
+  Ensure All Accounts on the System Have Unique Names
+  Ensure All Accounts on the System Have Unique User IDs
+  Set Password Maximum Age
+  Set Password Minimum Age
+  Set Password Minimum Length in login.defs
+  Set Existing Passwords Maximum Age
+  Set Existing Passwords Minimum Age
+  Set Existing Passwords Warning Age
+  Set Password Warning Age
+  Set existing passwords a period of inactivity before they been locked
+  Set number of Password Hashing Rounds - password-auth
+  Set number of Password Hashing Rounds - system-auth
+  Ensure sudo group has only necessary members
+  Ensure There Are No Accounts With Blank or Null Passwords
+  Verify No .forward Files Exist
+  Verify No netrc Files Exist
+  Verify No .rhost Files Exist
+  Verify Only Root Has UID 0
+  Verify Root Has A Primary GID 0
+  Verify Only Group Root Has GID 0
+  Ensure that System Accounts Are Locked
+  Set Interactive Session Timeout
+  Ensure that Users Path Contains Only Local Directories
+  Verify Group Who Owns lastlog Command
+  Verify Owner on lastlog Command
+  Verify Permissions on lastlog Command
+  Ensure User Bash History File Has Correct Permissions
+  Ensure All User Initialization Files Have Mode 0740 Or Less Permissive
+  Ensure All User Initialization Files Have Mode 0740 Or Less Permissive
+  Ensure system-auth and password-auth files are symbolic links pointing
+to system-auth-local and password-auth-local
+  Enable authselect
+  Install the pam_apparmor Package
+  Enable Kernel Page-Table Isolation (KPTI)
+  Disable vsyscalls
+  Disable Recovery Booting
+  Enable randomization of the page allocator
+  Enable Kernel Page-Table Isolation (KPTI)
+  Disable merging of slabs with similar size
+  Disable vsyscalls
+  Verify placeholder_value/grub.cfg Group Ownership
+  Verify placeholder_value/user.cfg Group Ownership
+  Verify placeholder_value/grub.cfg User Ownership
+  Verify placeholder_value/user.cfg User Ownership
+  Verify placeholder_value/grub.cfg Permissions
+  Verify placeholder_value/user.cfg Permissions
+  Set Boot Loader Password in grub2
+  Verify the UEFI Boot Loader grub.cfg Group Ownership
+  Verify placeholder_value/user.cfg Group Ownership
+  Verify the UEFI Boot Loader grub.cfg User Ownership
+  Verify placeholder_value/user.cfg User Ownership
+  Verify the UEFI Boot Loader grub.cfg Permissions
+  Verify placeholder_value/user.cfg Permissions
+  Enable Auditing to Start Prior to the Audit Daemon in zIPL
+  Enable randomization of the page allocator in zIPL
+  Enable page allocator poisoning in zIPL
+  Enable SLUB/SLAB allocator poisoning in zIPL
+  Disable vsyscalls in zIPL
+  Disable kernel support for MISC binaries
+  Enable support for BUG()
+  Disable compatibility with brk()
+  Disable the 32-bit vDSO
+  Enable checks on credential management
+  Disable kernel debugfs
+  Enable checks on linked list manipulation
+  Enable checks on notifier call chains
+  Enable checks on scatter-gather (SG) table operations
+  Disable /dev/kmem virtual device support
+  Disable hibernation
+  Disable the IPv6 protocol
+  Disable kexec system call
+  Disable legacy (BSD) PTY support
+  Disable vsyscall emulation
+  Disable vsyscall mapping
+  Disable vsyscall emulate execution only
+  Disable the LDT (local descriptor table)
+  Enable module signature verification
+  Enable automatic signing of all modules
+  Enable poison of pages after freeing
+  Enable poison without sanity check
+  Remove the kernel mapping in user mode
+  Disable support for /proc/kkcore
+  Enable seccomp to safely compute untrusted bytecode
+  Enable use of Berkeley Packet Filter with seccomp
+  Enable different security models
+  Disable mutable hooks
+  Enable Yama support
+  Enable SLUB debugging support
+  Enable TCP/IP syncookie support
+  Disable x86 vsyscall emulation
+  Ensure cron Is Logging To Rsyslog
+  Ensure Rsyslog Authenticates Off-Loaded Audit Records
+  Ensure Rsyslog Encrypts Off-Loaded Audit Records
+  Ensure Rsyslog Encrypts Off-Loaded Audit Records
+  Ensure Log Files Are Owned By Appropriate User
+  Ensure System Log Files Have Correct Permissions
+  Verify group-owner of system journal directories
+  Verify owner of system journal directories
+  Verify Permissions on the system journal directories
+  Verify Groupowner on the journalctl command
+  Verify Owner on the journalctl Command
+  Verify Permissions on the journal command
+  Install systemd-journal-remote Package
+  Enable systemd-journal-upload Service
+  Enable systemd-journald Service
+  Disable systemd-journal-remote Socket
+  Ensure Logrotate Runs Periodically
+  Enable logrotate Timer
+  Enable syslog-ng Service
+  Ensure rsyslog Default File Permissions Configured
+  Enable rsyslog Service
+  Install firewalld Package
+  Verify firewalld Enabled
+  Uninstall firewalld Package
+  Verify firewalld service disabled
+  Ensure firewall rules exist for all open ports
+  Set Default firewalld Zone for Incoming Packets
+  Verify Group Who Owns /etc/ipsec.d Directory
+  Verify User Who Owns /etc/ipsec.d Directory
+  Verify Permissions On /etc/ipsec.d Directory
+  Verify Group Who Owns /etc/ipsec.conf File
+  Verify Group Who Owns /etc/ipsec.secrets File
+  Verify User Who Owns /etc/ipsec.conf File
+  Verify User Who Owns /etc/ipsec.secrets File
+  Verify Permissions On /etc/ipsec.conf File
+  Verify Permissions On /etc/ipsec.secrets File
+  Verify Any Configured IPSec Tunnel Connections
+  Install libreswan Package
+  Install strongswan Package
+  Verify Group Who Owns /etc/iptables Directory
+  Verify User Who Owns /etc/iptables Directory
+  Verify Permissions On /etc/iptables Directory
+  Verify ip6tables Enabled if Using IPv6
+  Verify iptables Enabled
+  Set Default ip6tables Policy for Incoming Packets
+  Set configuration for IPv6 loopback traffic
+  Set configuration for loopback traffic
+  Ensure ip6tables Firewall Rules Exist for All Open Ports
+  Ensure iptables Firewall Rules Exist for All Open Ports
+  Set Default iptables Policy for Incoming Packets
+  Set Default iptables Policy for Forwarded Packets
+  Install iptables-nft Package
+  Install iptables-persistent Package
+  Remove iptables-persistent Package
+  Install iptables-services Package
+  Remove iptables-services Package
+  Install iptables Package
+  Disable Accepting ICMP Redirects for All IPv6 Interfaces
+  Disable Kernel Parameter for Accepting Source-Routed Packets on all IPv6 Interfaces
+  Disable Kernel Parameter for IPv6 Forwarding
+  Disable Accepting Router Advertisements on all IPv6 Interfaces by Default
+  Disable Kernel Parameter for Accepting ICMP Redirects by Default on IPv6 Interfaces
+  Disable Kernel Parameter for Accepting Source-Routed Packets on IPv6 Interfaces by Default
+  Disable Kernel Parameter for IPv6 Forwarding by default
+  Disable Support for RPC IPv6
+  Disable IPv6 Addressing on All IPv6 Interfaces
+  Disable IPv6 Addressing on IPv6 Interfaces by Default
+  Disable Accepting Packets Routed Between Local Interfaces
+  Disable Accepting ICMP Redirects for All IPv4 Interfaces
+  Disable Kernel Parameter for Accepting Source-Routed Packets on all IPv4 Interfaces
+  Disable Kernel Parameter for IPv4 Forwarding on all IPv4 Interfaces
+  Enable Kernel Parameter to Log Martian Packets on all IPv4 Interfaces
+  Disable Kernel Parameter for Accepting Secure ICMP Redirects on all IPv4 Interfaces
+  Disable Kernel Parameter for Accepting ICMP Redirects by Default on IPv4 Interfaces
+  Disable Kernel Parameter for Accepting Source-Routed Packets on IPv4 Interfaces by Default
+  Disable Kernel Parameter for IPv4 Forwarding By Default
+  Enable Kernel Parameter to Log Martian Packets on all IPv4 Interfaces by Default
+  Enable Kernel Parameter to Use Reverse Path Filtering on all IPv4 Interfaces by Default
+  Enable Kernel Parameter to Ignore ICMP Broadcast Echo Requests on IPv4 Interfaces
+  Enable Kernel Parameter to Ignore Bogus ICMP Error Responses on IPv4 Interfaces
+  Enable Kernel Parameter to Use TCP RFC 1337 on IPv4 Interfaces
+  Enable Kernel Parameter to Use TCP Syncookies on Network Interfaces
+  Disable Kernel Parameter for Sending ICMP Redirects on all IPv4 Interfaces
+  Disable Kernel Parameter for Sending ICMP Redirects on all IPv4 Interfaces by Default
+  Disable Kernel Parameter for IP Forwarding on IPv4 Interfaces
+  Verify Group Who Owns /etc/nftables Directory
+  Verify User Who Owns /etc/nftables Directory
+  Verify Permissions On /etc/nftables Directory
+  Ensure nftables Default Deny Firewall Policy
+  Install nftables Package
+  Uninstall nftables package
+  Ensure Base Chains Exist for Nftables
+  Set nftables Configuration for Loopback Traffic
+  Install SuSEfirewall2 Package
+  Enable the SuSEfirewall 2
+  Enable DoS Protections in SuSEfirewall2
+  Install ufw Package
+  Remove ufw Package
+  Verify ufw Enabled
+  Ensure ufw Default Deny Firewall Policy
+  Ensure ufw Firewall Rules Exist for All Open Ports
+  Disable ATM Support
+  Disable CAN Support
+  Disable DCCP Support
+  Disable IEEE 1394 (FireWire) Support
+  Disable RDS Support
+  Disable SCTP Support
+  Disable TIPC Support
+  Disable Bluetooth Kernel Module
+  Disable Kernel cfg80211 Module
+  Disable Kernel iwlmvm Module
+  Disable Kernel iwlwifi Module
+  Disable Kernel mac80211 Module
+  Disable Bluetooth Service
+  Disable Client Dynamic DNS Updates
+  Disable Zeroconf Networking
+  Ensure All World-Writable Directories Are Owned by root User
+  Verify that All World-Writable Directories Have Sticky Bits Set
+  Ensure All World-Writable Directories Are Owned by a System Account
+  Ensure All World-Writable Directories Are Group Owned by a System Account
+  Verify that system commands directories have root as a group owner
+  Verify that system commands directories have root ownership
+  Verify Group Who Owns /etc/crypttab File
+  Verify Group Who Owns /etc/sysconfig/sshd File
+  Verify Group Who Owns System.map Files
+  Verify User Who Owns /etc/crypttab File
+  Verify User Who Owns /etc/sysconfig/sshd File
+  Verify User Who Owns System.map Files
+  Verify Permissions On /etc/crypttab File
+  Verify Permissions on /etc/sysconfig/sshd File
+  Verify Permissions on System.map Files
+  Ensure All SGID Executables Are Authorized
+  Ensure All SUID Executables Are Authorized
+  Ensure No World-Writable Files Exist
+  Ensure All Files Are Owned by a Group
+  Verify permissions of log files
+  Ensure All Files And Directories Are Owned by a Group
+  Ensure All Files And Directories Are Owned by a User
+  Ensure All Files Are Owned by a User
+  Verify Permissions and Ownership of Old Passwords File
+  Verify Group Who Owns Backup group File
+  Verify Group Who Owns Backup passwd File
+  Verify Group Who Owns group File
+  Verify Group Who Owns passwd File
+  Verify Group Who Owns /etc/security/opasswd File
+  Verify Group Who Owns /etc/security/opasswd.old File
+  Verify Group Who Owns /etc/shells File
+  Verify User Who Owns Backup group File
+  Verify User Who Owns Backup gshadow File
+  Verify User Who Owns Backup passwd File
+  Verify Group Who Owns Backup shadow File
+  Verify User Who Owns group File
+  Verify User Who Owns gshadow File
+  Verify User Who Owns passwd File
+  Verify User Who Owns /etc/security/opasswd File
+  Verify User Who Owns /etc/security/opasswd.old File
+  Verify User Who Owns shadow File
+  Verify Who Owns /etc/shells File
+  Verify Permissions on Backup group File
+  Verify Permissions on Backup passwd File
+  Verify Permissions on Backup shadow File
+  Verify Permissions on group File
+  Verify Permissions on passwd File
+  Verify Permissions on /etc/security/opasswd File
+  Verify Permissions on /etc/security/opasswd.old File
+  Verify Permissions on /etc/shells File
+  Verify permissions of log files
+  Verify ownership of log files
+  Verify Groupownership of Files in /var/log/apt
+  Verify Groupownership of Files in /var/log/gdm
+  Verify Groupownership of Files in /var/log/gdm3
+  Verify Groupownership of Files in /var/log/landscape
+  Verify Grouponwership of Files in /var/log/sssd
+  Verify Group Who Owns /var/log Directory
+  Verify Group Who Owns /var/log/auth.log File
+  Verify Group Who Owns /var/log/cloud-init.log* File
+  Verify Group Who Owns /var/log/*.journal(~) File
+  Verify Group Who Owns /var/log/lastlog File
+  Verify Group Who Owns /var/log/localmessages* File
+  Verify Group Who Owns /var/log/messages File
+  Verify Group Who Owns /var/log/secure File
+  Verify Group Who Owns /var/log/syslog File
+  Verify Group Who Owns /var/log/waagent.log File
+  Verify Group Who Owns /var/log/(b|w)tmp(.*|-*) File
+  Verify ownership of log files
+  Verify Ownership of Files in /var/log/apt
+  Verify Ownership of Files in /var/log/gdm
+  Verify Ownership of Files in /var/log/gdm3
+  Verify Ownership of Files in /var/log/landscape
+  Verify Ownership of Files in /var/log/sssd
+  Verify User Who Owns /var/log Directory
+  Verify User Who Owns /var/log/auth.log File
+  Verify User Who Owns /var/log/cloud-init.log File
+  Verify User Who Owns /var/log/*.journal(~) Files
+  Verify User Who Owns /var/log/lastlog File
+  Verify User Who Owns /var/log/localmessages File
+  Verify User Who Owns /var/log/messages File
+  Verify User Who Owns /var/log/secure File
+  Verify User Who Owns /var/log/syslog File
+  Verify User Who Owns /var/log/waagent.log File
+  Verify User Who Owns /var/log/(b|w)tmp(.*|-*) File
+  Verify Permissions on /var/log Directory
+  Verify Permissions on files in the /var/log/apt/.* directory
+  Verify Permissions on /var/log/auth.log File
+  Verify Permissions on /var/log/cloud-init.log(.*) Files
+  Verify Permissions of Files in /var/log/gdm
+  Verify Permissions of Files in /var/log/gdm3
+  Verify Permissions on /var/log/lastlog(.*) Files
+  Verify Permissions on /var/log/localmessages(.*) Files
+  Verify Permissions on /var/log/secure File
+  Verify Permissions of Files in /var/log/sssd
+  Verify Permissions on /var/log/syslog File
+  Verify Permissions on /var/log/waagent.log(.*) Files
+  Verify Permissions on /var/log/wtmp(.*) Files
+  Verify Group Who Owns /etc/sysctl.d Directory
+  Verify User Who Owns /etc/sysctl.d Directory
+  Verify Permissions On /etc/sysctl.d Directory
+  Verify that Shared Library Directories Have Root Group Ownership
+  Verify that System Executable Have Root Ownership
+  Verify that Shared Library Directories Have Root Ownership
+  Verify that System Executable Directories Have Restrictive Permissions
+  Verify that Shared Library Directories Have Restrictive Permissions
+  Verify that Shared Library Files Have Root Ownership
+  Verify that Shared Library Files Have Restrictive Permissions
+  Verify the system-wide library files in directories
+"/lib", "/lib64", "/usr/lib/" and "/usr/lib64" are group-owned by root.
+  Enable Kernel Parameter to Enforce DAC on FIFOs
+  Enable Kernel Parameter to Enforce DAC on Hardlinks
+  Enable Kernel Parameter to Enforce DAC on Regular files
+  Enable Kernel Parameter to Enforce DAC on Symlinks
+  Disable Kernel Support for USB via Bootloader Configuration
+  Disable Kernel Support for USB via Bootloader Configuration
+  Disable Mounting of cramfs
+  Disable Mounting of freevxfs
+  Disable Mounting of hfsplus
+  Disable Mounting of hfs
+  Disable Mounting of jffs2
+  Disable Mounting of squashfs
+  Disable Mounting of udf
+  Disable Modprobe Loading of USB Storage Driver
+  Disable Mounting of vFAT filesystems
+  Remove autofs Package
+  Disable the Automounter
+  Verify Permissions of Local Logs of audit Tools
+  Disable core dump backtraces
+  Disable storing core dump
+  Disable Core Dumps for All Users
+  Disable acquiring, saving, and processing core dumps
+  Disable Core Dumps for SUID programs
+  Set Daemon Umask
+  Enable ExecShield via sysctl
+  Enable Randomized Layout of Virtual Address Space
+  Disable the uvcvideo module
+  Enable page allocator poisoning
+  Enable SLUB/SLAB allocator poisoning
+  Enable page allocator poisoning
+  Enable SLUB/SLAB allocator poisoning
+  Disable storing core dumps
+  Disable storing core dumps
+  Disable Kernel Image Loading
+  Disable loading and unloading of kernel modules
+  Disable Access to Network bpf() Syscall From Unprivileged Processes
+  Disable Access to Network bpf() Syscall From Unprivileged Processes
+  Disable the use of user namespaces
+  Disable the use of user namespaces
+  Verify Group Who Owns /etc/selinux Directory
+  Verify User Who Owns /etc/selinux Directory
+  Verify Permissions On /etc/selinux Directory
+  Verify Group Who Owns /etc/sestatus.conf File
+  Verify User Who Owns /etc/sestatus.conf File
+  Verify Permissions On /etc/sestatus.conf File
+  Install libselinux Package
+  Uninstall mcstrans Package
+  Install policycoreutils-python-utils package
+  Install policycoreutils Package
+  Uninstall setroubleshoot-plugins Package
+  Uninstall setroubleshoot-server Package
+  Uninstall setroubleshoot Package
+  Disable the abrt_anon_write SELinux Boolean
+  Disable the abrt_handle_event SELinux Boolean
+  Disable the abrt_upload_watch_anon_write SELinux Boolean
+  Enable the antivirus_can_scan_system SELinux Boolean
+  Disable the antivirus_use_jit SELinux Boolean
+  Enable the auditadm_exec_content SELinux Boolean
+  Disable the authlogin_nsswitch_use_ldap SELinux Boolean
+  Disable the authlogin_radius SELinux Boolean
+  Disable the authlogin_yubikey SELinux Boolean
+  Disable the awstats_purge_apache_log_files SELinux Boolean
+  Disable the boinc_execmem SELinux Boolean
+  Disable the cdrecord_read_content SELinux Boolean
+  Disable the cluster_can_network_connect SELinux Boolean
+  Disable the cluster_manage_all_files SELinux Boolean
+  Disable the cluster_use_execmem SELinux Boolean
+  Disable the cobbler_anon_write SELinux Boolean
+  Disable the cobbler_can_network_connect SELinux Boolean
+  Disable the cobbler_use_cifs SELinux Boolean
+  Disable the cobbler_use_nfs SELinux Boolean
+  Disable the collectd_tcp_network_connect SELinux Boolean
+  Disable the condor_tcp_network_connect SELinux Boolean
+  Disable the conman_can_network SELinux Boolean
+  Disable the container_connect_any SELinux Boolean
+  Disable the cron_can_relabel SELinux Boolean
+  Disable the cron_system_cronjob_use_shares SELinux Boolean
+  Enable the cron_userdomain_transition SELinux Boolean
+  Disable the cups_execmem SELinux Boolean
+  Disable the cvs_read_shadow SELinux Boolean
+  Disable the daemons_dump_core SELinux Boolean
+  Disable the daemons_enable_cluster_mode SELinux Boolean
+  Disable the daemons_use_tcp_wrapper SELinux Boolean
+  Disable the daemons_use_tty SELinux Boolean
+  Enable the dbadm_exec_content SELinux Boolean
+  Disable the dbadm_manage_user_files SELinux Boolean
+  Disable the dbadm_read_user_files SELinux Boolean
+  Disable the deny_ptrace SELinux Boolean
+  Disable the dhcpc_exec_iptables SELinux Boolean
+  Disable the dhcpd_use_ldap SELinux Boolean
+  Enable the domain_fd_use SELinux Boolean
+  Disable the domain_kernel_load_modules SELinux Boolean
+  Disable the entropyd_use_audio SELinux Boolean
+  Disable the exim_can_connect_db SELinux Boolean
+  Disable the exim_manage_user_files SELinux Boolean
+  Disable the exim_read_user_files SELinux Boolean
+  Disable the fcron_crond SELinux Boolean
+  Disable the fenced_can_network_connect SELinux Boolean
+  Disable the fenced_can_ssh SELinux Boolean
+  Enable the fips_mode SELinux Boolean
+  Disable the ftpd_anon_write SELinux Boolean
+  Disable the ftpd_connect_all_unreserved SELinux Boolean
+  Disable the ftpd_connect_db SELinux Boolean
+  Disable the ftpd_full_access SELinux Boolean
+  Disable the ftpd_use_cifs SELinux Boolean
+  Disable the ftpd_use_fusefs SELinux Boolean
+  Disable the ftpd_use_nfs SELinux Boolean
+  Disable the ftpd_use_passive_mode SELinux Boolean
+  Disable the gitosis_can_sendmail SELinux Boolean
+  Disable the git_cgi_enable_homedirs SELinux Boolean
+  Disable the git_cgi_use_cifs SELinux Boolean
+  Disable the git_cgi_use_nfs SELinux Boolean
+  Disable the git_session_bind_all_unreserved_ports SELinux Boolean
+  Disable the git_session_users SELinux Boolean
+  Disable the git_system_enable_homedirs SELinux Boolean
+  Disable the git_system_use_cifs SELinux Boolean
+  Disable the git_system_use_nfs SELinux Boolean
+  Disable the glance_api_can_network SELinux Boolean
+  Disable the glance_use_execmem SELinux Boolean
+  Disable the glance_use_fusefs SELinux Boolean
+  Disable the global_ssp SELinux Boolean
+  Disable the gluster_anon_write SELinux Boolean
+  Disable the gluster_export_all_ro SELinux Boolean
+  Disable the gpg_web_anon_write SELinux Boolean
+  Enable the gssd_read_tmp SELinux Boolean
+  Disable the guest_exec_content SELinux Boolean
+  Disable the haproxy_connect_any SELinux Boolean
+  Disable the httpd_anon_write SELinux Boolean
+  Disable the httpd_can_check_spam SELinux Boolean
+  Disable the httpd_can_connect_ftp SELinux Boolean
+  Disable the httpd_can_connect_ldap SELinux Boolean
+  Disable the httpd_can_connect_mythtv SELinux Boolean
+  Disable the httpd_can_connect_zabbix SELinux Boolean
+  Disable the httpd_can_network_connect SELinux Boolean
+  Disable the httpd_can_network_connect_cobbler SELinux Boolean
+  Disable the httpd_can_network_connect_db SELinux Boolean
+  Disable the httpd_can_network_memcache SELinux Boolean
+  Disable the httpd_can_network_relay SELinux Boolean
+  Disable the httpd_can_sendmail SELinux Boolean
+  Disable the httpd_dbus_avahi SELinux Boolean
+  Disable the httpd_dbus_sssd SELinux Boolean
+  Disable the httpd_dontaudit_search_dirs SELinux Boolean
+  Disable the httpd_enable_ftp_server SELinux Boolean
+  Disable the httpd_enable_homedirs SELinux Boolean
+  Disable the httpd_execmem SELinux Boolean
+  Enable the httpd_graceful_shutdown SELinux Boolean
+  Disable the httpd_manage_ipa SELinux Boolean
+  Disable the httpd_mod_auth_ntlm_winbind SELinux Boolean
+  Disable the httpd_mod_auth_pam SELinux Boolean
+  Disable the httpd_read_user_content SELinux Boolean
+  Disable the httpd_run_ipa SELinux Boolean
+  Disable the httpd_run_preupgrade SELinux Boolean
+  Disable the httpd_run_stickshift SELinux Boolean
+  Disable the httpd_serve_cobbler_files SELinux Boolean
+  Disable the httpd_setrlimit SELinux Boolean
+  Disable the httpd_ssi_exec SELinux Boolean
+  Disable the httpd_sys_script_anon_write SELinux Boolean
+  Disable the httpd_tmp_exec SELinux Boolean
+  Disable the httpd_tty_comm SELinux Boolean
+  Disable the httpd_unified SELinux Boolean
+  Disable the httpd_use_cifs SELinux Boolean
+  Disable the httpd_use_fusefs SELinux Boolean
+  Disable the httpd_use_gpg SELinux Boolean
+  Disable the httpd_use_nfs SELinux Boolean
+  Disable the httpd_use_openstack SELinux Boolean
+  Disable the httpd_use_sasl SELinux Boolean
+  Disable the httpd_verify_dns SELinux Boolean
+  Disable the icecast_use_any_tcp_ports SELinux Boolean
+  Disable the irc_use_any_tcp_ports SELinux Boolean
+  Disable the irssi_use_full_network SELinux Boolean
+  Disable the kdumpgui_run_bootloader SELinux Boolean
+  Enable the kerberos_enabled SELinux Boolean
+  Disable the ksmtuned_use_cifs SELinux Boolean
+  Disable the ksmtuned_use_nfs SELinux Boolean
+  Enable the logadm_exec_content SELinux Boolean
+  Disable the logging_syslogd_can_sendmail SELinux Boolean
+  Disable the logging_syslogd_run_nagios_plugins SELinux Boolean
+  Enable the logging_syslogd_use_tty SELinux Boolean
+  Enable the login_console_enabled SELinux Boolean
+  Disable the logrotate_use_nfs SELinux Boolean
+  Disable the logwatch_can_network_connect_mail SELinux Boolean
+  Disable the lsmd_plugin_connect_any SELinux Boolean
+  Disable the mailman_use_fusefs SELinux Boolean
+  Disable the mcelog_client SELinux Boolean
+  Enable the mcelog_exec_scripts SELinux Boolean
+  Disable the mcelog_foreground SELinux Boolean
+  Disable the mcelog_server SELinux Boolean
+  Disable the minidlna_read_generic_user_content SELinux Boolean
+  Disable the mmap_low_allowed SELinux Boolean
+  Disable the mock_enable_homedirs SELinux Boolean
+  Enable the mount_anyfile SELinux Boolean
+  Disable the mozilla_plugin_bind_unreserved_ports SELinux Boolean
+  Disable the mozilla_plugin_can_network_connect SELinux Boolean
+  Disable the mozilla_plugin_use_bluejeans SELinux Boolean
+  Disable the mozilla_plugin_use_gps SELinux Boolean
+  Disable the mozilla_plugin_use_spice SELinux Boolean
+  Disable the mozilla_read_content SELinux Boolean
+  Disable the mpd_enable_homedirs SELinux Boolean
+  Disable the mpd_use_cifs SELinux Boolean
+  Disable the mpd_use_nfs SELinux Boolean
+  Disable the mplayer_execstack SELinux Boolean
+  Disable the mysql_connect_any SELinux Boolean
+  Disable the nagios_run_pnp4nagios SELinux Boolean
+  Disable the nagios_run_sudo SELinux Boolean
+  Disable the named_tcp_bind_http_port SELinux Boolean
+  Disable the named_write_master_zones SELinux Boolean
+  Disable the neutron_can_network SELinux Boolean
+  Disable the nfsd_anon_write SELinux Boolean
+  Enable the nfs_export_all_ro SELinux Boolean
+  Enable the nfs_export_all_rw SELinux Boolean
+  Disable the nis_enabled SELinux Boolean
+  Enable the nscd_use_shm SELinux Boolean
+  Disable the openshift_use_nfs SELinux Boolean
+  Disable the openvpn_can_network_connect SELinux Boolean
+  Disable the openvpn_enable_homedirs SELinux Boolean
+  Disable the openvpn_run_unconfined SELinux Boolean
+  Disable the pcp_bind_all_unreserved_ports SELinux Boolean
+  Disable the pcp_read_generic_logs SELinux Boolean
+  Disable the piranha_lvs_can_network_connect SELinux Boolean
+  Disable the polipo_connect_all_unreserved SELinux Boolean
+  Disable the polipo_session_bind_all_unreserved_ports SELinux Boolean
+  Disable the polipo_session_users SELinux Boolean
+  Disable the polipo_use_cifs SELinux Boolean
+  Disable the polipo_use_nfs SELinux Boolean
+  Enable the postfix_local_write_mail_spool SELinux Boolean
+  Disable the postgresql_can_rsync SELinux Boolean
+  Disable the postgresql_selinux_transmit_client_label SELinux Boolean
+  Enable the postgresql_selinux_unconfined_dbadm SELinux Boolean
+  Enable the postgresql_selinux_users_ddl SELinux Boolean
+  Disable the pppd_can_insmod SELinux Boolean
+  Disable the pppd_for_user SELinux Boolean
+  Disable the privoxy_connect_any SELinux Boolean
+  Disable the prosody_bind_http_port SELinux Boolean
+  Disable the puppetagent_manage_all_files SELinux Boolean
+  Disable the puppetmaster_use_db SELinux Boolean
+  Disable the racoon_read_shadow SELinux Boolean
+  Disable the rsync_anon_write SELinux Boolean
+  Disable the rsync_client SELinux Boolean
+  Disable the rsync_export_all_ro SELinux Boolean
+  Disable the rsync_full_access SELinux Boolean
+  Disable the samba_create_home_dirs SELinux Boolean
+  Disable the samba_domain_controller SELinux Boolean
+  Disable the samba_enable_home_dirs SELinux Boolean
+  Disable the samba_export_all_ro SELinux Boolean
+  Disable the samba_export_all_rw SELinux Boolean
+  Disable the samba_load_libgfapi SELinux Boolean
+  Disable the samba_portmapper SELinux Boolean
+  Disable the samba_run_unconfined SELinux Boolean
+  Disable the samba_share_fusefs SELinux Boolean
+  Disable the samba_share_nfs SELinux Boolean
+  Disable the sanlock_use_fusefs SELinux Boolean
+  Disable the sanlock_use_nfs SELinux Boolean
+  Disable the sanlock_use_samba SELinux Boolean
+  Disable the saslauthd_read_shadow SELinux Boolean
+  Enable the secadm_exec_content SELinux Boolean
+  Disable the secure_mode SELinux Boolean
+  Disable the secure_mode_policyload SELinux Boolean
+  Disable the selinuxuser_execheap SELinux Boolean
+  Enable the selinuxuser_execmod SELinux Boolean
+  Disable the selinuxuser_execstack SELinux Boolean
+  Disable the selinuxuser_mysql_connect_enabled SELinux Boolean
+  Enable the selinuxuser_ping SELinux Boolean
+  Disable the selinuxuser_postgresql_connect_enabled SELinux Boolean
+  Disable the selinuxuser_rw_noexattrfile SELinux Boolean
+  Disable the selinuxuser_share_music SELinux Boolean
+  Disable the selinuxuser_tcp_server SELinux Boolean
+  Disable the selinuxuser_udp_server SELinux Boolean
+  Disable the selinuxuser_use_ssh_chroot SELinux Boolean
+  Disable the sge_domain_can_network_connect SELinux Boolean
+  Disable the sge_use_nfs SELinux Boolean
+  Disable the smartmon_3ware SELinux Boolean
+  Disable the smbd_anon_write SELinux Boolean
+  Disable the spamassassin_can_network SELinux Boolean
+  Enable the spamd_enable_home_dirs SELinux Boolean
+  Disable the squid_connect_any SELinux Boolean
+  Disable the squid_use_tproxy SELinux Boolean
+  Disable the ssh_chroot_rw_homedirs SELinux Boolean
+  Disable the ssh_keysign SELinux Boolean
+  Disable the ssh_sysadm_login SELinux Boolean
+  Enable the staff_exec_content SELinux Boolean
+  Disable the staff_use_svirt SELinux Boolean
+  Disable the swift_can_network SELinux Boolean
+  Enable the sysadm_exec_content SELinux Boolean
+  Disable the telepathy_connect_all_ports SELinux Boolean
+  Disable the telepathy_tcp_connect_generic_network_ports SELinux Boolean
+  Disable the tftp_anon_write SELinux Boolean
+  Disable the tftp_home_dir SELinux Boolean
+  Disable the tmpreaper_use_nfs SELinux Boolean
+  Disable the tmpreaper_use_samba SELinux Boolean
+  Disable the tor_bind_all_unreserved_ports SELinux Boolean
+  Disable the tor_can_network_relay SELinux Boolean
+  Enable the unconfined_chrome_sandbox_transition SELinux Boolean
+  Enable the unconfined_login SELinux Boolean
+  Enable the unconfined_mozilla_plugin_transition SELinux Boolean
+  Disable the unprivuser_use_svirt SELinux Boolean
+  Enable the user_exec_content SELinux Boolean
+  Disable the use_ecryptfs_home_dirs SELinux Boolean
+  Disable the use_fusefs_home_dirs SELinux Boolean
+  Disable the use_lpd_server SELinux Boolean
+  Disable the use_nfs_home_dirs SELinux Boolean
+  Disable the use_samba_home_dirs SELinux Boolean
+  Disable the varnishd_connect_any SELinux Boolean
+  Disable the virt_read_qemu_ga_data SELinux Boolean
+  Disable the virt_rw_qemu_ga_data SELinux Boolean
+  Disable the virt_sandbox_use_all_caps SELinux Boolean
+  Enable the virt_sandbox_use_audit SELinux Boolean
+  Disable the virt_sandbox_use_mknod SELinux Boolean
+  Disable the virt_sandbox_use_netlink SELinux Boolean
+  Disable the virt_sandbox_use_sys_admin SELinux Boolean
+  Disable the virt_transition_userdomain SELinux Boolean
+  Disable the virt_use_comm SELinux Boolean
+  Disable the virt_use_execmem SELinux Boolean
+  Disable the virt_use_fusefs SELinux Boolean
+  Disable the virt_use_nfs SELinux Boolean
+  Disable the virt_use_rawip SELinux Boolean
+  Disable the virt_use_samba SELinux Boolean
+  Disable the virt_use_sanlock SELinux Boolean
+  Disable the virt_use_usb SELinux Boolean
+  Disable the virt_use_xserver SELinux Boolean
+  Disable the webadm_manage_user_files SELinux Boolean
+  Disable the webadm_read_user_files SELinux Boolean
+  Disable the wine_mmap_zero_ignore SELinux Boolean
+  Disable the xdm_bind_vnc_tcp_port SELinux Boolean
+  Disable the xdm_exec_bootloader SELinux Boolean
+  Disable the xdm_sysadm_login SELinux Boolean
+  Disable the xdm_write_home SELinux Boolean
+  Enable the xend_run_blktap SELinux Boolean
+  Enable the xend_run_qemu SELinux Boolean
+  Disable the xen_use_nfs SELinux Boolean
+  Disable the xguest_connect_network SELinux Boolean
+  Disable the xguest_exec_content SELinux Boolean
+  Disable the xguest_mount_media SELinux Boolean
+  Disable the xguest_use_bluetooth SELinux Boolean
+  Disable the xserver_clients_write_xshm SELinux Boolean
+  Disable the xserver_execmem SELinux Boolean
+  Disable the xserver_object_manager SELinux Boolean
+  Disable the zabbix_can_network SELinux Boolean
+  Disable the zarafa_setrlimit SELinux Boolean
+  Disable the zebra_write_config SELinux Boolean
+  Disable the zoneminder_anon_write SELinux Boolean
+  Disable the zoneminder_run_sudo SELinux Boolean
+  Disable the GNOME3 Login Restart and Shutdown Buttons
+  Disable the GNOME3 Login User List
+  Enable the GNOME3 Login Smartcard Authentication
+  Enable the GNOME3 Screen Locking On Smartcard Removal
+  Disable XDMCP in GDM
+  Disable GNOME3 Automount running
+  Disable All GNOME3 Thumbnailers
+  Disable WIFI Network Connection Creation in GNOME3
+  Disable WIFI Network Notification in GNOME3
+  Enable GNOME3 Screensaver Idle Activation
+  Ensure Users Cannot Change GNOME3 Screensaver Idle Activation
+  Set GNOME3 Screensaver Inactivity Timeout
+  Enable GNOME3 Screensaver Lock After Idle Period
+  Ensure Users Cannot Change GNOME3 Screensaver Lock After Idle Period
+  Disable Full User Name on Splash Shield
+  Ensure Users Cannot Change GNOME3 Screensaver Settings
+  Ensure Users Cannot Change GNOME3 Session Idle Settings
+  Disable Geolocation in GNOME3
+  Disable Power Settings in GNOME3
+  Disable User Administration in GNOME3
+  Remove the GDM Package Group
+  Disable XWayland
+  Install crypto-policies package
+  Install McAfee Virus Scanning Software
+  Install the McAfee Runtime Libraries and Linux Agent
+  Install McAfee Endpoint Security for Linux (ENSL)
+  Install the Asset Configuration Compliance Module (ACCM)
+  Install the Policy Auditor (PA) Module
+  Enable nails Service
+  Install AIDE
+  Verify crypto-policies with RPM
+  Verify File Hashes with RPM
+  Verify Group Who Owns /etc/sudoers.d Directory
+  Verify User Who Owns /etc/sudoers.d Directory
+  Verify Permissions On /etc/sudoers.d Directory
+  Verify Group Who Owns /etc/sudoers File
+  Verify User Who Owns /etc/sudoers File
+  Verify Permissions On /etc/sudoers File
+  Ensure That the sudo Binary Has the Correct Permissions
+  Install sudo Package
+  Ensure sudo only includes the default configuration directory
+  Ensure invoking users password for privilege escalation when using sudo
+  Ensure sudo Runs In A Minimal Environment - sudo env_reset
+  Ensure sudo Ignores Commands In Current Dir - sudo ignore_dot
+  Ensure Privileged Escalated Commands Cannot Execute Other Commands - sudo NOEXEC
+  Ensure Only Users Logged In To Real tty Can Execute Sudo - sudo requiretty
+  Ensure Only Users Logged In To Real tty Can Execute Sudo - sudo use_pty
+  Ensure Sudo Logfile Exists - sudo logfile
+  Ensure Users Re-Authenticate for Privilege Escalation - sudo NOPASSWD
+  Ensure Users Re-Authenticate for Privilege Escalation - sudo !authenticate
+  Ensure Users Re-Authenticate for Privilege Escalation - sudo
+  Ensure only owner and members of group owner of /usr/bin/sudo can execute it
+  Uninstall abrt-addon-ccpp Package
+  Uninstall abrt-addon-python Package
+  Uninstall abrt-cli Package
+  Uninstall abrt-libs Package
+  Uninstall abrt-plugin-rhtsupport Package
+  Uninstall abrt-plugin-sosreport Package
+  Uninstall abrt-server-info-page Package
+  Install binutils Package
+  Install cryptsetup Package
+  Uninstall geolite2-city Package
+  Uninstall geolite2-country Package
+  Uninstall gssproxy Package
+  Uninstall krb5-workstation Package
+  Install libcap-ng-utils Package
+  Uninstall libreport-plugin-rhtsupport Package
+  Install openscap-scanner Package
+  Uninstall pigz Package
+  Uninstall python3-abrt-addon Package
+  Install rear Package
+  Install rng-tools Package
+  Install scap-security-guide Package
+  Install sequoia-sq Package
+  Install tar Package
+  Uninstall tuned Package
+  Install vim Package
+  Ensure placeholder_value Removes Previous Package Versions
+  Disable Installation of Weak Dependencies in DNF
+  Ensure gpgcheck Is Enabled for All Package Repositories
+  Ensure AlmaLinux GPG Key Installed
+  Ensure Amazon GPG Key Installed
+  Ensure Fedora GPG Key Installed
+  Ensure gpgcheck Enabled In Main placeholder_value Configuration
+  Ensure gpgcheck Enabled for Local Packages
+  Ensure gpgcheck Enabled for All placeholder_value Package Repositories
+  Ensure gpgcheck Enabled for Repository Metadata
+  Ensure Oracle Linux GPG Key Installed
+  Ensure Red Hat GPG Key Installed
+  Ensure SUSE GPG Key Installed
+  Install dnf-automatic Package
+  Install GNOME Software
+  Enable dnf-automatic Timer
+
+============================================================
+osType=3 (1130 rules)
+============================================================
+  Ensure auditd Collects File Deletion Events by User
+  Ensure auditd Collects File Deletion Events by User - rename
+  Ensure auditd Collects File Deletion Events by User - renameat
+  Ensure auditd Collects File Deletion Events by User - renameat2
+  Ensure auditd Collects File Deletion Events by User - rmdir
+  Ensure auditd Collects File Deletion Events by User - unlink
+  Ensure auditd Collects File Deletion Events by User - unlinkat
+  Remove Default Configuration to Disable Syscall Auditing
+  Ensure auditd Collects Changes to Cron Jobs - /etc/cron.d/
+  Record Events that Modify User/Group Information via open syscall - /etc/group
+  Record Events that Modify User/Group Information via openat syscall - /etc/group
+  Record Events that Modify User/Group Information via open_by_handle_at syscall - /etc/group
+  Record Events that Modify User/Group Information via open syscall - /etc/gshadow
+  Record Events that Modify User/Group Information via openat syscall - /etc/gshadow
+  Record Events that Modify User/Group Information via open_by_handle_at syscall - /etc/gshadow
+  Record Events that Modify User/Group Information via open syscall - /etc/passwd
+  Record Events that Modify User/Group Information via openat syscall - /etc/passwd
+  Record Events that Modify User/Group Information via open_by_handle_at syscall - /etc/passwd
+  Record Events that Modify User/Group Information via open syscall - /etc/shadow
+  Record Events that Modify User/Group Information via openat syscall - /etc/shadow
+  Record Events that Modify User/Group Information via open_by_handle_at syscall - /etc/shadow
+  Record Events that Modify the System's Mandatory Access Controls
+  Record Events that Modify the System's Mandatory Access Controls (/etc/apparmor)
+  Record Events that Modify the System's Mandatory Access Controls (/etc/apparmor.d)
+  Record Events that Modify the System's Mandatory Access Controls (/etc/selinux)
+  Record Events that Modify the System's Mandatory Access Controls in usr/share
+  Record Events that Modify the System's Mandatory Access Controls in /var/lib/selinux
+  Record Events that Modify the System's Network Environment
+  Record Events that Modify the System's Network Environment - /etc/hosts
+  Record Events that Modify the System's Network Environment - /etc/issue
+  Record Events that Modify the System's Network Environment - /etc/issue.net
+  Record Events that Modify the System's Network Environment - /etc/NetworkManager/system-connections/
+  Record Events that Modify the System's Network Environment - /etc/sysconfig/network
+  Record Events that Modify the System's Network Environment - /etc/hostname
+  Record Events that Modify the System's Network Environment - /etc/NetworkManager/
+  Record Events that Modify the System's Network Environment - /etc/sysconfig/network-scripts
+  Record Events that Modify the System's Network Environment - setdomainname
+  Record Events that Modify the System's Network Environment - sethostname
+  Record Attempts to Alter Process and Session Initiation Information btmp
+  Record Attempts to Alter Process and Session Initiation Information utmp
+  Record Attempts to Alter Process and Session Initiation Information wtmp
+  Record Events When Executables Are Run As Another User
+  Record Events When Privileged Executables Are Run
+  Record Events that Modify User/Group Information
+  Record Events that Modify User/Group Information - /etc/group
+  Record Events that Modify User/Group Information - /etc/gshadow
+  Record Events that Modify User/Group Information - /etc/nsswitch.conf
+  Record Events that Modify User/Group Information - /etc/security/opasswd
+  Record Events that Modify User/Group Information - /etc/pam.d/
+  Record Events that Modify User/Group Information - /etc/pam.conf
+  Record Events that Modify User/Group Information - /etc/passwd
+  Record Events that Modify User/Group Information - /etc/shadow
+  Ensure auditd Collects records for events that affect "/var/log/journal"
+  Ensure auditd Collects Changes to Cron Jobs - /var/spool/cron
+  Record Attempts to perform maintenance activities
+  Record Attempts to Alter Time Through clock_settime
+  Record Attempts to Alter the localtime File
+  Record Access Events to Audit Log Directory
+  Set type of computer node name logging in audit logs
+  Enable Auditing for Processes Which Start Prior to the Audit Daemon
+  Verify that audit tools Have Mode 0755 or less
+  Verify Permissions on /etc/audit/auditd.conf
+  Verify Permissions on /etc/audit/audit.rules
+  Verify Permissions on /etc/audit/rules.d/*.rules
+  Enable Auditing for Processes Which Start Prior to the Audit Daemon
+  Install audispd-plugins Package
+  Enable auditd Service
+  Disable Apport Service
+  Uninstall avahi-autoipd Server Package
+  Uninstall avahi Server Package
+  Disable Avahi Server Software
+  Uninstall Automatic Bug Reporting Tool (abrt)
+  Install the psacct package
+  Disable Automatic Bug Reporting Tool (abrtd)
+  Disable Advanced Configuration and Power Interface (acpid)
+  Disable Certmonger Service (certmonger)
+  Disable Cockpit Management Server
+  Disable CPU Speed (cpupower)
+  Disable KDump Kernel Crash Analyzer (kdump)
+  Disable Software RAID Monitor (mdmonitor)
+  Disable Network Console (netconsole)
+  Disable ntpdate Service (ntpdate)
+  Disable Odd Job Daemon (oddjobd)
+  Disable Portreserve (portreserve)
+  Enable Process Accounting (psacct)
+  Disable Apache Qpid (qpidd)
+  Disable Quota Netlink (quota_nld)
+  Disable Network Router Discovery Daemon (rdisc)
+  Disable Red Hat Network Service (rhnsd)
+  Disable Red Hat Subscription Manager Daemon (rhsmcertd)
+  Disable Cyrus SASL Authentication Daemon (saslauthd)
+  Disable System Statistics Reset Service (sysstat)
+  Verify Group Who Owns Crontab
+  Verify Group Who Owns cron.d
+  Verify Group Who Owns cron.daily
+  Verify Group Who Owns cron.deny
+  Verify Group Who Owns cron.hourly
+  Verify Group Who Owns cron.monthly
+  Verify Group Who Owns cron.weekly
+  Verify Group Who Owns cron.yearly
+  Verify Owner on crontab
+  Verify Owner on cron.d
+  Verify Owner on cron.daily
+  Verify Owner on cron.deny
+  Verify Owner on cron.hourly
+  Verify Owner on cron.monthly
+  Verify Owner on cron.weekly
+  Verify Owner on cron.yearly
+  Verify Permissions on crontab
+  Verify Permissions on cron.d
+  Verify Permissions on cron.daily
+  Verify Permissions on cron.hourly
+  Verify Permissions on cron.monthly
+  Verify Permissions on cron.weekly
+  Verify Permissions on cron.yearly
+  Ensure that /etc/at.allow exists
+  Ensure that /etc/at.deny does not exist
+  Ensure that /etc/cron.allow exists
+  Ensure that /etc/cron.deny does not exist
+  Verify Group Who Owns /etc/at.allow file
+  Verify Group Who Owns /etc/at.deny file
+  Verify User Who Owns /etc/at.allow file
+  Verify User Who Owns /etc/at.deny file
+  Verify User Who Owns /etc/cron.allow file
+  Verify Permissions on /etc/at.allow file
+  Verify Permissions on /etc/cron.allow file
+  Disable At Service (atd)
+  Enable cron Service
+  Enable cron Service
+  Uninstall the inet-based telnet server
+  Uninstall the nis package
+  Uninstall the ntpdate package
+  Uninstall the ssl compliant telnet server
+  Uninstall the telnet server
+  Uninstall DHCP Client Package
+  Disable DHCP Client in ifcfg
+  Uninstall kea Package
+  Disable DHCPD6 Service
+  Disable DHCP Service
+  Uninstall bind Package
+  Disable named Service
+  Uninstall dnsmasq Package
+  Uninstall unbound Package
+  Disable dnsmasq Service
+  Install the docker Package
+  Enable the Docker service
+  Install fapolicyd Package
+  Enable the File Access Policy Service
+  Uninstall vsftpd Package
+  Disable vsftpd Service
+  Enable Logging of All FTP Transactions
+  Install vsftpd Package
+  Remove ftp Package
+  Remove tnftp Package
+  Uninstall placeholder_value Package
+  Disable placeholder_value Service
+  Uninstall nginx Package
+  Disable nginx Service
+  Set Permissions on the /var/log/httpd/ Directory
+  Set Permissions on All Configuration Files Inside /etc/httpd/conf.d/
+  Set Permissions on All Configuration Files Inside /etc/httpd/conf/
+  Disable Anonymous FTP Access
+  Enable HTTPD Error Logging
+  Enable HTTPD LogLevel
+  Enable HTTPD System Logging
+  Enable log_config_module For HTTPD Logging
+  Enable Transport Layer Security (TLS) Encryption
+  Remove .java And .jpp Files
+  Ensure Web Content Located on Separate partition
+  Uninstall cyrus-imapd Package
+  Disable Dovecot Service
+  Disable Kerberos by removing host keytab
+  Remove the Kerberos Server Package
+  Uninstall 389-ds-base Package
+  Enable the LDAP Client For Use in Authconfig
+  Disable LDAP Server (slapd)
+  Uninstall Sendmail Package
+  Disable Postfix Network Listening
+  Enable Postfix Service
+  Disable Network File Systems (netfs)
+  Uninstall rpcbind Package
+  Disable Network File System Lock Service (nfslock)
+  Disable rpcbind Service
+  Disable Secure RPC Client Service (rpcgssd)
+  Disable RPC ID Mapping Service (rpcidmapd)
+  Disable Network File System (nfs)
+  Disable Secure RPC Server Service (rpcsvcgssd)
+  Ensure All-Squashing Disabled On All Exports
+  Uninstall nfs-common Package
+  Uninstall nfs-kernel-server Package
+  Uninstall nfs-utils Package
+  Disable chrony daemon from acting as server
+  Disable network management of chrony daemon
+  Verify Group Who Owns /etc/chrony.keys File
+  Verify User Who Owns /etc/chrony.keys File
+  Verify Permissions On /etc/chrony.keys File
+  Remove the ntp service
+  Install the systemd_timesyncd Service
+  Remove the systemd_timesyncd Service
+  Enable the NTP Daemon
+  Enable the NTP Daemon
+  Disable systemd_timesyncd Service
+  Enable systemd_timesyncd Service
+  Verify Group Ownership of /etc/hosts.allow
+  Verify Group Ownership of /etc/hosts.deny
+  Verify Ownership of /etc/hosts.allow
+  Verify Ownership of /etc/hosts.deny
+  Verify Permissions on /etc/hosts.allow
+  Verify Permissions on /etc/hosts.deny
+  Install tcp_wrappers Package
+  Uninstall tcpd Package
+  Uninstall xinetd package if not used by network services
+  Disable xinetd Service
+  Remove NIS Client
+  Uninstall ypserv Package
+  Disable ypbind Service
+  Disable ypserv Service
+  Uninstall rsync Package
+  Remove Host-Based Authentication Files
+  Remove User Host-Based Authentication Files
+  Uninstall rsh-server Package
+  Uninstall rsh Package
+  Disable rexec Service
+  Disable rlogin Service
+  Disable rsh Service
+  Uninstall talk-server Package
+  Uninstall talk Package
+  Remove telnet Clients
+  Uninstall telnet-server Package
+  Remove telnet Clients
+  Disable telnet Service
+  Remove tftp Daemon
+  Disable placeholder_value Service
+  Ensure tftp Daemon Uses Secure Mode
+  Ensure tftp systemd Service Uses Secure Mode
+  Disable Printer Browsing Entirely if Possible
+  Uninstall CUPS Package
+  Disable the CUPS Service
+  Uninstall squid Package
+  Disable Squid
+  Remove the FreeRadius Server Package
+  Enable the Hardware RNG Entropy Gatherer Service
+  Uninstall quagga Package
+  Disable Quagga Service
+  Install the Samba Common Package
+  Uninstall Samba Package
+  Disable Samba
+  Disable snmpd Service
+  Verify Group Who Owns SSH Server Configuration Files
+  Verify Owner on SSH Server Configuration Files
+  Verify Permissions on SSH Server Config File
+  Verify Group Ownership on SSH Server Private *_key Key Files
+  Verify Group Ownership on SSH Server Public *.pub Key Files
+  Verify Group Who Owns SSH Server config file
+  Verify Group Who Owns SSH Server Configuration Files
+  Verify Ownership on SSH Server Private *_key Key Files
+  Verify Ownership on SSH Server Public *.pub Key Files
+  Verify Owner on SSH Server config file
+  Verify Owner on SSH Server Configuration Files
+  Verify Permissions on SSH Server config file
+  Verify Permissions on SSH Server Config File
+  Verify Permissions on SSH Server Private *_key Key Files
+  Verify Permissions on SSH Server Public *.pub Key Files
+  Install OpenSSH client software
+  Install the OpenSSH Server Package
+  Remove the OpenSSH Server Package
+  Install the OpenSSH Client and Server Package
+  Remove the OpenSSH Client and Server Package
+  Disable SSH Server If Possible
+  Enable the OpenSSH Service
+  Disable Host-Based Authentication
+  Enable SSH Server firewalld Firewall Exception
+  Disable Compression Or Set Compression to delayed
+  Disable SSH Access via Empty Passwords
+  Disable SSH Forwarding
+  Disable GSSAPI Authentication
+  Disable Kerberos Authentication
+  Disable PubkeyAuthentication Authentication
+  Disable SSH Support for .rhosts Files
+  Disable SSH Support for Rhosts RSA Authentication
+  Disable SSH Root Login
+  Disable SSH root Login with a Password (Insecure)
+  Disable SSH TCP Forwarding
+  Disable SSH Support for User Known Hosts
+  Disable X11 Forwarding
+  Enable GSSAPI Authentication
+  Enable PAM
+  Enable Public Key Authentication
+  Enable Use of Strict Mode Checking
+  Enable SSH Warning Banner
+  Enable SSH Warning Banner
+  Enable Encrypted X11 Forwarding
+  Enable SSH Print Last Log
+  Set SSH Client Alive Interval
+  Set SSH Client Alive Count Max
+  Set SSH authentication attempt limit
+  Set SSH MaxSessions limit
+  Enable Use of Privilege Separation
+  Install sssd-ipa Package
+  Install the SSSD Package
+  Enable the SSSD Service
+  Enable Certmap in SSSD
+  Enable Smartcards in SSSD
+  Install usbguard Package
+  Enable the USBGuard Service
+  Remove the X Windows Package Group
+  Remove the X Windows Xwayland Package
+  Disable graphical user interface
+  Disable Graphical Environment Startup By Setting Default Target
+  Ensure Local Login Warning Banner Is Configured Properly
+  Ensure Remote Login Warning Banner Is Configured Properly
+  Ensure Message Of The Day Is Configured Properly
+  Enable the SSH login confirmation banner
+  Verify Group Ownership of System Login Banner
+  Verify Group Ownership of System Login Banner for Remote Connections
+  Verify Group Ownership of Message of the Day Banner
+  Verify ownership of System Login Banner
+  Verify ownership of System Login Banner for Remote Connections
+  Verify ownership of Message of the Day Banner
+  Verify permissions on System Login Banner
+  Verify permissions on System Login Banner for Remote Connections
+  Verify permissions on Message of the Day Banner
+  Enable GNOME3 Login Warning Banner
+  Ensure Active Authselect Profile Includes PAM Modules
+  Ensure PAM Displays Last Logon/Access Notification
+  Set Up a Private Namespace in PAM Configuration
+  Ensure Root Account Lockout on Failed Password Attempts
+  Set Interval For Counting Failed Password Attempts
+  Set Root Lockout Time for Failed Password Attempts
+  Set Lockout Time for Failed Password Attempts
+  Set Lockout Time for Failed Password Attempts
+  Set Deny For Failed Password Attempts
+  Set Lockout Time for Failed Password Attempts using pam_tally2
+  Ensure Password History Is Enforced for the Root User
+  Install authselect Package
+  Install nss-sss Package
+  Install pam Package
+  Install pam-modules Package
+  Install pam-runtime Package
+  Install pam-sss Package
+  Set Password Strength Minimum Digit Characters
+  Set Password Strength Minimum Different Characters
+  Set Password Strength Minimum Lowercase Characters
+  Set Password Minimum Length
+  Set Password Strength Minimum Special Characters
+  Set Password Retry Limit
+  Set Password Strength Minimum Uppercase Characters
+  Ensure PAM Enforces Password Requirements - Minimum Digit Characters
+  Ensure PAM Enforces Password Requirements - Prevent the Use of Dictionary Words
+  Ensure PAM Enforces Password Requirements - Minimum Different Characters
+  Ensure PAM Enforces Password Requirements - Enforce for Local Accounts Only
+  Ensure PAM Enforces Password Requirements - Enforce for root User
+  Ensure PAM Enforces Password Requirements - Enforcing
+  Ensure PAM Enforces Password Requirements - Minimum Lowercase Characters
+  Ensure PAM Enforces Password Requirements - Maximum Consecutive Repeating Characters from Same Character Class
+  Set Password Maximum Consecutive Repeating Characters
+  Ensure PAM Enforces Password Requirements - Minimum Different Categories
+  Ensure PAM Enforces Password Requirements - Minimum Length
+  Ensure PAM Enforces Password Requirements - Minimum Special Characters
+  Ensure PAM Enforces Password Requirements - Authentication Retry Prompts Permitted Per-Session in placeholder_value
+  Ensure PAM Enforces Password Requirements - Authentication Retry Prompts Permitted Per-Session
+  Ensure PAM Enforces Password Requirements - Minimum Uppercase Characters
+  Set Password Hashing Algorithm for PAM
+  Set Password Hashing Algorithm in /etc/libuser.conf
+  Set Password Hashing Algorithm in placeholder_value
+  Set PAM Password Hashing Algorithm - password-auth
+  Set PAM Password Hashing Algorithm - system-auth
+  Set Password Hashing Rounds in placeholder_value
+  Set yescrypt Cost Factor in placeholder_value
+  Disable Ctrl-Alt-Del Burst Action
+  Disable Ctrl-Alt-Del Reboot Activation
+  Install the screen Package
+  Install the tmux Package
+  Install Smart Card Packages For Multifactor Authentication
+  Install the pcsc-lite-ccid package
+  Install the pcsc-lite package
+  Enable the pcscd Service
+  Enable Smart Card Logins in PAM
+  Disable debug-shell SystemD Service
+  Set Account Expiration Following Inactivity in password-auth
+  Set Account Expiration Following Inactivity in system-auth
+  Set Account Expiration Following Inactivity
+  Ensure All Accounts on the System Have Unique Names
+  Ensure All Accounts on the System Have Unique User IDs
+  Set Password Maximum Age
+  Set Password Minimum Age
+  Set Password Minimum Length in login.defs
+  Set Existing Passwords Maximum Age
+  Set Existing Passwords Minimum Age
+  Set Existing Passwords Warning Age
+  Set Password Warning Age
+  Set existing passwords a period of inactivity before they been locked
+  Set number of Password Hashing Rounds - password-auth
+  Set number of Password Hashing Rounds - system-auth
+  Ensure sudo group has only necessary members
+  Ensure There Are No Accounts With Blank or Null Passwords
+  Verify No .forward Files Exist
+  Verify No netrc Files Exist
+  Verify No .rhost Files Exist
+  Verify Only Root Has UID 0
+  Verify Root Has A Primary GID 0
+  Verify Only Group Root Has GID 0
+  Ensure that System Accounts Are Locked
+  Set Interactive Session Timeout
+  Ensure that Users Path Contains Only Local Directories
+  Verify Group Who Owns lastlog Command
+  Verify Owner on lastlog Command
+  Verify Permissions on lastlog Command
+  Ensure User Bash History File Has Correct Permissions
+  Ensure All User Initialization Files Have Mode 0740 Or Less Permissive
+  Ensure All User Initialization Files Have Mode 0740 Or Less Permissive
+  Ensure system-auth and password-auth files are symbolic links pointing
+to system-auth-local and password-auth-local
+  Enable authselect
+  Install the pam_apparmor Package
+  Enable Kernel Page-Table Isolation (KPTI)
+  Disable vsyscalls
+  Disable Recovery Booting
+  Enable randomization of the page allocator
+  Enable Kernel Page-Table Isolation (KPTI)
+  Disable merging of slabs with similar size
+  Disable vsyscalls
+  Verify placeholder_value/grub.cfg Group Ownership
+  Verify placeholder_value/user.cfg Group Ownership
+  Verify placeholder_value/grub.cfg User Ownership
+  Verify placeholder_value/user.cfg User Ownership
+  Verify placeholder_value/grub.cfg Permissions
+  Verify placeholder_value/user.cfg Permissions
+  Set Boot Loader Password in grub2
+  Verify the UEFI Boot Loader grub.cfg Group Ownership
+  Verify placeholder_value/user.cfg Group Ownership
+  Verify the UEFI Boot Loader grub.cfg User Ownership
+  Verify placeholder_value/user.cfg User Ownership
+  Verify the UEFI Boot Loader grub.cfg Permissions
+  Verify placeholder_value/user.cfg Permissions
+  Enable Auditing to Start Prior to the Audit Daemon in zIPL
+  Enable randomization of the page allocator in zIPL
+  Enable page allocator poisoning in zIPL
+  Enable SLUB/SLAB allocator poisoning in zIPL
+  Disable vsyscalls in zIPL
+  Disable kernel support for MISC binaries
+  Enable support for BUG()
+  Disable compatibility with brk()
+  Disable the 32-bit vDSO
+  Enable checks on credential management
+  Disable kernel debugfs
+  Enable checks on linked list manipulation
+  Enable checks on notifier call chains
+  Enable checks on scatter-gather (SG) table operations
+  Disable /dev/kmem virtual device support
+  Disable hibernation
+  Disable the IPv6 protocol
+  Disable kexec system call
+  Disable legacy (BSD) PTY support
+  Disable vsyscall emulation
+  Disable vsyscall mapping
+  Disable vsyscall emulate execution only
+  Disable the LDT (local descriptor table)
+  Enable module signature verification
+  Enable automatic signing of all modules
+  Enable poison of pages after freeing
+  Enable poison without sanity check
+  Remove the kernel mapping in user mode
+  Disable support for /proc/kkcore
+  Enable seccomp to safely compute untrusted bytecode
+  Enable use of Berkeley Packet Filter with seccomp
+  Enable different security models
+  Disable mutable hooks
+  Enable Yama support
+  Enable SLUB debugging support
+  Enable TCP/IP syncookie support
+  Disable x86 vsyscall emulation
+  Ensure cron Is Logging To Rsyslog
+  Ensure Rsyslog Authenticates Off-Loaded Audit Records
+  Ensure Rsyslog Encrypts Off-Loaded Audit Records
+  Ensure Rsyslog Encrypts Off-Loaded Audit Records
+  Ensure Log Files Are Owned By Appropriate User
+  Ensure System Log Files Have Correct Permissions
+  Verify group-owner of system journal directories
+  Verify owner of system journal directories
+  Verify Permissions on the system journal directories
+  Verify Groupowner on the journalctl command
+  Verify Owner on the journalctl Command
+  Verify Permissions on the journal command
+  Install systemd-journal-remote Package
+  Enable systemd-journal-upload Service
+  Enable systemd-journald Service
+  Disable systemd-journal-remote Socket
+  Ensure Logrotate Runs Periodically
+  Enable logrotate Timer
+  Enable syslog-ng Service
+  Ensure rsyslog Default File Permissions Configured
+  Enable rsyslog Service
+  Install firewalld Package
+  Verify firewalld Enabled
+  Uninstall firewalld Package
+  Verify firewalld service disabled
+  Ensure firewall rules exist for all open ports
+  Set Default firewalld Zone for Incoming Packets
+  Verify Group Who Owns /etc/ipsec.d Directory
+  Verify User Who Owns /etc/ipsec.d Directory
+  Verify Permissions On /etc/ipsec.d Directory
+  Verify Group Who Owns /etc/ipsec.conf File
+  Verify Group Who Owns /etc/ipsec.secrets File
+  Verify User Who Owns /etc/ipsec.conf File
+  Verify User Who Owns /etc/ipsec.secrets File
+  Verify Permissions On /etc/ipsec.conf File
+  Verify Permissions On /etc/ipsec.secrets File
+  Verify Any Configured IPSec Tunnel Connections
+  Install libreswan Package
+  Install strongswan Package
+  Verify Group Who Owns /etc/iptables Directory
+  Verify User Who Owns /etc/iptables Directory
+  Verify Permissions On /etc/iptables Directory
+  Verify ip6tables Enabled if Using IPv6
+  Verify iptables Enabled
+  Set Default ip6tables Policy for Incoming Packets
+  Set configuration for IPv6 loopback traffic
+  Set configuration for loopback traffic
+  Ensure ip6tables Firewall Rules Exist for All Open Ports
+  Ensure iptables Firewall Rules Exist for All Open Ports
+  Set Default iptables Policy for Incoming Packets
+  Set Default iptables Policy for Forwarded Packets
+  Install iptables-nft Package
+  Install iptables-persistent Package
+  Remove iptables-persistent Package
+  Install iptables-services Package
+  Remove iptables-services Package
+  Install iptables Package
+  Disable Accepting ICMP Redirects for All IPv6 Interfaces
+  Disable Kernel Parameter for Accepting Source-Routed Packets on all IPv6 Interfaces
+  Disable Kernel Parameter for IPv6 Forwarding
+  Disable Accepting Router Advertisements on all IPv6 Interfaces by Default
+  Disable Kernel Parameter for Accepting ICMP Redirects by Default on IPv6 Interfaces
+  Disable Kernel Parameter for Accepting Source-Routed Packets on IPv6 Interfaces by Default
+  Disable Kernel Parameter for IPv6 Forwarding by default
+  Disable Support for RPC IPv6
+  Disable IPv6 Addressing on All IPv6 Interfaces
+  Disable IPv6 Addressing on IPv6 Interfaces by Default
+  Disable Accepting Packets Routed Between Local Interfaces
+  Disable Accepting ICMP Redirects for All IPv4 Interfaces
+  Disable Kernel Parameter for Accepting Source-Routed Packets on all IPv4 Interfaces
+  Disable Kernel Parameter for IPv4 Forwarding on all IPv4 Interfaces
+  Enable Kernel Parameter to Log Martian Packets on all IPv4 Interfaces
+  Disable Kernel Parameter for Accepting Secure ICMP Redirects on all IPv4 Interfaces
+  Disable Kernel Parameter for Accepting ICMP Redirects by Default on IPv4 Interfaces
+  Disable Kernel Parameter for Accepting Source-Routed Packets on IPv4 Interfaces by Default
+  Disable Kernel Parameter for IPv4 Forwarding By Default
+  Enable Kernel Parameter to Log Martian Packets on all IPv4 Interfaces by Default
+  Enable Kernel Parameter to Use Reverse Path Filtering on all IPv4 Interfaces by Default
+  Enable Kernel Parameter to Ignore ICMP Broadcast Echo Requests on IPv4 Interfaces
+  Enable Kernel Parameter to Ignore Bogus ICMP Error Responses on IPv4 Interfaces
+  Enable Kernel Parameter to Use TCP RFC 1337 on IPv4 Interfaces
+  Enable Kernel Parameter to Use TCP Syncookies on Network Interfaces
+  Disable Kernel Parameter for Sending ICMP Redirects on all IPv4 Interfaces
+  Disable Kernel Parameter for Sending ICMP Redirects on all IPv4 Interfaces by Default
+  Disable Kernel Parameter for IP Forwarding on IPv4 Interfaces
+  Verify Group Who Owns /etc/nftables Directory
+  Verify User Who Owns /etc/nftables Directory
+  Verify Permissions On /etc/nftables Directory
+  Ensure nftables Default Deny Firewall Policy
+  Install nftables Package
+  Uninstall nftables package
+  Ensure Base Chains Exist for Nftables
+  Set nftables Configuration for Loopback Traffic
+  Install SuSEfirewall2 Package
+  Enable the SuSEfirewall 2
+  Enable DoS Protections in SuSEfirewall2
+  Install ufw Package
+  Remove ufw Package
+  Verify ufw Enabled
+  Ensure ufw Default Deny Firewall Policy
+  Ensure ufw Firewall Rules Exist for All Open Ports
+  Disable ATM Support
+  Disable CAN Support
+  Disable DCCP Support
+  Disable IEEE 1394 (FireWire) Support
+  Disable RDS Support
+  Disable SCTP Support
+  Disable TIPC Support
+  Disable Bluetooth Kernel Module
+  Disable Kernel cfg80211 Module
+  Disable Kernel iwlmvm Module
+  Disable Kernel iwlwifi Module
+  Disable Kernel mac80211 Module
+  Disable Bluetooth Service
+  Disable Client Dynamic DNS Updates
+  Disable Zeroconf Networking
+  Ensure All World-Writable Directories Are Owned by root User
+  Verify that All World-Writable Directories Have Sticky Bits Set
+  Ensure All World-Writable Directories Are Owned by a System Account
+  Ensure All World-Writable Directories Are Group Owned by a System Account
+  Verify that system commands directories have root as a group owner
+  Verify that system commands directories have root ownership
+  Verify Group Who Owns /etc/crypttab File
+  Verify Group Who Owns /etc/sysconfig/sshd File
+  Verify Group Who Owns System.map Files
+  Verify User Who Owns /etc/crypttab File
+  Verify User Who Owns /etc/sysconfig/sshd File
+  Verify User Who Owns System.map Files
+  Verify Permissions On /etc/crypttab File
+  Verify Permissions on /etc/sysconfig/sshd File
+  Verify Permissions on System.map Files
+  Ensure All SGID Executables Are Authorized
+  Ensure All SUID Executables Are Authorized
+  Ensure No World-Writable Files Exist
+  Ensure All Files Are Owned by a Group
+  Verify permissions of log files
+  Ensure All Files And Directories Are Owned by a Group
+  Ensure All Files And Directories Are Owned by a User
+  Ensure All Files Are Owned by a User
+  Verify Permissions and Ownership of Old Passwords File
+  Verify Group Who Owns Backup group File
+  Verify Group Who Owns Backup passwd File
+  Verify Group Who Owns group File
+  Verify Group Who Owns passwd File
+  Verify Group Who Owns /etc/security/opasswd File
+  Verify Group Who Owns /etc/security/opasswd.old File
+  Verify Group Who Owns /etc/shells File
+  Verify User Who Owns Backup group File
+  Verify User Who Owns Backup gshadow File
+  Verify User Who Owns Backup passwd File
+  Verify Group Who Owns Backup shadow File
+  Verify User Who Owns group File
+  Verify User Who Owns gshadow File
+  Verify User Who Owns passwd File
+  Verify User Who Owns /etc/security/opasswd File
+  Verify User Who Owns /etc/security/opasswd.old File
+  Verify User Who Owns shadow File
+  Verify Who Owns /etc/shells File
+  Verify Permissions on Backup group File
+  Verify Permissions on Backup passwd File
+  Verify Permissions on Backup shadow File
+  Verify Permissions on group File
+  Verify Permissions on passwd File
+  Verify Permissions on /etc/security/opasswd File
+  Verify Permissions on /etc/security/opasswd.old File
+  Verify Permissions on /etc/shells File
+  Verify permissions of log files
+  Verify ownership of log files
+  Verify Groupownership of Files in /var/log/apt
+  Verify Groupownership of Files in /var/log/gdm
+  Verify Groupownership of Files in /var/log/gdm3
+  Verify Groupownership of Files in /var/log/landscape
+  Verify Grouponwership of Files in /var/log/sssd
+  Verify Group Who Owns /var/log Directory
+  Verify Group Who Owns /var/log/auth.log File
+  Verify Group Who Owns /var/log/cloud-init.log* File
+  Verify Group Who Owns /var/log/*.journal(~) File
+  Verify Group Who Owns /var/log/lastlog File
+  Verify Group Who Owns /var/log/localmessages* File
+  Verify Group Who Owns /var/log/messages File
+  Verify Group Who Owns /var/log/secure File
+  Verify Group Who Owns /var/log/syslog File
+  Verify Group Who Owns /var/log/waagent.log File
+  Verify Group Who Owns /var/log/(b|w)tmp(.*|-*) File
+  Verify ownership of log files
+  Verify Ownership of Files in /var/log/apt
+  Verify Ownership of Files in /var/log/gdm
+  Verify Ownership of Files in /var/log/gdm3
+  Verify Ownership of Files in /var/log/landscape
+  Verify Ownership of Files in /var/log/sssd
+  Verify User Who Owns /var/log Directory
+  Verify User Who Owns /var/log/auth.log File
+  Verify User Who Owns /var/log/cloud-init.log File
+  Verify User Who Owns /var/log/*.journal(~) Files
+  Verify User Who Owns /var/log/lastlog File
+  Verify User Who Owns /var/log/localmessages File
+  Verify User Who Owns /var/log/messages File
+  Verify User Who Owns /var/log/secure File
+  Verify User Who Owns /var/log/syslog File
+  Verify User Who Owns /var/log/waagent.log File
+  Verify User Who Owns /var/log/(b|w)tmp(.*|-*) File
+  Verify Permissions on /var/log Directory
+  Verify Permissions on files in the /var/log/apt/.* directory
+  Verify Permissions on /var/log/auth.log File
+  Verify Permissions on /var/log/cloud-init.log(.*) Files
+  Verify Permissions of Files in /var/log/gdm
+  Verify Permissions of Files in /var/log/gdm3
+  Verify Permissions on /var/log/lastlog(.*) Files
+  Verify Permissions on /var/log/localmessages(.*) Files
+  Verify Permissions on /var/log/secure File
+  Verify Permissions of Files in /var/log/sssd
+  Verify Permissions on /var/log/syslog File
+  Verify Permissions on /var/log/waagent.log(.*) Files
+  Verify Permissions on /var/log/wtmp(.*) Files
+  Verify Group Who Owns /etc/sysctl.d Directory
+  Verify User Who Owns /etc/sysctl.d Directory
+  Verify Permissions On /etc/sysctl.d Directory
+  Verify that Shared Library Directories Have Root Group Ownership
+  Verify that System Executable Have Root Ownership
+  Verify that Shared Library Directories Have Root Ownership
+  Verify that System Executable Directories Have Restrictive Permissions
+  Verify that Shared Library Directories Have Restrictive Permissions
+  Verify that Shared Library Files Have Root Ownership
+  Verify that Shared Library Files Have Restrictive Permissions
+  Verify the system-wide library files in directories
+"/lib", "/lib64", "/usr/lib/" and "/usr/lib64" are group-owned by root.
+  Enable Kernel Parameter to Enforce DAC on FIFOs
+  Enable Kernel Parameter to Enforce DAC on Hardlinks
+  Enable Kernel Parameter to Enforce DAC on Regular files
+  Enable Kernel Parameter to Enforce DAC on Symlinks
+  Disable Kernel Support for USB via Bootloader Configuration
+  Disable Kernel Support for USB via Bootloader Configuration
+  Disable Mounting of cramfs
+  Disable Mounting of freevxfs
+  Disable Mounting of hfsplus
+  Disable Mounting of hfs
+  Disable Mounting of jffs2
+  Disable Mounting of squashfs
+  Disable Mounting of udf
+  Disable Modprobe Loading of USB Storage Driver
+  Disable Mounting of vFAT filesystems
+  Remove autofs Package
+  Disable the Automounter
+  Verify Permissions of Local Logs of audit Tools
+  Disable core dump backtraces
+  Disable storing core dump
+  Disable Core Dumps for All Users
+  Disable acquiring, saving, and processing core dumps
+  Disable Core Dumps for SUID programs
+  Set Daemon Umask
+  Enable ExecShield via sysctl
+  Enable Randomized Layout of Virtual Address Space
+  Disable the uvcvideo module
+  Enable page allocator poisoning
+  Enable SLUB/SLAB allocator poisoning
+  Enable page allocator poisoning
+  Enable SLUB/SLAB allocator poisoning
+  Disable storing core dumps
+  Disable storing core dumps
+  Disable Kernel Image Loading
+  Disable loading and unloading of kernel modules
+  Disable Access to Network bpf() Syscall From Unprivileged Processes
+  Disable Access to Network bpf() Syscall From Unprivileged Processes
+  Disable the use of user namespaces
+  Disable the use of user namespaces
+  Verify Group Who Owns /etc/selinux Directory
+  Verify User Who Owns /etc/selinux Directory
+  Verify Permissions On /etc/selinux Directory
+  Verify Group Who Owns /etc/sestatus.conf File
+  Verify User Who Owns /etc/sestatus.conf File
+  Verify Permissions On /etc/sestatus.conf File
+  Install libselinux Package
+  Uninstall mcstrans Package
+  Install policycoreutils-python-utils package
+  Install policycoreutils Package
+  Uninstall setroubleshoot-plugins Package
+  Uninstall setroubleshoot-server Package
+  Uninstall setroubleshoot Package
+  Disable the abrt_anon_write SELinux Boolean
+  Disable the abrt_handle_event SELinux Boolean
+  Disable the abrt_upload_watch_anon_write SELinux Boolean
+  Enable the antivirus_can_scan_system SELinux Boolean
+  Disable the antivirus_use_jit SELinux Boolean
+  Enable the auditadm_exec_content SELinux Boolean
+  Disable the authlogin_nsswitch_use_ldap SELinux Boolean
+  Disable the authlogin_radius SELinux Boolean
+  Disable the authlogin_yubikey SELinux Boolean
+  Disable the awstats_purge_apache_log_files SELinux Boolean
+  Disable the boinc_execmem SELinux Boolean
+  Disable the cdrecord_read_content SELinux Boolean
+  Disable the cluster_can_network_connect SELinux Boolean
+  Disable the cluster_manage_all_files SELinux Boolean
+  Disable the cluster_use_execmem SELinux Boolean
+  Disable the cobbler_anon_write SELinux Boolean
+  Disable the cobbler_can_network_connect SELinux Boolean
+  Disable the cobbler_use_cifs SELinux Boolean
+  Disable the cobbler_use_nfs SELinux Boolean
+  Disable the collectd_tcp_network_connect SELinux Boolean
+  Disable the condor_tcp_network_connect SELinux Boolean
+  Disable the conman_can_network SELinux Boolean
+  Disable the container_connect_any SELinux Boolean
+  Disable the cron_can_relabel SELinux Boolean
+  Disable the cron_system_cronjob_use_shares SELinux Boolean
+  Enable the cron_userdomain_transition SELinux Boolean
+  Disable the cups_execmem SELinux Boolean
+  Disable the cvs_read_shadow SELinux Boolean
+  Disable the daemons_dump_core SELinux Boolean
+  Disable the daemons_enable_cluster_mode SELinux Boolean
+  Disable the daemons_use_tcp_wrapper SELinux Boolean
+  Disable the daemons_use_tty SELinux Boolean
+  Enable the dbadm_exec_content SELinux Boolean
+  Disable the dbadm_manage_user_files SELinux Boolean
+  Disable the dbadm_read_user_files SELinux Boolean
+  Disable the deny_ptrace SELinux Boolean
+  Disable the dhcpc_exec_iptables SELinux Boolean
+  Disable the dhcpd_use_ldap SELinux Boolean
+  Enable the domain_fd_use SELinux Boolean
+  Disable the domain_kernel_load_modules SELinux Boolean
+  Disable the entropyd_use_audio SELinux Boolean
+  Disable the exim_can_connect_db SELinux Boolean
+  Disable the exim_manage_user_files SELinux Boolean
+  Disable the exim_read_user_files SELinux Boolean
+  Disable the fcron_crond SELinux Boolean
+  Disable the fenced_can_network_connect SELinux Boolean
+  Disable the fenced_can_ssh SELinux Boolean
+  Enable the fips_mode SELinux Boolean
+  Disable the ftpd_anon_write SELinux Boolean
+  Disable the ftpd_connect_all_unreserved SELinux Boolean
+  Disable the ftpd_connect_db SELinux Boolean
+  Disable the ftpd_full_access SELinux Boolean
+  Disable the ftpd_use_cifs SELinux Boolean
+  Disable the ftpd_use_fusefs SELinux Boolean
+  Disable the ftpd_use_nfs SELinux Boolean
+  Disable the ftpd_use_passive_mode SELinux Boolean
+  Disable the gitosis_can_sendmail SELinux Boolean
+  Disable the git_cgi_enable_homedirs SELinux Boolean
+  Disable the git_cgi_use_cifs SELinux Boolean
+  Disable the git_cgi_use_nfs SELinux Boolean
+  Disable the git_session_bind_all_unreserved_ports SELinux Boolean
+  Disable the git_session_users SELinux Boolean
+  Disable the git_system_enable_homedirs SELinux Boolean
+  Disable the git_system_use_cifs SELinux Boolean
+  Disable the git_system_use_nfs SELinux Boolean
+  Disable the glance_api_can_network SELinux Boolean
+  Disable the glance_use_execmem SELinux Boolean
+  Disable the glance_use_fusefs SELinux Boolean
+  Disable the global_ssp SELinux Boolean
+  Disable the gluster_anon_write SELinux Boolean
+  Disable the gluster_export_all_ro SELinux Boolean
+  Disable the gpg_web_anon_write SELinux Boolean
+  Enable the gssd_read_tmp SELinux Boolean
+  Disable the guest_exec_content SELinux Boolean
+  Disable the haproxy_connect_any SELinux Boolean
+  Disable the httpd_anon_write SELinux Boolean
+  Disable the httpd_can_check_spam SELinux Boolean
+  Disable the httpd_can_connect_ftp SELinux Boolean
+  Disable the httpd_can_connect_ldap SELinux Boolean
+  Disable the httpd_can_connect_mythtv SELinux Boolean
+  Disable the httpd_can_connect_zabbix SELinux Boolean
+  Disable the httpd_can_network_connect SELinux Boolean
+  Disable the httpd_can_network_connect_cobbler SELinux Boolean
+  Disable the httpd_can_network_connect_db SELinux Boolean
+  Disable the httpd_can_network_memcache SELinux Boolean
+  Disable the httpd_can_network_relay SELinux Boolean
+  Disable the httpd_can_sendmail SELinux Boolean
+  Disable the httpd_dbus_avahi SELinux Boolean
+  Disable the httpd_dbus_sssd SELinux Boolean
+  Disable the httpd_dontaudit_search_dirs SELinux Boolean
+  Disable the httpd_enable_ftp_server SELinux Boolean
+  Disable the httpd_enable_homedirs SELinux Boolean
+  Disable the httpd_execmem SELinux Boolean
+  Enable the httpd_graceful_shutdown SELinux Boolean
+  Disable the httpd_manage_ipa SELinux Boolean
+  Disable the httpd_mod_auth_ntlm_winbind SELinux Boolean
+  Disable the httpd_mod_auth_pam SELinux Boolean
+  Disable the httpd_read_user_content SELinux Boolean
+  Disable the httpd_run_ipa SELinux Boolean
+  Disable the httpd_run_preupgrade SELinux Boolean
+  Disable the httpd_run_stickshift SELinux Boolean
+  Disable the httpd_serve_cobbler_files SELinux Boolean
+  Disable the httpd_setrlimit SELinux Boolean
+  Disable the httpd_ssi_exec SELinux Boolean
+  Disable the httpd_sys_script_anon_write SELinux Boolean
+  Disable the httpd_tmp_exec SELinux Boolean
+  Disable the httpd_tty_comm SELinux Boolean
+  Disable the httpd_unified SELinux Boolean
+  Disable the httpd_use_cifs SELinux Boolean
+  Disable the httpd_use_fusefs SELinux Boolean
+  Disable the httpd_use_gpg SELinux Boolean
+  Disable the httpd_use_nfs SELinux Boolean
+  Disable the httpd_use_openstack SELinux Boolean
+  Disable the httpd_use_sasl SELinux Boolean
+  Disable the httpd_verify_dns SELinux Boolean
+  Disable the icecast_use_any_tcp_ports SELinux Boolean
+  Disable the irc_use_any_tcp_ports SELinux Boolean
+  Disable the irssi_use_full_network SELinux Boolean
+  Disable the kdumpgui_run_bootloader SELinux Boolean
+  Enable the kerberos_enabled SELinux Boolean
+  Disable the ksmtuned_use_cifs SELinux Boolean
+  Disable the ksmtuned_use_nfs SELinux Boolean
+  Enable the logadm_exec_content SELinux Boolean
+  Disable the logging_syslogd_can_sendmail SELinux Boolean
+  Disable the logging_syslogd_run_nagios_plugins SELinux Boolean
+  Enable the logging_syslogd_use_tty SELinux Boolean
+  Enable the login_console_enabled SELinux Boolean
+  Disable the logrotate_use_nfs SELinux Boolean
+  Disable the logwatch_can_network_connect_mail SELinux Boolean
+  Disable the lsmd_plugin_connect_any SELinux Boolean
+  Disable the mailman_use_fusefs SELinux Boolean
+  Disable the mcelog_client SELinux Boolean
+  Enable the mcelog_exec_scripts SELinux Boolean
+  Disable the mcelog_foreground SELinux Boolean
+  Disable the mcelog_server SELinux Boolean
+  Disable the minidlna_read_generic_user_content SELinux Boolean
+  Disable the mmap_low_allowed SELinux Boolean
+  Disable the mock_enable_homedirs SELinux Boolean
+  Enable the mount_anyfile SELinux Boolean
+  Disable the mozilla_plugin_bind_unreserved_ports SELinux Boolean
+  Disable the mozilla_plugin_can_network_connect SELinux Boolean
+  Disable the mozilla_plugin_use_bluejeans SELinux Boolean
+  Disable the mozilla_plugin_use_gps SELinux Boolean
+  Disable the mozilla_plugin_use_spice SELinux Boolean
+  Disable the mozilla_read_content SELinux Boolean
+  Disable the mpd_enable_homedirs SELinux Boolean
+  Disable the mpd_use_cifs SELinux Boolean
+  Disable the mpd_use_nfs SELinux Boolean
+  Disable the mplayer_execstack SELinux Boolean
+  Disable the mysql_connect_any SELinux Boolean
+  Disable the nagios_run_pnp4nagios SELinux Boolean
+  Disable the nagios_run_sudo SELinux Boolean
+  Disable the named_tcp_bind_http_port SELinux Boolean
+  Disable the named_write_master_zones SELinux Boolean
+  Disable the neutron_can_network SELinux Boolean
+  Disable the nfsd_anon_write SELinux Boolean
+  Enable the nfs_export_all_ro SELinux Boolean
+  Enable the nfs_export_all_rw SELinux Boolean
+  Disable the nis_enabled SELinux Boolean
+  Enable the nscd_use_shm SELinux Boolean
+  Disable the openshift_use_nfs SELinux Boolean
+  Disable the openvpn_can_network_connect SELinux Boolean
+  Disable the openvpn_enable_homedirs SELinux Boolean
+  Disable the openvpn_run_unconfined SELinux Boolean
+  Disable the pcp_bind_all_unreserved_ports SELinux Boolean
+  Disable the pcp_read_generic_logs SELinux Boolean
+  Disable the piranha_lvs_can_network_connect SELinux Boolean
+  Disable the polipo_connect_all_unreserved SELinux Boolean
+  Disable the polipo_session_bind_all_unreserved_ports SELinux Boolean
+  Disable the polipo_session_users SELinux Boolean
+  Disable the polipo_use_cifs SELinux Boolean
+  Disable the polipo_use_nfs SELinux Boolean
+  Enable the postfix_local_write_mail_spool SELinux Boolean
+  Disable the postgresql_can_rsync SELinux Boolean
+  Disable the postgresql_selinux_transmit_client_label SELinux Boolean
+  Enable the postgresql_selinux_unconfined_dbadm SELinux Boolean
+  Enable the postgresql_selinux_users_ddl SELinux Boolean
+  Disable the pppd_can_insmod SELinux Boolean
+  Disable the pppd_for_user SELinux Boolean
+  Disable the privoxy_connect_any SELinux Boolean
+  Disable the prosody_bind_http_port SELinux Boolean
+  Disable the puppetagent_manage_all_files SELinux Boolean
+  Disable the puppetmaster_use_db SELinux Boolean
+  Disable the racoon_read_shadow SELinux Boolean
+  Disable the rsync_anon_write SELinux Boolean
+  Disable the rsync_client SELinux Boolean
+  Disable the rsync_export_all_ro SELinux Boolean
+  Disable the rsync_full_access SELinux Boolean
+  Disable the samba_create_home_dirs SELinux Boolean
+  Disable the samba_domain_controller SELinux Boolean
+  Disable the samba_enable_home_dirs SELinux Boolean
+  Disable the samba_export_all_ro SELinux Boolean
+  Disable the samba_export_all_rw SELinux Boolean
+  Disable the samba_load_libgfapi SELinux Boolean
+  Disable the samba_portmapper SELinux Boolean
+  Disable the samba_run_unconfined SELinux Boolean
+  Disable the samba_share_fusefs SELinux Boolean
+  Disable the samba_share_nfs SELinux Boolean
+  Disable the sanlock_use_fusefs SELinux Boolean
+  Disable the sanlock_use_nfs SELinux Boolean
+  Disable the sanlock_use_samba SELinux Boolean
+  Disable the saslauthd_read_shadow SELinux Boolean
+  Enable the secadm_exec_content SELinux Boolean
+  Disable the secure_mode SELinux Boolean
+  Disable the secure_mode_policyload SELinux Boolean
+  Disable the selinuxuser_execheap SELinux Boolean
+  Enable the selinuxuser_execmod SELinux Boolean
+  Disable the selinuxuser_execstack SELinux Boolean
+  Disable the selinuxuser_mysql_connect_enabled SELinux Boolean
+  Enable the selinuxuser_ping SELinux Boolean
+  Disable the selinuxuser_postgresql_connect_enabled SELinux Boolean
+  Disable the selinuxuser_rw_noexattrfile SELinux Boolean
+  Disable the selinuxuser_share_music SELinux Boolean
+  Disable the selinuxuser_tcp_server SELinux Boolean
+  Disable the selinuxuser_udp_server SELinux Boolean
+  Disable the selinuxuser_use_ssh_chroot SELinux Boolean
+  Disable the sge_domain_can_network_connect SELinux Boolean
+  Disable the sge_use_nfs SELinux Boolean
+  Disable the smartmon_3ware SELinux Boolean
+  Disable the smbd_anon_write SELinux Boolean
+  Disable the spamassassin_can_network SELinux Boolean
+  Enable the spamd_enable_home_dirs SELinux Boolean
+  Disable the squid_connect_any SELinux Boolean
+  Disable the squid_use_tproxy SELinux Boolean
+  Disable the ssh_chroot_rw_homedirs SELinux Boolean
+  Disable the ssh_keysign SELinux Boolean
+  Disable the ssh_sysadm_login SELinux Boolean
+  Enable the staff_exec_content SELinux Boolean
+  Disable the staff_use_svirt SELinux Boolean
+  Disable the swift_can_network SELinux Boolean
+  Enable the sysadm_exec_content SELinux Boolean
+  Disable the telepathy_connect_all_ports SELinux Boolean
+  Disable the telepathy_tcp_connect_generic_network_ports SELinux Boolean
+  Disable the tftp_anon_write SELinux Boolean
+  Disable the tftp_home_dir SELinux Boolean
+  Disable the tmpreaper_use_nfs SELinux Boolean
+  Disable the tmpreaper_use_samba SELinux Boolean
+  Disable the tor_bind_all_unreserved_ports SELinux Boolean
+  Disable the tor_can_network_relay SELinux Boolean
+  Enable the unconfined_chrome_sandbox_transition SELinux Boolean
+  Enable the unconfined_login SELinux Boolean
+  Enable the unconfined_mozilla_plugin_transition SELinux Boolean
+  Disable the unprivuser_use_svirt SELinux Boolean
+  Enable the user_exec_content SELinux Boolean
+  Disable the use_ecryptfs_home_dirs SELinux Boolean
+  Disable the use_fusefs_home_dirs SELinux Boolean
+  Disable the use_lpd_server SELinux Boolean
+  Disable the use_nfs_home_dirs SELinux Boolean
+  Disable the use_samba_home_dirs SELinux Boolean
+  Disable the varnishd_connect_any SELinux Boolean
+  Disable the virt_read_qemu_ga_data SELinux Boolean
+  Disable the virt_rw_qemu_ga_data SELinux Boolean
+  Disable the virt_sandbox_use_all_caps SELinux Boolean
+  Enable the virt_sandbox_use_audit SELinux Boolean
+  Disable the virt_sandbox_use_mknod SELinux Boolean
+  Disable the virt_sandbox_use_netlink SELinux Boolean
+  Disable the virt_sandbox_use_sys_admin SELinux Boolean
+  Disable the virt_transition_userdomain SELinux Boolean
+  Disable the virt_use_comm SELinux Boolean
+  Disable the virt_use_execmem SELinux Boolean
+  Disable the virt_use_fusefs SELinux Boolean
+  Disable the virt_use_nfs SELinux Boolean
+  Disable the virt_use_rawip SELinux Boolean
+  Disable the virt_use_samba SELinux Boolean
+  Disable the virt_use_sanlock SELinux Boolean
+  Disable the virt_use_usb SELinux Boolean
+  Disable the virt_use_xserver SELinux Boolean
+  Disable the webadm_manage_user_files SELinux Boolean
+  Disable the webadm_read_user_files SELinux Boolean
+  Disable the wine_mmap_zero_ignore SELinux Boolean
+  Disable the xdm_bind_vnc_tcp_port SELinux Boolean
+  Disable the xdm_exec_bootloader SELinux Boolean
+  Disable the xdm_sysadm_login SELinux Boolean
+  Disable the xdm_write_home SELinux Boolean
+  Enable the xend_run_blktap SELinux Boolean
+  Enable the xend_run_qemu SELinux Boolean
+  Disable the xen_use_nfs SELinux Boolean
+  Disable the xguest_connect_network SELinux Boolean
+  Disable the xguest_exec_content SELinux Boolean
+  Disable the xguest_mount_media SELinux Boolean
+  Disable the xguest_use_bluetooth SELinux Boolean
+  Disable the xserver_clients_write_xshm SELinux Boolean
+  Disable the xserver_execmem SELinux Boolean
+  Disable the xserver_object_manager SELinux Boolean
+  Disable the zabbix_can_network SELinux Boolean
+  Disable the zarafa_setrlimit SELinux Boolean
+  Disable the zebra_write_config SELinux Boolean
+  Disable the zoneminder_anon_write SELinux Boolean
+  Disable the zoneminder_run_sudo SELinux Boolean
+  Disable the GNOME3 Login Restart and Shutdown Buttons
+  Disable the GNOME3 Login User List
+  Enable the GNOME3 Login Smartcard Authentication
+  Enable the GNOME3 Screen Locking On Smartcard Removal
+  Disable XDMCP in GDM
+  Disable GNOME3 Automount running
+  Disable All GNOME3 Thumbnailers
+  Disable WIFI Network Connection Creation in GNOME3
+  Disable WIFI Network Notification in GNOME3
+  Enable GNOME3 Screensaver Idle Activation
+  Ensure Users Cannot Change GNOME3 Screensaver Idle Activation
+  Set GNOME3 Screensaver Inactivity Timeout
+  Enable GNOME3 Screensaver Lock After Idle Period
+  Ensure Users Cannot Change GNOME3 Screensaver Lock After Idle Period
+  Disable Full User Name on Splash Shield
+  Ensure Users Cannot Change GNOME3 Screensaver Settings
+  Ensure Users Cannot Change GNOME3 Session Idle Settings
+  Disable Geolocation in GNOME3
+  Disable Power Settings in GNOME3
+  Disable User Administration in GNOME3
+  Remove the GDM Package Group
+  Disable XWayland
+  Install crypto-policies package
+  Install McAfee Virus Scanning Software
+  Install the McAfee Runtime Libraries and Linux Agent
+  Install McAfee Endpoint Security for Linux (ENSL)
+  Install the Asset Configuration Compliance Module (ACCM)
+  Install the Policy Auditor (PA) Module
+  Enable nails Service
+  Install AIDE
+  Verify crypto-policies with RPM
+  Verify File Hashes with RPM
+  Verify Group Who Owns /etc/sudoers.d Directory
+  Verify User Who Owns /etc/sudoers.d Directory
+  Verify Permissions On /etc/sudoers.d Directory
+  Verify Group Who Owns /etc/sudoers File
+  Verify User Who Owns /etc/sudoers File
+  Verify Permissions On /etc/sudoers File
+  Ensure That the sudo Binary Has the Correct Permissions
+  Install sudo Package
+  Ensure sudo only includes the default configuration directory
+  Ensure invoking users password for privilege escalation when using sudo
+  Ensure sudo Runs In A Minimal Environment - sudo env_reset
+  Ensure sudo Ignores Commands In Current Dir - sudo ignore_dot
+  Ensure Privileged Escalated Commands Cannot Execute Other Commands - sudo NOEXEC
+  Ensure Only Users Logged In To Real tty Can Execute Sudo - sudo requiretty
+  Ensure Only Users Logged In To Real tty Can Execute Sudo - sudo use_pty
+  Ensure Sudo Logfile Exists - sudo logfile
+  Ensure Users Re-Authenticate for Privilege Escalation - sudo NOPASSWD
+  Ensure Users Re-Authenticate for Privilege Escalation - sudo !authenticate
+  Ensure Users Re-Authenticate for Privilege Escalation - sudo
+  Ensure only owner and members of group owner of /usr/bin/sudo can execute it
+  Uninstall abrt-addon-ccpp Package
+  Uninstall abrt-addon-python Package
+  Uninstall abrt-cli Package
+  Uninstall abrt-libs Package
+  Uninstall abrt-plugin-rhtsupport Package
+  Uninstall abrt-plugin-sosreport Package
+  Uninstall abrt-server-info-page Package
+  Install binutils Package
+  Install cryptsetup Package
+  Uninstall geolite2-city Package
+  Uninstall geolite2-country Package
+  Uninstall gssproxy Package
+  Uninstall krb5-workstation Package
+  Install libcap-ng-utils Package
+  Uninstall libreport-plugin-rhtsupport Package
+  Install openscap-scanner Package
+  Uninstall pigz Package
+  Uninstall python3-abrt-addon Package
+  Install rear Package
+  Install rng-tools Package
+  Install scap-security-guide Package
+  Install sequoia-sq Package
+  Install tar Package
+  Uninstall tuned Package
+  Install vim Package
+  Ensure placeholder_value Removes Previous Package Versions
+  Disable Installation of Weak Dependencies in DNF
+  Ensure gpgcheck Is Enabled for All Package Repositories
+  Ensure AlmaLinux GPG Key Installed
+  Ensure Amazon GPG Key Installed
+  Ensure Fedora GPG Key Installed
+  Ensure gpgcheck Enabled In Main placeholder_value Configuration
+  Ensure gpgcheck Enabled for Local Packages
+  Ensure gpgcheck Enabled for All placeholder_value Package Repositories
+  Ensure gpgcheck Enabled for Repository Metadata
+  Ensure Oracle Linux GPG Key Installed
+  Ensure Red Hat GPG Key Installed
+  Ensure SUSE GPG Key Installed
+  Install dnf-automatic Package
+  Install GNOME Software
+  Enable dnf-automatic Timer
+
+============================================================
+osType=4 (521 rules)
+============================================================
+  Ensure auditd Collects File Deletion Events by User
+  Ensure auditd Collects File Deletion Events by User - rename
+  Ensure auditd Collects File Deletion Events by User - renameat
+  Ensure auditd Collects File Deletion Events by User - renameat2
+  Ensure auditd Collects File Deletion Events by User - rmdir
+  Ensure auditd Collects File Deletion Events by User - unlink
+  Ensure auditd Collects File Deletion Events by User - unlinkat
+  Remove Default Configuration to Disable Syscall Auditing
+  Ensure auditd Collects Changes to Cron Jobs - /etc/cron.d/
+  Record Events that Modify User/Group Information via open syscall - /etc/gshadow
+  Record Events that Modify User/Group Information via openat syscall - /etc/gshadow
+  Record Events that Modify User/Group Information via open_by_handle_at syscall - /etc/gshadow
+  Record Events that Modify User/Group Information via open syscall - /etc/passwd
+  Record Events that Modify User/Group Information via openat syscall - /etc/passwd
+  Record Events that Modify User/Group Information via open_by_handle_at syscall - /etc/passwd
+  Record Events that Modify User/Group Information via open syscall - /etc/shadow
+  Record Events that Modify User/Group Information via openat syscall - /etc/shadow
+  Record Events that Modify User/Group Information via open_by_handle_at syscall - /etc/shadow
+  Record Events that Modify the System's Mandatory Access Controls
+  Record Events that Modify the System's Mandatory Access Controls (/etc/apparmor)
+  Record Events that Modify the System's Mandatory Access Controls (/etc/apparmor.d)
+  Record Events that Modify the System's Mandatory Access Controls (/etc/selinux)
+  Record Events that Modify the System's Mandatory Access Controls in usr/share
+  Record Events that Modify the System's Mandatory Access Controls in /var/lib/selinux
+  Record Events that Modify the System's Network Environment
+  Record Events that Modify the System's Network Environment - /etc/hosts
+  Record Events that Modify the System's Network Environment - /etc/issue
+  Record Events that Modify the System's Network Environment - /etc/issue.net
+  Record Events that Modify the System's Network Environment - /etc/NetworkManager/system-connections/
+  Record Events that Modify the System's Network Environment - /etc/sysconfig/network
+  Record Events that Modify the System's Network Environment - /etc/hostname
+  Record Events that Modify the System's Network Environment - /etc/NetworkManager/
+  Record Events that Modify the System's Network Environment - /etc/sysconfig/network-scripts
+  Record Events that Modify the System's Network Environment - setdomainname
+  Record Events that Modify the System's Network Environment - sethostname
+  Record Attempts to Alter Process and Session Initiation Information btmp
+  Record Attempts to Alter Process and Session Initiation Information utmp
+  Record Attempts to Alter Process and Session Initiation Information wtmp
+  Record Events When Executables Are Run As Another User
+  Record Events When Privileged Executables Are Run
+  Record Events that Modify User/Group Information - /etc/pam.d/
+  Record Events that Modify User/Group Information - /etc/pam.conf
+  Ensure auditd Collects records for events that affect "/var/log/journal"
+  Ensure auditd Collects Changes to Cron Jobs - /var/spool/cron
+  Record Attempts to Alter Time Through clock_settime
+  Record Attempts to Alter the localtime File
+  Record Access Events to Audit Log Directory
+  Set type of computer node name logging in audit logs
+  Enable Auditing for Processes Which Start Prior to the Audit Daemon
+  Verify that audit tools Have Mode 0755 or less
+  Verify Permissions on /etc/audit/auditd.conf
+  Verify Permissions on /etc/audit/audit.rules
+  Verify Permissions on /etc/audit/rules.d/*.rules
+  Enable Auditing for Processes Which Start Prior to the Audit Daemon
+  Enable auditd Service
+  Uninstall avahi-autoipd Server Package
+  Verify Owner on crontab
+  Verify Owner on cron.d
+  Verify Owner on cron.daily
+  Verify Owner on cron.deny
+  Verify Owner on cron.hourly
+  Verify Owner on cron.monthly
+  Verify Owner on cron.weekly
+  Verify Owner on cron.yearly
+  Verify Permissions on crontab
+  Verify Permissions on cron.d
+  Verify Permissions on cron.daily
+  Verify Permissions on cron.hourly
+  Verify Permissions on cron.monthly
+  Verify Permissions on cron.weekly
+  Verify Permissions on cron.yearly
+  Ensure that /etc/at.allow exists
+  Ensure that /etc/at.deny does not exist
+  Ensure that /etc/cron.allow exists
+  Ensure that /etc/cron.deny does not exist
+  Verify User Who Owns /etc/at.allow file
+  Verify User Who Owns /etc/at.deny file
+  Verify User Who Owns /etc/cron.allow file
+  Verify Permissions on /etc/at.allow file
+  Verify Permissions on /etc/cron.allow file
+  Disable DHCP Client in ifcfg
+  Uninstall dnsmasq Package
+  Disable dnsmasq Service
+  Enable Logging of All FTP Transactions
+  Set Permissions on the /var/log/httpd/ Directory
+  Set Permissions on All Configuration Files Inside /etc/httpd/conf.d/
+  Set Permissions on All Configuration Files Inside /etc/httpd/conf/
+  Enable HTTPD Error Logging
+  Enable HTTPD LogLevel
+  Enable HTTPD System Logging
+  Enable log_config_module For HTTPD Logging
+  Remove .java And .jpp Files
+  Ensure Web Content Located on Separate partition
+  Disable Postfix Network Listening
+  Uninstall nfs-kernel-server Package
+  Disable network management of chrony daemon
+  Verify User Who Owns /etc/chrony.keys File
+  Verify Permissions On /etc/chrony.keys File
+  Verify Ownership of /etc/hosts.allow
+  Verify Ownership of /etc/hosts.deny
+  Verify Permissions on /etc/hosts.allow
+  Verify Permissions on /etc/hosts.deny
+  Install tcp_wrappers Package
+  Uninstall tcpd Package
+  Remove Host-Based Authentication Files
+  Disable rlogin Service
+  Verify Owner on SSH Server Configuration Files
+  Verify Permissions on SSH Server Config File
+  Verify Ownership on SSH Server Private *_key Key Files
+  Verify Ownership on SSH Server Public *.pub Key Files
+  Verify Owner on SSH Server config file
+  Verify Owner on SSH Server Configuration Files
+  Verify Permissions on SSH Server config file
+  Verify Permissions on SSH Server Config File
+  Verify Permissions on SSH Server Private *_key Key Files
+  Verify Permissions on SSH Server Public *.pub Key Files
+  Install OpenSSH client software
+  Install the OpenSSH Server Package
+  Remove the OpenSSH Server Package
+  Install the OpenSSH Client and Server Package
+  Remove the OpenSSH Client and Server Package
+  Disable SSH Server If Possible
+  Enable the OpenSSH Service
+  Disable Compression Or Set Compression to delayed
+  Disable SSH Access via Empty Passwords
+  Disable SSH Forwarding
+  Disable GSSAPI Authentication
+  Disable Kerberos Authentication
+  Disable PubkeyAuthentication Authentication
+  Disable SSH Support for .rhosts Files
+  Disable SSH Support for Rhosts RSA Authentication
+  Disable SSH Root Login
+  Disable SSH root Login with a Password (Insecure)
+  Disable SSH TCP Forwarding
+  Disable X11 Forwarding
+  Enable GSSAPI Authentication
+  Enable PAM
+  Enable Public Key Authentication
+  Enable Use of Strict Mode Checking
+  Enable SSH Warning Banner
+  Enable SSH Warning Banner
+  Enable Encrypted X11 Forwarding
+  Enable SSH Print Last Log
+  Set SSH Client Alive Interval
+  Set SSH Client Alive Count Max
+  Set SSH authentication attempt limit
+  Set SSH MaxSessions limit
+  Enable Use of Privilege Separation
+  Install sssd-ipa Package
+  Enable the SSH login confirmation banner
+  Verify ownership of System Login Banner
+  Verify ownership of System Login Banner for Remote Connections
+  Verify ownership of Message of the Day Banner
+  Verify permissions on System Login Banner
+  Verify permissions on System Login Banner for Remote Connections
+  Verify permissions on Message of the Day Banner
+  Ensure Active Authselect Profile Includes PAM Modules
+  Ensure PAM Displays Last Logon/Access Notification
+  Set Up a Private Namespace in PAM Configuration
+  Ensure Root Account Lockout on Failed Password Attempts
+  Set Interval For Counting Failed Password Attempts
+  Set Root Lockout Time for Failed Password Attempts
+  Set Lockout Time for Failed Password Attempts
+  Set Lockout Time for Failed Password Attempts
+  Set Deny For Failed Password Attempts
+  Set Lockout Time for Failed Password Attempts using pam_tally2
+  Ensure Password History Is Enforced for the Root User
+  Install pam Package
+  Install pam-modules Package
+  Install pam-runtime Package
+  Install pam-sss Package
+  Set Password Strength Minimum Digit Characters
+  Set Password Strength Minimum Different Characters
+  Set Password Strength Minimum Lowercase Characters
+  Set Password Minimum Length
+  Set Password Strength Minimum Special Characters
+  Set Password Retry Limit
+  Set Password Strength Minimum Uppercase Characters
+  Ensure PAM Enforces Password Requirements - Minimum Digit Characters
+  Ensure PAM Enforces Password Requirements - Prevent the Use of Dictionary Words
+  Ensure PAM Enforces Password Requirements - Minimum Different Characters
+  Ensure PAM Enforces Password Requirements - Enforce for Local Accounts Only
+  Ensure PAM Enforces Password Requirements - Enforce for root User
+  Ensure PAM Enforces Password Requirements - Enforcing
+  Ensure PAM Enforces Password Requirements - Minimum Lowercase Characters
+  Ensure PAM Enforces Password Requirements - Maximum Consecutive Repeating Characters from Same Character Class
+  Set Password Maximum Consecutive Repeating Characters
+  Ensure PAM Enforces Password Requirements - Minimum Different Categories
+  Ensure PAM Enforces Password Requirements - Minimum Length
+  Ensure PAM Enforces Password Requirements - Minimum Special Characters
+  Ensure PAM Enforces Password Requirements - Authentication Retry Prompts Permitted Per-Session in placeholder_value
+  Ensure PAM Enforces Password Requirements - Authentication Retry Prompts Permitted Per-Session
+  Ensure PAM Enforces Password Requirements - Minimum Uppercase Characters
+  Set Password Hashing Algorithm for PAM
+  Set Password Hashing Algorithm in /etc/libuser.conf
+  Set Password Hashing Algorithm in placeholder_value
+  Set PAM Password Hashing Algorithm - password-auth
+  Set PAM Password Hashing Algorithm - system-auth
+  Set Password Hashing Rounds in placeholder_value
+  Set yescrypt Cost Factor in placeholder_value
+  Disable Ctrl-Alt-Del Reboot Activation
+  Enable Smart Card Logins in PAM
+  Set Account Expiration Following Inactivity in password-auth
+  Set Account Expiration Following Inactivity in system-auth
+  Set Account Expiration Following Inactivity
+  Ensure All Accounts on the System Have Unique Names
+  Ensure All Accounts on the System Have Unique User IDs
+  Set Password Maximum Age
+  Set Password Minimum Age
+  Set Password Minimum Length in login.defs
+  Set Existing Passwords Maximum Age
+  Set Existing Passwords Minimum Age
+  Set Existing Passwords Warning Age
+  Set Password Warning Age
+  Set existing passwords a period of inactivity before they been locked
+  Set number of Password Hashing Rounds - password-auth
+  Set number of Password Hashing Rounds - system-auth
+  Ensure There Are No Accounts With Blank or Null Passwords
+  Verify No .forward Files Exist
+  Verify No netrc Files Exist
+  Verify No .rhost Files Exist
+  Verify Only Root Has UID 0
+  Verify Root Has A Primary GID 0
+  Ensure that System Accounts Are Locked
+  Set Interactive Session Timeout
+  Ensure that Users Path Contains Only Local Directories
+  Verify Owner on lastlog Command
+  Verify Permissions on lastlog Command
+  Ensure system-auth and password-auth files are symbolic links pointing
+to system-auth-local and password-auth-local
+  Install the pam_apparmor Package
+  Enable Kernel Page-Table Isolation (KPTI)
+  Disable vsyscalls
+  Disable Recovery Booting
+  Enable randomization of the page allocator
+  Enable Kernel Page-Table Isolation (KPTI)
+  Disable merging of slabs with similar size
+  Disable vsyscalls
+  Verify placeholder_value/grub.cfg User Ownership
+  Verify placeholder_value/grub.cfg Permissions
+  Set Boot Loader Password in grub2
+  Verify the UEFI Boot Loader grub.cfg User Ownership
+  Verify the UEFI Boot Loader grub.cfg Permissions
+  Enable Auditing to Start Prior to the Audit Daemon in zIPL
+  Enable randomization of the page allocator in zIPL
+  Enable page allocator poisoning in zIPL
+  Enable SLUB/SLAB allocator poisoning in zIPL
+  Disable vsyscalls in zIPL
+  Disable kernel support for MISC binaries
+  Enable support for BUG()
+  Disable compatibility with brk()
+  Disable the 32-bit vDSO
+  Enable checks on credential management
+  Disable kernel debugfs
+  Enable checks on linked list manipulation
+  Enable checks on notifier call chains
+  Enable checks on scatter-gather (SG) table operations
+  Disable /dev/kmem virtual device support
+  Disable hibernation
+  Disable the IPv6 protocol
+  Disable kexec system call
+  Disable legacy (BSD) PTY support
+  Disable vsyscall emulation
+  Disable vsyscall mapping
+  Disable vsyscall emulate execution only
+  Disable the LDT (local descriptor table)
+  Enable module signature verification
+  Enable automatic signing of all modules
+  Enable poison of pages after freeing
+  Enable poison without sanity check
+  Remove the kernel mapping in user mode
+  Disable support for /proc/kkcore
+  Enable seccomp to safely compute untrusted bytecode
+  Enable use of Berkeley Packet Filter with seccomp
+  Enable different security models
+  Disable mutable hooks
+  Enable Yama support
+  Enable SLUB debugging support
+  Enable TCP/IP syncookie support
+  Disable x86 vsyscall emulation
+  Ensure cron Is Logging To Rsyslog
+  Ensure Rsyslog Authenticates Off-Loaded Audit Records
+  Ensure Rsyslog Encrypts Off-Loaded Audit Records
+  Ensure Rsyslog Encrypts Off-Loaded Audit Records
+  Ensure Log Files Are Owned By Appropriate User
+  Ensure System Log Files Have Correct Permissions
+  Verify Permissions on the system journal directories
+  Verify Owner on the journalctl Command
+  Verify Permissions on the journal command
+  Enable systemd-journald Service
+  Ensure Logrotate Runs Periodically
+  Enable logrotate Timer
+  Enable syslog-ng Service
+  Ensure rsyslog Default File Permissions Configured
+  Enable rsyslog Service
+  Verify User Who Owns /etc/ipsec.d Directory
+  Verify Permissions On /etc/ipsec.d Directory
+  Verify User Who Owns /etc/ipsec.conf File
+  Verify User Who Owns /etc/ipsec.secrets File
+  Verify Permissions On /etc/ipsec.conf File
+  Verify Permissions On /etc/ipsec.secrets File
+  Verify ip6tables Enabled if Using IPv6
+  Set Default ip6tables Policy for Incoming Packets
+  Set configuration for IPv6 loopback traffic
+  Ensure ip6tables Firewall Rules Exist for All Open Ports
+  Disable Accepting ICMP Redirects for All IPv6 Interfaces
+  Disable Kernel Parameter for Accepting Source-Routed Packets on all IPv6 Interfaces
+  Disable Kernel Parameter for IPv6 Forwarding
+  Disable Accepting Router Advertisements on all IPv6 Interfaces by Default
+  Disable Kernel Parameter for Accepting ICMP Redirects by Default on IPv6 Interfaces
+  Disable Kernel Parameter for Accepting Source-Routed Packets on IPv6 Interfaces by Default
+  Disable Kernel Parameter for IPv6 Forwarding by default
+  Disable Support for RPC IPv6
+  Disable IPv6 Addressing on All IPv6 Interfaces
+  Disable IPv6 Addressing on IPv6 Interfaces by Default
+  Disable Accepting Packets Routed Between Local Interfaces
+  Disable Accepting ICMP Redirects for All IPv4 Interfaces
+  Disable Kernel Parameter for Accepting Source-Routed Packets on all IPv4 Interfaces
+  Disable Kernel Parameter for IPv4 Forwarding on all IPv4 Interfaces
+  Enable Kernel Parameter to Log Martian Packets on all IPv4 Interfaces
+  Disable Kernel Parameter for Accepting Secure ICMP Redirects on all IPv4 Interfaces
+  Disable Kernel Parameter for Accepting ICMP Redirects by Default on IPv4 Interfaces
+  Disable Kernel Parameter for Accepting Source-Routed Packets on IPv4 Interfaces by Default
+  Disable Kernel Parameter for IPv4 Forwarding By Default
+  Enable Kernel Parameter to Log Martian Packets on all IPv4 Interfaces by Default
+  Enable Kernel Parameter to Use Reverse Path Filtering on all IPv4 Interfaces by Default
+  Enable Kernel Parameter to Ignore ICMP Broadcast Echo Requests on IPv4 Interfaces
+  Enable Kernel Parameter to Ignore Bogus ICMP Error Responses on IPv4 Interfaces
+  Enable Kernel Parameter to Use TCP RFC 1337 on IPv4 Interfaces
+  Enable Kernel Parameter to Use TCP Syncookies on Network Interfaces
+  Disable Kernel Parameter for Sending ICMP Redirects on all IPv4 Interfaces
+  Disable Kernel Parameter for Sending ICMP Redirects on all IPv4 Interfaces by Default
+  Disable Kernel Parameter for IP Forwarding on IPv4 Interfaces
+  Disable ATM Support
+  Disable CAN Support
+  Disable DCCP Support
+  Disable IEEE 1394 (FireWire) Support
+  Disable RDS Support
+  Disable SCTP Support
+  Disable TIPC Support
+  Disable Bluetooth Kernel Module
+  Disable Kernel cfg80211 Module
+  Disable Kernel iwlmvm Module
+  Disable Kernel iwlwifi Module
+  Disable Kernel mac80211 Module
+  Disable Client Dynamic DNS Updates
+  Disable Zeroconf Networking
+  Ensure All World-Writable Directories Are Owned by root User
+  Verify that All World-Writable Directories Have Sticky Bits Set
+  Ensure All World-Writable Directories Are Owned by a System Account
+  Verify User Who Owns /etc/crypttab File
+  Verify User Who Owns /etc/sysconfig/sshd File
+  Verify User Who Owns System.map Files
+  Verify Permissions On /etc/crypttab File
+  Verify Permissions on /etc/sysconfig/sshd File
+  Verify Permissions on System.map Files
+  Ensure All SGID Executables Are Authorized
+  Ensure All SUID Executables Are Authorized
+  Ensure No World-Writable Files Exist
+  Verify permissions of log files
+  Verify Permissions and Ownership of Old Passwords File
+  Verify User Who Owns Backup gshadow File
+  Verify User Who Owns Backup passwd File
+  Verify Group Who Owns Backup shadow File
+  Verify User Who Owns gshadow File
+  Verify User Who Owns passwd File
+  Verify User Who Owns /etc/security/opasswd File
+  Verify User Who Owns /etc/security/opasswd.old File
+  Verify User Who Owns shadow File
+  Verify Who Owns /etc/shells File
+  Verify Permissions on Backup passwd File
+  Verify Permissions on Backup shadow File
+  Verify Permissions on passwd File
+  Verify Permissions on /etc/security/opasswd File
+  Verify Permissions on /etc/security/opasswd.old File
+  Verify Permissions on /etc/shells File
+  Verify permissions of log files
+  Verify ownership of log files
+  Verify Ownership of Files in /var/log/apt
+  Verify Ownership of Files in /var/log/gdm
+  Verify Ownership of Files in /var/log/gdm3
+  Verify Ownership of Files in /var/log/landscape
+  Verify Ownership of Files in /var/log/sssd
+  Verify User Who Owns /var/log Directory
+  Verify User Who Owns /var/log/auth.log File
+  Verify User Who Owns /var/log/cloud-init.log File
+  Verify User Who Owns /var/log/*.journal(~) Files
+  Verify User Who Owns /var/log/lastlog File
+  Verify User Who Owns /var/log/localmessages File
+  Verify User Who Owns /var/log/messages File
+  Verify User Who Owns /var/log/secure File
+  Verify User Who Owns /var/log/syslog File
+  Verify User Who Owns /var/log/waagent.log File
+  Verify User Who Owns /var/log/(b|w)tmp(.*|-*) File
+  Verify Permissions on /var/log Directory
+  Verify Permissions on files in the /var/log/apt/.* directory
+  Verify Permissions on /var/log/auth.log File
+  Verify Permissions on /var/log/cloud-init.log(.*) Files
+  Verify Permissions of Files in /var/log/gdm
+  Verify Permissions of Files in /var/log/gdm3
+  Verify Permissions on /var/log/lastlog(.*) Files
+  Verify Permissions on /var/log/localmessages(.*) Files
+  Verify Permissions on /var/log/secure File
+  Verify Permissions of Files in /var/log/sssd
+  Verify Permissions on /var/log/syslog File
+  Verify Permissions on /var/log/waagent.log(.*) Files
+  Verify Permissions on /var/log/wtmp(.*) Files
+  Verify Permissions On /etc/sysctl.d Directory
+  Verify that System Executable Have Root Ownership
+  Verify that Shared Library Directories Have Root Ownership
+  Verify that System Executable Directories Have Restrictive Permissions
+  Verify that Shared Library Directories Have Restrictive Permissions
+  Verify that Shared Library Files Have Root Ownership
+  Verify that Shared Library Files Have Restrictive Permissions
+  Verify the system-wide library files in directories
+"/lib", "/lib64", "/usr/lib/" and "/usr/lib64" are group-owned by root.
+  Disable Kernel Support for USB via Bootloader Configuration
+  Disable Kernel Support for USB via Bootloader Configuration
+  Disable Mounting of cramfs
+  Disable Mounting of freevxfs
+  Disable Mounting of hfsplus
+  Disable Mounting of hfs
+  Disable Mounting of jffs2
+  Disable Mounting of squashfs
+  Disable Mounting of udf
+  Disable Modprobe Loading of USB Storage Driver
+  Disable Mounting of vFAT filesystems
+  Verify Permissions of Local Logs of audit Tools
+  Enable ExecShield via sysctl
+  Enable Randomized Layout of Virtual Address Space
+  Disable the uvcvideo module
+  Enable page allocator poisoning
+  Enable SLUB/SLAB allocator poisoning
+  Enable page allocator poisoning
+  Enable SLUB/SLAB allocator poisoning
+  Disable storing core dumps
+  Disable storing core dumps
+  Disable Kernel Image Loading
+  Disable loading and unloading of kernel modules
+  Disable Access to Network bpf() Syscall From Unprivileged Processes
+  Disable Access to Network bpf() Syscall From Unprivileged Processes
+  Verify User Who Owns /etc/selinux Directory
+  Verify Permissions On /etc/selinux Directory
+  Verify User Who Owns /etc/sestatus.conf File
+  Verify Permissions On /etc/sestatus.conf File
+  Install libselinux Package
+  Enable the auditadm_exec_content SELinux Boolean
+  Disable the authlogin_nsswitch_use_ldap SELinux Boolean
+  Disable the authlogin_radius SELinux Boolean
+  Disable the authlogin_yubikey SELinux Boolean
+  Disable the awstats_purge_apache_log_files SELinux Boolean
+  Disable the cluster_can_network_connect SELinux Boolean
+  Disable the cluster_manage_all_files SELinux Boolean
+  Disable the cobbler_can_network_connect SELinux Boolean
+  Disable the collectd_tcp_network_connect SELinux Boolean
+  Disable the condor_tcp_network_connect SELinux Boolean
+  Disable the conman_can_network SELinux Boolean
+  Disable the daemons_use_tcp_wrapper SELinux Boolean
+  Disable the domain_kernel_load_modules SELinux Boolean
+  Disable the fenced_can_network_connect SELinux Boolean
+  Disable the fenced_can_ssh SELinux Boolean
+  Enable the fips_mode SELinux Boolean
+  Disable the glance_api_can_network SELinux Boolean
+  Disable the httpd_can_check_spam SELinux Boolean
+  Disable the httpd_can_network_connect SELinux Boolean
+  Disable the httpd_can_network_connect_cobbler SELinux Boolean
+  Disable the httpd_can_network_connect_db SELinux Boolean
+  Disable the httpd_can_network_memcache SELinux Boolean
+  Disable the httpd_can_network_relay SELinux Boolean
+  Disable the httpd_dontaudit_search_dirs SELinux Boolean
+  Disable the httpd_manage_ipa SELinux Boolean
+  Disable the httpd_mod_auth_pam SELinux Boolean
+  Disable the httpd_run_ipa SELinux Boolean
+  Disable the httpd_serve_cobbler_files SELinux Boolean
+  Disable the httpd_sys_script_anon_write SELinux Boolean
+  Disable the httpd_verify_dns SELinux Boolean
+  Disable the icecast_use_any_tcp_ports SELinux Boolean
+  Disable the irc_use_any_tcp_ports SELinux Boolean
+  Disable the irssi_use_full_network SELinux Boolean
+  Disable the kdumpgui_run_bootloader SELinux Boolean
+  Enable the logadm_exec_content SELinux Boolean
+  Disable the logging_syslogd_can_sendmail SELinux Boolean
+  Disable the logging_syslogd_run_nagios_plugins SELinux Boolean
+  Enable the logging_syslogd_use_tty SELinux Boolean
+  Enable the login_console_enabled SELinux Boolean
+  Disable the logrotate_use_nfs SELinux Boolean
+  Disable the logwatch_can_network_connect_mail SELinux Boolean
+  Disable the mcelog_client SELinux Boolean
+  Enable the mcelog_exec_scripts SELinux Boolean
+  Disable the mcelog_foreground SELinux Boolean
+  Disable the mcelog_server SELinux Boolean
+  Enable the mount_anyfile SELinux Boolean
+  Disable the mozilla_plugin_can_network_connect SELinux Boolean
+  Disable the named_tcp_bind_http_port SELinux Boolean
+  Disable the neutron_can_network SELinux Boolean
+  Disable the openvpn_can_network_connect SELinux Boolean
+  Disable the pcp_read_generic_logs SELinux Boolean
+  Disable the piranha_lvs_can_network_connect SELinux Boolean
+  Disable the polipo_connect_all_unreserved SELinux Boolean
+  Disable the polipo_session_bind_all_unreserved_ports SELinux Boolean
+  Disable the polipo_use_cifs SELinux Boolean
+  Disable the polipo_use_nfs SELinux Boolean
+  Disable the postgresql_selinux_transmit_client_label SELinux Boolean
+  Enable the postgresql_selinux_unconfined_dbadm SELinux Boolean
+  Disable the puppetagent_manage_all_files SELinux Boolean
+  Disable the sge_domain_can_network_connect SELinux Boolean
+  Disable the spamassassin_can_network SELinux Boolean
+  Enable the spamd_enable_home_dirs SELinux Boolean
+  Disable the ssh_chroot_rw_homedirs SELinux Boolean
+  Disable the ssh_keysign SELinux Boolean
+  Disable the ssh_sysadm_login SELinux Boolean
+  Disable the swift_can_network SELinux Boolean
+  Disable the telepathy_tcp_connect_generic_network_ports SELinux Boolean
+  Disable the tor_can_network_relay SELinux Boolean
+  Enable the unconfined_login SELinux Boolean
+  Enable the virt_sandbox_use_audit SELinux Boolean
+  Disable the virt_use_rawip SELinux Boolean
+  Disable the xdm_bind_vnc_tcp_port SELinux Boolean
+  Disable the xdm_exec_bootloader SELinux Boolean
+  Disable the xdm_sysadm_login SELinux Boolean
+  Disable the xguest_connect_network SELinux Boolean
+  Disable the xguest_mount_media SELinux Boolean
+  Disable the zabbix_can_network SELinux Boolean

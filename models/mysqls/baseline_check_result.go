@@ -2,8 +2,10 @@ package mysqls
 
 import (
 	"context"
-	"gitlabee.4dogs.cn/common/mysql"
+	"fmt"
 	"time"
+
+	"gitlabee.4dogs.cn/common/mysql"
 )
 
 type BaselineCheckResult struct {
@@ -12,6 +14,7 @@ type BaselineCheckResult struct {
 	TargetID         int       `gorm:"column:target_id" json:"targetId"`
 	TargetIP         string    `gorm:"column:target_ip" json:"targetIp"`
 	OSType           int       `gorm:"column:os_type" json:"osType"`
+	ScanScene        int       `gorm:"column:scan_scene" json:"scanScene"`
 	RuleID           int       `gorm:"column:rule_id" json:"ruleId"`
 	RuleName         string    `gorm:"column:rule_name" json:"ruleName"`
 	RuleCategory     int       `gorm:"column:rule_category" json:"ruleCategory"`
@@ -70,4 +73,59 @@ func (b *BaselineCheckResult) GetStatByTargetID(ctx context.Context, targetID in
 	db.Where("check_result = ?", 1).Count(&passCount)
 	db.Where("check_result = ?", 2).Count(&failCount)
 	return
+}
+
+// BaselineTaskGroupRow 按 task_id 聚合的一行（用于历史列表）
+type BaselineTaskGroupRow struct {
+	TaskID     int       `gorm:"column:task_id"`
+	TargetIP   string    `gorm:"column:target_ip"`
+	OSType     int       `gorm:"column:os_type"`
+	ScanScene  int       `gorm:"column:scan_scene"`
+	LastTime   time.Time `gorm:"column:last_time"`
+	TotalRules int64     `gorm:"column:total_rules"`
+	PassCount  int64     `gorm:"column:pass_count"`
+	FailCount  int64     `gorm:"column:fail_count"`
+	ErrCount   int64     `gorm:"column:err_count"`
+}
+
+func (b *BaselineCheckResult) CountDistinctTasks(ctx context.Context, scanScene int) (int64, error) {
+	var total int64
+	tpl := "SELECT COUNT(*) FROM (SELECT 1 FROM baseline_check_result %sGROUP BY task_id, target_ip) AS t"
+	var err error
+	if scanScene > 0 {
+		err = mysql.FromContext(ctx).Raw(fmt.Sprintf(tpl, "WHERE scan_scene = ? "), scanScene).Scan(&total).Error
+	} else {
+		err = mysql.FromContext(ctx).Raw(fmt.Sprintf(tpl, "")).Scan(&total).Error
+	}
+	return total, err
+}
+
+func (b *BaselineCheckResult) ListGroupedByTask(ctx context.Context, page, size, scanScene int) ([]BaselineTaskGroupRow, error) {
+	if page < 1 {
+		page = 1
+	}
+	if size < 1 {
+		size = 10
+	}
+	offset := (page - 1) * size
+	var rows []BaselineTaskGroupRow
+	q := mysql.FromContext(ctx).Model(b)
+	if scanScene > 0 {
+		q = q.Where("scan_scene = ?", scanScene)
+	}
+	err := q.Select(`task_id,
+			target_ip,
+			MAX(os_type) AS os_type,
+			MAX(scan_scene) AS scan_scene,
+			MAX(create_time) AS last_time,
+			COUNT(*) AS total_rules,
+			SUM(CASE WHEN check_result = 1 THEN 1 ELSE 0 END) AS pass_count,
+			SUM(CASE WHEN check_result = 2 THEN 1 ELSE 0 END) AS fail_count,
+			SUM(CASE WHEN check_result = 3 THEN 1 ELSE 0 END) AS err_count`).
+		Group("task_id, target_ip").
+		Order("last_time DESC").
+		Offset(offset).
+		Limit(size).
+		Scan(&rows).Error
+	return rows, err
 }

@@ -31,14 +31,17 @@ func GetHostBaselineChecker() *HostBaselineChecker {
 }
 
 type BaselineCheckTask struct {
-	TaskID   int
-	TargetID int
-	Host     string
-	Port     int
-	Username string
-	Password string
-	Key      string
-	OSType   int
+	TaskID         int
+	TargetID       int
+	Host           string
+	Port           int
+	Username       string
+	Password       string
+	Key            string
+	OSType         int
+	Transport      int  // 0=auto（由连接层解析），1=SSH，2=WinRM
+	WinRMUseHttps  bool
+	ScanScene      int // 1=安全配置核查 2=主机漏洞检测
 }
 
 type BaselineCheckReport struct {
@@ -61,6 +64,10 @@ type BaselineCheckReport struct {
 }
 
 func (c *HostBaselineChecker) RunBaselineCheck(ctx context.Context, task *BaselineCheckTask) (*BaselineCheckReport, error) {
+	scene := task.ScanScene
+	if scene <= 0 {
+		scene = enums.HostScanSceneBaseline
+	}
 	report := &BaselineCheckReport{
 		TaskID:    task.TaskID,
 		TargetID:  task.TargetID,
@@ -76,6 +83,8 @@ func (c *HostBaselineChecker) RunBaselineCheck(ctx context.Context, task *Baseli
 		Password:   task.Password,
 		PrivateKey: task.Key,
 		OSType:     task.OSType,
+		Transport:  task.Transport,
+		UseHTTPS:   task.WinRMUseHttps,
 		Timeout:    30 * time.Second,
 	}
 
@@ -113,6 +122,7 @@ func (c *HostBaselineChecker) RunBaselineCheck(ctx context.Context, task *Baseli
 			TargetID:        task.TargetID,
 			TargetIP:        task.Host,
 			OSType:          task.OSType,
+			ScanScene:       scene,
 			RuleID:          rule.ID,
 			RuleName:        rule.Name,
 			RuleCategory:    rule.Category,

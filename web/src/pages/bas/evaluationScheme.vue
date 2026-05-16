@@ -82,13 +82,7 @@
     </div>
 </template>
 <style lang="less" scoped>
-.list_box{
-    background: #FFFFFF;
-    box-shadow: 0px 2px 4px 0px rgba(76, 122, 227, 0.12);
-    padding: 24px;
-    border-radius: 4px;
-    box-sizing: border-box;
-}
+@import './css/bas-list-page.less';
 </style>
 <script>
 import bas from '@/api/bas.js'

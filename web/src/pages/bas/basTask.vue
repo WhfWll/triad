@@ -2,7 +2,7 @@
    <div>
         <!-- bas任务 -->
         <div class="main-title  ">  
-            模拟任务 
+            安全配置核查 
 	  	</div>
         <div class="list_box">
             <div class="search-box"> 
@@ -41,16 +41,16 @@
 					prop="templateName"
 					label="评估方案" :show-overflow-tooltip="true">    
 				</el-table-column>    
-                <el-table-column prop="riskLevelEnum" label="风险"  >
-                    <template slot-scope="scope" slot="header"> 
+                <el-table-column prop="riskLevelEnum" label="风险" width="120">
+                    <template slot="header"> 
                         <span class="cursorPointer" @click="clickButton('风险')"
                             :class="(formData.riskLevel !== '' && formData.riskLevel !== 0) ? 'active' : ''">风险<i
                             class="iconfont iconshaixuan"></i>
                         </span> 
-                        <el-select popper-class="thSelect" style=" width:150px;" v-model="formData.riskLevel" clearable
-                        size="small" ref="riskLevel" @change="handlesearch">
-                        <el-option v-for="(item, index) in riskLevellist" :key="index" :label="item.label" :value="item.value">
-                        </el-option>
+                        <el-select popper-class="thSelect" style="width:150px;" v-model="formData.riskLevel" clearable
+                            size="small" ref="riskLevel" @change="handlesearch">
+                            <el-option v-for="(item, index) in riskLevellist" :key="index" :label="item.label" :value="item.value">
+                            </el-option>
                         </el-select>
                     </template>
                     <template slot-scope="scope">
@@ -111,48 +111,7 @@
     </div>
 </template>
 <style lang="less" scoped>
-.list_box{
-    background: #FFFFFF;
-    box-shadow: 0px 2px 4px 0px rgba(76, 122, 227, 0.12);
-    padding: 24px;
-    border-radius: 4px;
-    box-sizing: border-box;
-}
-/deep/ thead {
-    .cursorPointer {
-        cursor: pointer; 
-        position: absolute;
-        // top: 6px;
-        &.active {
-        color: #4C7AE3;
-
-        i {
-            color: #4C7AE3;
-        }
-        }
-    }
-    .cell {
-        line-height: 15px;
-
-        >span {
-        position: absolute;
-        }
-    }
-    .iconfont {
-        color: rgba(72, 72, 102, 0.32);
-        margin-left: 5px;
-    }
-
-    .el-select {
-        height: 0;
-        visibility: hidden;
-
-        .el-input,
-        .el-input__inner {
-        height: 0 !important;
-        }
-    }
-}
+@import './css/bas-list-page.less';
 </style>
 <script>
 import bas from '@/api/bas.js'
@@ -276,6 +235,7 @@ export default {
         handleReset(){
             this.formData.page = 1;
             this.formData.search='';
+            this.formData.riskLevel='';
             this.pageSize=10;
 			this.getData();
 			this.currentpage = 1;

@@ -1,211 +1,225 @@
-&lt;template&gt;
-  &lt;div class="app-shell"&gt;
-    &lt;div class="sidebar" :class="{ collapsed: isCollapsed }"&gt;
-      &lt;div class="sidebar-header"&gt;
-        &lt;div class="logo-area"&gt;
-          &lt;svg viewBox="0 0 48 48" width="32" height="32" class="logo-icon"&gt;
-            &lt;path d="M24 4L8 12v10c0 12 7 22 16 24 9-2 16-12 16-24V12L24 4z" fill="none" stroke="#00d4aa" stroke-width="2.5"/&gt;
-            &lt;path d="M18 24l4 4 8-8" fill="none" stroke="#00d4aa" stroke-width="2.5" stroke-linecap="round"/&gt;
-          &lt;/svg&gt;
-          &lt;span class="logo-text" v-show="!isCollapsed"&gt;SecGuard&lt;/span&gt;
-        &lt;/div&gt;
-      &lt;/div&gt;
+<template>
+  <div class="app-shell">
+    <div class="sidebar" :class="{ collapsed: isCollapsed }">
+      <div class="sidebar-header">
+        <div class="logo-area">
+          <svg viewBox="0 0 48 48" width="32" height="32" class="logo-icon">
+            <path d="M24 4L8 12v10c0 12 7 22 16 24 9-2 16-12 16-24V12L24 4z" fill="none" stroke="#00d4aa" stroke-width="2.5"/>
+            <path d="M18 24l4 4 8-8" fill="none" stroke="#00d4aa" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+          <span class="logo-text" v-show="!isCollapsed">SecGuard</span>
+        </div>
+      </div>
 
-      &lt;div class="sidebar-menu"&gt;
-        &lt;el-scrollbar style="height: 100%"&gt;
-          &lt;el-menu
-            :default-active="navselected"
+      <div class="sidebar-menu">
+        <el-scrollbar style="height: 100%">
+          <el-menu
+            :default-active="sidebarActivePath"
             :collapse="isCollapsed"
             :collapse-transition="false"
             router
             background-color="transparent"
             text-color="rgba(148,163,184,0.7)"
             active-text-color="#00d4aa"
-          &gt;
-            &lt;el-menu-item index="/index" v-if="role != 3"&gt;
-              &lt;i class="el-icon-data-analysis"&gt;&lt;/i&gt;
-              &lt;span slot="title"&gt;仪表盘&lt;/span&gt;
-            &lt;/el-menu-item&gt;
+          >
+            <el-menu-item index="/index" v-if="role != 3">
+              <i class="el-icon-data-analysis"></i>
+              <span slot="title">仪表盘</span>
+            </el-menu-item>
 
-            &lt;el-submenu index="/task" v-if="role != 3"&gt;
-              &lt;template slot="title"&gt;
-                &lt;i class="el-icon-s-order"&gt;&lt;/i&gt;
-                &lt;span&gt;任务中心&lt;/span&gt;
-              &lt;/template&gt;
-              &lt;el-menu-item index="/task"&gt;渗透测试&lt;/el-menu-item&gt;
-              &lt;el-menu-item index="/vulScanTask"&gt;漏洞扫描&lt;/el-menu-item&gt;
-              &lt;el-menu-item index="/logicvuln"&gt;逻辑漏洞&lt;/el-menu-item&gt;
-              &lt;el-menu-item index="/taskgroup"&gt;任务组&lt;/el-menu-item&gt;
-            &lt;/el-submenu&gt;
+            <el-submenu index="/task" v-if="role != 3">
+              <template slot="title">
+                <i class="el-icon-s-order"></i>
+                <span>任务中心</span>
+              </template>
+              <el-menu-item index="/task">渗透测试</el-menu-item>
+              <el-menu-item index="/vulScanTask">漏洞扫描</el-menu-item>
+              <el-menu-item index="/logicvuln">逻辑漏洞</el-menu-item>
+              <el-menu-item index="/taskgroup">任务组</el-menu-item>
+            </el-submenu>
 
-            &lt;el-submenu index="/security" v-if="role != 3"&gt;
-              &lt;template slot="title"&gt;
-                &lt;i class="el-icon-shield"&gt;&lt;/i&gt;
-                &lt;span&gt;安全检查&lt;/span&gt;
-              &lt;/template&gt;
-              &lt;el-menu-item index="/bastask"&gt;基线核查&lt;/el-menu-item&gt;
-              &lt;el-menu-item index="/malware"&gt;恶意代码检测&lt;/el-menu-item&gt;
-              &lt;el-menu-item index="/dbcheck"&gt;数据库安全&lt;/el-menu-item&gt;
-              &lt;el-menu-item index="/sensitive"&gt;敏感数据发现&lt;/el-menu-item&gt;
-              &lt;el-menu-item index="/appspecific"&gt;专项应用检测&lt;/el-menu-item&gt;
-              &lt;el-menu-item index="/dynamicscan"&gt;动态扫描&lt;/el-menu-item&gt;
-            &lt;/el-submenu&gt;
+            <el-submenu index="submenu-hostsec" v-if="role != 3">
+              <template slot="title">
+                <i class="el-icon-monitor"></i>
+                <span>主机安全检查</span>
+              </template>
+              <el-menu-item index="/hostsec/tasks">任务管理</el-menu-item>
+              <el-menu-item index="/hostsec/rules">检测规则</el-menu-item>
+            </el-submenu>
 
-            &lt;el-submenu index="/report"&gt;
-              &lt;template slot="title"&gt;
-                &lt;i class="el-icon-document"&gt;&lt;/i&gt;
-                &lt;span&gt;报告中心&lt;/span&gt;
-              &lt;/template&gt;
-              &lt;el-menu-item index="/reportlist"&gt;报告清单&lt;/el-menu-item&gt;
-              &lt;el-menu-item index="/createreport" v-if="false"&gt;生成报告&lt;/el-menu-item&gt;
-            &lt;/el-submenu&gt;
+            <el-submenu index="submenu-appsec" v-if="role != 3">
+              <template slot="title">
+                <i class="el-icon-mobile-phone"></i>
+                <span>应用安全检查</span>
+              </template>
+              <el-menu-item index="/appsec/tasks">任务管理</el-menu-item>
+              <el-menu-item index="/appsec/rules">检测规则</el-menu-item>
+            </el-submenu>
 
-            &lt;el-submenu index="/experienceSet" v-if="role != 3"&gt;
-              &lt;template slot="title"&gt;
-                &lt;i class="el-icon-setting"&gt;&lt;/i&gt;
-                &lt;span&gt;场景管理&lt;/span&gt;
-              &lt;/template&gt;
-              &lt;el-menu-item index="/taskscenario"&gt;任务场景&lt;/el-menu-item&gt;
-            &lt;/el-submenu&gt;
+            <el-submenu index="submenu-datasec" v-if="role != 3">
+              <template slot="title">
+                <i class="el-icon-document"></i>
+                <span>数据安全检查</span>
+              </template>
+              <el-menu-item index="/datasec/tasks">任务管理</el-menu-item>
+              <el-menu-item index="/datasec/rules">检测规则</el-menu-item>
+            </el-submenu>
 
-            &lt;el-submenu index="/toolmanagement" v-if="role != 3"&gt;
-              &lt;template slot="title"&gt;
-                &lt;i class="el-icon-tools"&gt;&lt;/i&gt;
-                &lt;span&gt;工具管理&lt;/span&gt;
-              &lt;/template&gt;
-              &lt;el-menu-item index="/vulnerability"&gt;漏洞库&lt;/el-menu-item&gt;
-              &lt;el-menu-item index="/fingerprint"&gt;指纹库&lt;/el-menu-item&gt;
-              &lt;el-menu-item index="/dictionary"&gt;字典库&lt;/el-menu-item&gt;
-              &lt;el-menu-item index="/auxiliarytool"&gt;辅助工具&lt;/el-menu-item&gt;
-            &lt;/el-submenu&gt;
+            <el-submenu index="/report">
+              <template slot="title">
+                <i class="el-icon-document"></i>
+                <span>报告中心</span>
+              </template>
+              <el-menu-item index="/reportlist">报告清单</el-menu-item>
+              <el-menu-item index="/createreport" v-if="false">生成报告</el-menu-item>
+            </el-submenu>
 
-            &lt;el-submenu index="/assetview" v-if="role != 3"&gt;
-              &lt;template slot="title"&gt;
-                &lt;i class="el-icon-monitor"&gt;&lt;/i&gt;
-                &lt;span&gt;资产中心&lt;/span&gt;
-              &lt;/template&gt;
-              &lt;el-menu-item index="/assetview"&gt;资产概览&lt;/el-menu-item&gt;
-              &lt;el-menu-item index="/assettree"&gt;资产树&lt;/el-menu-item&gt;
-            &lt;/el-submenu&gt;
+            <el-submenu index="/experienceSet" v-if="role != 3">
+              <template slot="title">
+                <i class="el-icon-setting"></i>
+                <span>场景管理</span>
+              </template>
+              <el-menu-item index="/taskscenario">任务场景</el-menu-item>
+            </el-submenu>
 
-            &lt;el-menu-item index="/riskvuln" v-if="role != 3"&gt;
-              &lt;i class="el-icon-warning"&gt;&lt;/i&gt;
-              &lt;span slot="title"&gt;漏洞中心&lt;/span&gt;
-            &lt;/el-menu-item&gt;
+            <el-submenu index="/toolmanagement" v-if="role != 3">
+              <template slot="title">
+                <i class="el-icon-tools"></i>
+                <span>工具管理</span>
+              </template>
+              <el-menu-item index="/vulnerability">漏洞库</el-menu-item>
+              <el-menu-item index="/fingerprint">指纹库</el-menu-item>
+              <el-menu-item index="/dictionary">字典库</el-menu-item>
+              <el-menu-item index="/auxiliarytool">辅助工具</el-menu-item>
+            </el-submenu>
+
+            <el-submenu index="/assetview" v-if="role != 3">
+              <template slot="title">
+                <i class="el-icon-monitor"></i>
+                <span>资产中心</span>
+              </template>
+              <el-menu-item index="/assetview">资产概览</el-menu-item>
+              <el-menu-item index="/assettree">资产树</el-menu-item>
+            </el-submenu>
+
+            <el-menu-item index="/riskvuln" v-if="role != 3">
+              <i class="el-icon-warning"></i>
+              <span slot="title">漏洞中心</span>
+            </el-menu-item>
 
 
 
-            &lt;el-submenu index="/usermanagement" v-if="role == 2 || role == 4"&gt;
-              &lt;template slot="title"&gt;
-                &lt;i class="el-icon-user"&gt;&lt;/i&gt;
-                &lt;span&gt;用户管理&lt;/span&gt;
-              &lt;/template&gt;
-              &lt;el-menu-item index="/usermanagement"&gt;用户管理&lt;/el-menu-item&gt;
-              &lt;el-menu-item index="/usergroup"&gt;用户组管理&lt;/el-menu-item&gt;
-            &lt;/el-submenu&gt;
+            <el-submenu index="/usermanagement" v-if="role == 2 || role == 4">
+              <template slot="title">
+                <i class="el-icon-user"></i>
+                <span>用户管理</span>
+              </template>
+              <el-menu-item index="/usermanagement">用户管理</el-menu-item>
+              <el-menu-item index="/usergroup">用户组管理</el-menu-item>
+            </el-submenu>
 
-            &lt;el-submenu index="/system" v-if="role !== 1 &amp;&amp; role !== 2 &amp;&amp; role !== 3"&gt;
-              &lt;template slot="title"&gt;
-                &lt;i class="el-icon-s-tools"&gt;&lt;/i&gt;
-                &lt;span&gt;系统管理&lt;/span&gt;
-              &lt;/template&gt;
-              &lt;el-menu-item index="/systemsetting"&gt;系统配置&lt;/el-menu-item&gt;
-              &lt;el-menu-item index="/node"&gt;节点管理&lt;/el-menu-item&gt;
-            &lt;/el-submenu&gt;
+            <el-submenu index="/system" v-if="role !== 1 && role !== 2 && role !== 3">
+              <template slot="title">
+                <i class="el-icon-s-tools"></i>
+                <span>系统管理</span>
+              </template>
+              <el-menu-item index="/systemsetting">系统配置</el-menu-item>
+              <el-menu-item index="/node">节点管理</el-menu-item>
+            </el-submenu>
 
-            &lt;el-submenu index="/log" v-if="role !== 1 &amp;&amp; role !== 2"&gt;
-              &lt;template slot="title"&gt;
-                &lt;i class="el-icon-document-copy"&gt;&lt;/i&gt;
-                &lt;span&gt;日志管理&lt;/span&gt;
-              &lt;/template&gt;
-              &lt;el-menu-item index="/log"&gt;日志审计&lt;/el-menu-item&gt;
-              &lt;el-menu-item index="/logconfig"&gt;日志配置&lt;/el-menu-item&gt;
-            &lt;/el-submenu&gt;
-          &lt;/el-menu&gt;
-        &lt;/el-scrollbar&gt;
-      &lt;/div&gt;
+            <el-submenu index="/log" v-if="role !== 1 && role !== 2">
+              <template slot="title">
+                <i class="el-icon-document-copy"></i>
+                <span>日志管理</span>
+              </template>
+              <el-menu-item index="/log">日志审计</el-menu-item>
+              <el-menu-item index="/logconfig">日志配置</el-menu-item>
+            </el-submenu>
+          </el-menu>
+        </el-scrollbar>
+      </div>
 
-      &lt;div class="sidebar-footer"&gt;
-        &lt;div class="collapse-btn" @click="isCollapsed = !isCollapsed"&gt;
-          &lt;i :class="isCollapsed ? 'el-icon-s-unfold' : 'el-icon-s-fold'"&gt;&lt;/i&gt;
-        &lt;/div&gt;
-      &lt;/div&gt;
-    &lt;/div&gt;
+      <div class="sidebar-footer">
+        <div class="collapse-btn" @click="isCollapsed = !isCollapsed">
+          <i :class="isCollapsed ? 'el-icon-s-unfold' : 'el-icon-s-fold'"></i>
+        </div>
+      </div>
+    </div>
 
-    &lt;div class="main-area" :class="{ expanded: isCollapsed }"&gt;
-      &lt;header class="top-header"&gt;
-        &lt;div class="header-left"&gt;
-          &lt;div class="breadcrumb"&gt;
-            &lt;span class="page-title"&gt;{{ currentPageTitle }}&lt;/span&gt;
-          &lt;/div&gt;
-        &lt;/div&gt;
-        &lt;div class="header-right"&gt;
-          &lt;div class="header-actions"&gt;
-            &lt;el-dropdown trigger="click" @command="handleCommand"&gt;
-              &lt;span class="user-info"&gt;
-                &lt;span class="avatar"&gt;
-                  &lt;i class="el-icon-user-solid"&gt;&lt;/i&gt;
-                &lt;/span&gt;
-                &lt;span class="username"&gt;{{ sysUserName }}&lt;/span&gt;
-                &lt;i class="el-icon-arrow-down"&gt;&lt;/i&gt;
-              &lt;/span&gt;
-              &lt;el-dropdown-menu slot="dropdown"&gt;
-                &lt;el-dropdown-item command="updatepwd"&gt;
-                  &lt;i class="el-icon-key"&gt;&lt;/i&gt; 修改密码
-                &lt;/el-dropdown-item&gt;
-                &lt;el-dropdown-item command="updateedit"&gt;
-                  &lt;i class="el-icon-edit"&gt;&lt;/i&gt; 编辑用户
-                &lt;/el-dropdown-item&gt;
-                &lt;el-dropdown-item command="logout" divided&gt;
-                  &lt;i class="el-icon-switch-button"&gt;&lt;/i&gt; 退出登录
-                &lt;/el-dropdown-item&gt;
-              &lt;/el-dropdown-menu&gt;
-            &lt;/el-dropdown&gt;
-          &lt;/div&gt;
-        &lt;/div&gt;
-      &lt;/header&gt;
+    <div class="main-area" :class="{ expanded: isCollapsed }">
+      <header class="top-header">
+        <div class="header-left">
+          <div class="breadcrumb">
+            <span class="page-title">{{ currentPageTitle }}</span>
+          </div>
+        </div>
+        <div class="header-right">
+          <div class="header-actions">
+            <el-dropdown trigger="click" @command="handleCommand">
+              <span class="user-info">
+                <span class="avatar">
+                  <i class="el-icon-user-solid"></i>
+                </span>
+                <span class="username">{{ sysUserName }}</span>
+                <i class="el-icon-arrow-down"></i>
+              </span>
+              <el-dropdown-menu slot="dropdown">
+                <el-dropdown-item command="updatepwd">
+                  <i class="el-icon-key"></i> 修改密码
+                </el-dropdown-item>
+                <el-dropdown-item command="updateedit">
+                  <i class="el-icon-edit"></i> 编辑用户
+                </el-dropdown-item>
+                <el-dropdown-item command="logout" divided>
+                  <i class="el-icon-switch-button"></i> 退出登录
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </el-dropdown>
+          </div>
+        </div>
+      </header>
 
-      &lt;main class="content-area"&gt;
-        &lt;router-view /&gt;
-      &lt;/main&gt;
-    &lt;/div&gt;
+      <main class="content-area">
+        <router-view />
+      </main>
+    </div>
 
-    &lt;el-dialog title="修改密码" :visible.sync="dialogFormVisible" width="520px" :close-on-click-modal="false" class="theme-dialog"&gt;
-      &lt;el-form :model="pwddata" :rules="rules1" ref="ruleFormPWD" label-width="80px"&gt;
-        &lt;el-form-item label="原密码" prop="oldpwd"&gt;
-          &lt;el-input type="password" v-model="pwddata.oldpwd" placeholder="请输入原密码"&gt;&lt;/el-input&gt;
-        &lt;/el-form-item&gt;
-        &lt;el-form-item label="新密码" prop="onepwd"&gt;
-          &lt;el-input type="password" v-model="pwddata.onepwd" placeholder="请输入新密码"&gt;&lt;/el-input&gt;
-        &lt;/el-form-item&gt;
-        &lt;el-form-item label="确认密码" prop="twopwd"&gt;
-          &lt;el-input type="password" v-model="pwddata.twopwd" placeholder="请输入确认密码"&gt;&lt;/el-input&gt;
-        &lt;/el-form-item&gt;
-      &lt;/el-form&gt;
-      &lt;span slot="footer"&gt;
-        &lt;el-button @click="cancelform"&gt;取 消&lt;/el-button&gt;
-        &lt;el-button type="primary" @click="submitForm"&gt;确 定&lt;/el-button&gt;
-      &lt;/span&gt;
-    &lt;/el-dialog&gt;
+    <el-dialog title="修改密码" :visible.sync="dialogFormVisible" width="520px" :close-on-click-modal="false" class="theme-dialog">
+      <el-form :model="pwddata" :rules="rules1" ref="ruleFormPWD" label-width="80px">
+        <el-form-item label="原密码" prop="oldpwd">
+          <el-input type="password" v-model="pwddata.oldpwd" placeholder="请输入原密码"></el-input>
+        </el-form-item>
+        <el-form-item label="新密码" prop="onepwd">
+          <el-input type="password" v-model="pwddata.onepwd" placeholder="请输入新密码"></el-input>
+        </el-form-item>
+        <el-form-item label="确认密码" prop="twopwd">
+          <el-input type="password" v-model="pwddata.twopwd" placeholder="请输入确认密码"></el-input>
+        </el-form-item>
+      </el-form>
+      <span slot="footer">
+        <el-button @click="cancelform">取 消</el-button>
+        <el-button type="primary" @click="submitForm">确 定</el-button>
+      </span>
+    </el-dialog>
 
-    &lt;el-dialog title="提示" :visible.sync="logoutDialogVisible" width="400px" :close-on-click-modal="false" class="theme-dialog"&gt;
-      &lt;div class="logout-confirm"&gt;
-        &lt;i class="el-icon-warning-outline"&gt;&lt;/i&gt;
-        &lt;span&gt;确定退出系统吗？&lt;/span&gt;
-      &lt;/div&gt;
-      &lt;span slot="footer"&gt;
-        &lt;el-button @click="logoutDialogVisible = false"&gt;取 消&lt;/el-button&gt;
-        &lt;el-button type="primary" @click="fnlogout"&gt;确 定&lt;/el-button&gt;
-      &lt;/span&gt;
-    &lt;/el-dialog&gt;
-  &lt;/div&gt;
-&lt;/template&gt;
+    <el-dialog title="提示" :visible.sync="logoutDialogVisible" width="400px" :close-on-click-modal="false" class="theme-dialog">
+      <div class="logout-confirm">
+        <i class="el-icon-warning-outline"></i>
+        <span>确定退出系统吗？</span>
+      </div>
+      <span slot="footer">
+        <el-button @click="logoutDialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="fnlogout">确 定</el-button>
+      </span>
+    </el-dialog>
+  </div>
+</template>
 
-&lt;style scoped lang="less"&gt;
+<style scoped lang="less">
 @import './css/home.less';
-&lt;/style&gt;
+</style>
 
-&lt;script&gt;
+<script>
 import store from '@/store'
 import { system } from '@/api/system.js'
 
@@ -230,6 +244,16 @@ export default {
     };
   },
   computed: {
+    sidebarActivePath() {
+      const p = this.$route.path
+      if (p.startsWith('/hostsec')) return p
+      if (p === '/hostbaseline' || p === '/malware' || p === '/hostsecurityhub') return '/hostsec/tasks'
+      if (p.startsWith('/appsec')) return p
+      if (p === '/dynamicscan' || p === '/appspecific') return '/appsec/tasks'
+      if (p.startsWith('/datasec')) return p
+      if (p === '/dbcheck' || p === '/sensitive') return '/datasec/tasks'
+      return p
+    },
     currentPageTitle() {
       const map = {
         '/index': '仪表盘',
@@ -237,7 +261,15 @@ export default {
         '/vulScanTask': '漏洞扫描',
         '/logicvuln': '逻辑漏洞',
         '/taskgroup': '任务组',
-        '/baseline': '基线核查',
+        '/hostsec/tasks': '主机安全检查 · 任务管理',
+        '/hostsec/rules': '主机安全检查 · 检测规则',
+        '/appsec/tasks': '应用安全检查 · 任务管理',
+        '/appsec/rules': '应用安全检查 · 检测规则',
+        '/datasec/tasks': '数据安全检查 · 任务管理',
+        '/datasec/rules': '数据安全检查 · 检测规则',
+        '/hostsecurityhub': '主机安全检查 · 任务管理',
+        '/baseline': '安全配置核查',
+        '/hostbaseline': '安全配置核查',
         '/malware': '恶意代码检测',
         '/dbcheck': '数据库安全',
         '/sensitive': '敏感数据发现',
@@ -252,10 +284,6 @@ export default {
         '/assetview': '资产概览',
         '/assettree': '资产树',
         '/riskvuln': '漏洞中心',
-        '/bastask': '基线核查',
-        '/evaluationScheme': '评估方案',
-        '/scriptLibrary': '剧本库',
-        '/agent': 'Agent管理',
         '/x-ray': 'Xray',
         '/burpsuite': 'Burpsuite',
         '/usermanagement': '用户管理',
@@ -296,7 +324,7 @@ export default {
       this.$router.push({ path: '/login' });
     },
     submitForm() {
-      this.$refs.ruleFormPWD.validate(valid =&gt; {
+      this.$refs.ruleFormPWD.validate(valid => {
         if (!valid) return;
         var uid = localStorage.getItem('user_id-par');
         var putParams = {
@@ -308,7 +336,7 @@ export default {
           url: '/smart/user/updatepw',
           method: 'POST',
           data: putParams,
-        }).then(res =&gt; {
+        }).then(res => {
           var dt = res.data;
           if (dt.code === 200) {
             this.$message({ message: '修改密码成功，请重新登录', type: 'success' });
@@ -328,4 +356,4 @@ export default {
     },
   },
 };
-&lt;/script&gt;
+</script>

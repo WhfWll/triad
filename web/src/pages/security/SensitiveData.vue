@@ -1,6 +1,6 @@
 <template>
   <div class="security-container">
-    <div class="main-title">敏感数据发现</div>
+    <div class="main-title" v-if="!embedded">敏感数据发现</div>
     
     <div class="list_box">
       <div class="search-box">
@@ -46,10 +46,9 @@
         </el-table-column>
         <el-table-column prop="scanTime" label="扫描时间">
         </el-table-column>
-        <el-table-column label="操作">
+        <el-table-column label="操作" width="100">
           <template slot-scope="scope">
             <el-link :underline="false" class="link_primary" @click="handleDetail(scope.row)">详情</el-link>
-            <el-link :underline="false" class="link_danger" @click="handleDel(scope.row)">删除</el-link>
           </template>
         </el-table-column>
       </el-table>
@@ -184,6 +183,12 @@ import security from '@/api/security.js'
 
 export default {
   name: 'SensitiveData',
+  props: {
+    embedded: {
+      type: Boolean,
+      default: false
+    }
+  },
   data() {
     return {
       dialogVisible: false,
@@ -262,22 +267,18 @@ export default {
       })
     },
     async handleDel(row) {
-      const res = await security.delSensitiveTask({ id: row.id })
-      if (res.code == 200) {
+      this.$confirm('确认删除该任务？', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
         this.$message({ message: '删除成功', type: 'success' })
         this.getData()
-      } else {
-        this.$message({ message: res.msg, type: 'error' })
-      }
+      }).catch(() => {})
     },
     async handleDetail(row) {
-      const res = await security.getSensitiveDetail({ id: row.id })
-      if (res.code == 200) {
-        this.detailData = res.data
-        this.detailVisible = true
-      } else {
-        this.$message({ message: res.msg, type: 'error' })
-      }
+      this.detailData = row
+      this.detailVisible = true
     },
     handlesearch() {
       this.formData.page = 1
@@ -336,73 +337,7 @@ export default {
 </script>
 
 <style lang="less" scoped>
-.security-container {
-  padding: 20px;
-}
-
-.main-title {
-  font-size: 18px;
-  font-weight: bold;
-  color: #00d4aa;
-  margin-bottom: 20px;
-}
-
-.list_box {
-  background: #1a1d24;
-  border-radius: 8px;
-  padding: 24px;
-}
-
-.search-box {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.operationbutton {
-  display: flex;
-  gap: 10px;
-}
-
-.serach-condition {
-  display: flex;
-  gap: 15px;
-}
-
-.search-text {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.myTable {
-  background: #1a1d24;
-}
-
-.el-table__header-wrapper,
-.el-table__body-wrapper {
-  background: #1a1d24;
-}
-
-.el-table th,
-.el-table td {
-  color: #94a3b8;
-  border-bottom: 1px solid #2d3748;
-}
-
-.el-table--enable-row-hover .el-table__body tr:hover>td {
-  background-color: rgba(0, 212, 170, 0.1);
-}
-
-.link_primary {
-  color: #00d4aa;
-  margin-right: 15px;
-}
-
-.link_danger {
-  color: #ef4444;
-}
+@import '../bas/css/bas-list-page.less';
 
 .count-high {
   color: #ef4444;

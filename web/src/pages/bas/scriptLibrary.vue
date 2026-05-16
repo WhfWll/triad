@@ -257,48 +257,12 @@
     </div>
 </template>
 <style lang="less" scoped>
-    .list_box{
-        background: #FFFFFF;
-        box-shadow: 0px 2px 4px 0px rgba(76, 122, 227, 0.12);
-        padding: 24px;
-        border-radius: 4px;
-        box-sizing: border-box;
-    }
-    /deep/ thead {
-        .cursorPointer {
-            cursor: pointer; 
-            position: absolute;
-            // top: 6px;
-            &.active {
-            color: #4C7AE3;
+@import './css/bas-list-page.less';
 
-            i {
-                color: #4C7AE3;
-            }
-            }
-        }
-        .cell {
-            line-height: 15px;
+.search-box {
+  justify-content: flex-end;
+}
 
-            >span {
-            position: absolute;
-            }
-        }
-        .iconfont {
-            color: rgba(72, 72, 102, 0.32);
-            margin-left: 5px;
-        }
-
-        .el-select {
-            height: 0;
-            visibility: hidden;
-
-            .el-input,
-            .el-input__inner {
-            height: 0 !important;
-            }
-        }
-    }
     .test_dialog {
         width: 100%;
         height: 100%;

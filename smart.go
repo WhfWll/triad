@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"smart/crons"
 	"smart/routers"
+	"smart/services"
 	"smart/services/reverse_shell"
 	"smart/tools/enums"
 
@@ -46,6 +48,9 @@ func main() {
 		return
 	}
 	mysql.Setup()
+
+	// 从数据库加载基线规则（不再从 JSON 文件加载）
+	services.InitBaselineRulesFromDB(context.Background())
 	redis.Setup()
 	crons.Start()
 
