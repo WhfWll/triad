@@ -44,7 +44,9 @@
                 <span>主机安全检查</span>
               </template>
               <el-menu-item index="/hostsec/tasks">任务管理</el-menu-item>
-              <el-menu-item index="/hostsec/rules">检测规则</el-menu-item>
+              <el-menu-item index="/hostsec/rules">配置核查规则</el-menu-item>
+              <el-menu-item index="/hostsec/vuln-rules">漏洞扫描规则</el-menu-item>
+              <el-menu-item index="/hostsec/malware-rules">病毒库规则</el-menu-item>
             </el-submenu>
 
             <el-submenu index="submenu-appsec" v-if="role != 3">
@@ -262,7 +264,9 @@ export default {
         '/logicvuln': '逻辑漏洞',
         '/taskgroup': '任务组',
         '/hostsec/tasks': '主机安全检查 · 任务管理',
-        '/hostsec/rules': '主机安全检查 · 检测规则',
+        '/hostsec/rules': '主机安全检查 · 配置核查规则',
+        '/hostsec/vuln-rules': '主机安全检查 · 漏洞扫描规则',
+        '/hostsec/malware-rules': '主机安全检查 · 病毒库规则',
         '/appsec/tasks': '应用安全检查 · 任务管理',
         '/appsec/rules': '应用安全检查 · 检测规则',
         '/datasec/tasks': '数据安全检查 · 任务管理',

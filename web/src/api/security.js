@@ -50,6 +50,9 @@ const security = {
   getBaselineTaskList: (params) => {
     return axios.get('/smart/baseline/tasks', params)
   },
+  getBaselineTaskTargets: (params) => {
+    return axios.get('/smart/baseline/task/targets', params)
+  },
   getBaselineRules: () => {
     return axios.get('/smart/baseline/rules')
   },
@@ -89,6 +92,62 @@ const security = {
   },
   runDynamicScan: () => {
     return Promise.resolve({ code: 200, msg: '功能开发中' })
+  },
+
+  // CVE漏洞扫描 (后端路由: /smart/vulnscan/cve/*)
+  runCveScan: (data) => {
+    return axios.postJson('/smart/vulnscan/cve/run', data)
+  },
+  runCveBatchScan: (data) => {
+    return axios.postJson('/smart/vulnscan/cve/batch', data)
+  },
+  getCveBatchProgress: (params) => {
+    return axios.get('/smart/vulnscan/cve/progress', params)
+  },
+
+  // YARA恶意代码检测 (后端路由: /smart/malware/yara/*)
+  runYaraScan: (data) => {
+    return axios.postJson('/smart/malware/yara/run', data)
+  },
+  runYaraBatchScan: (data) => {
+    return axios.postJson('/smart/malware/yara/batch', data)
+  },
+  getYaraBatchProgress: (params) => {
+    return axios.get('/smart/malware/yara/progress', params)
+  },
+  getYaraResultList: (params) => {
+    return axios.get('/smart/malware/yara/result', params)
+  },
+  getYaraTaskList: (params) => {
+    return axios.get('/smart/malware/yara/tasks', params)
+  },
+
+  // 病毒库规则管理 (后端路由: /smart/malware/rule/*)
+  getMalwareRuleList: (params) => {
+    return axios.get('/smart/malware/rules', params)
+  },
+  getMalwareRuleDetail: (params) => {
+    return axios.get('/smart/malware/rule/detail', params)
+  },
+  createMalwareRule: (data) => {
+    return axios.postJson('/smart/malware/rule/create', data)
+  },
+  updateMalwareRule: (data) => {
+    return axios.postJson('/smart/malware/rule/update', data)
+  },
+  deleteMalwareRule: (params) => {
+    return axios.get('/smart/malware/rule/delete', params)
+  },
+  importMalwareRules: (data) => {
+    return axios.postFormData('/smart/malware/rule/import', data)
+  },
+
+  // CVE漏洞库查询 (后端路由: /smart/cvedb/*)
+  getCveDBInfo: (params) => {
+    return axios.get('/smart/cvedb/info', params)
+  },
+  queryCveDB: (params) => {
+    return axios.get('/smart/cvedb/query', params)
   }
 }
 

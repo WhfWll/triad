@@ -235,6 +235,8 @@ func (a *BaselineApp) GetBaselineResults(ctx context.Context, req *typespec.Base
 	for _, r := range list {
 		resp.List = append(resp.List, typespec.BaselineCheckItem{
 			ID:              r.ID,
+			TargetID:        r.TargetID,
+			TargetIP:        r.TargetIP,
 			RuleID:          r.RuleID,
 			RuleName:        r.RuleName,
 			RuleCategory:    r.RuleCategory,
@@ -310,6 +312,28 @@ func (a *BaselineApp) GetBaselineTaskList(ctx context.Context, req *typespec.Bas
 		})
 	}
 	return resp, nil
+}
+
+func (a *BaselineApp) GetBaselineTaskTargets(ctx context.Context, taskID int) ([]typespec.BaselineTaskTargetItem, error) {
+	var model mysqls.BaselineCheckResult
+	rows, err := model.GetTargetsByTaskID(ctx, taskID)
+	if err != nil {
+		return nil, err
+	}
+	var items []typespec.BaselineTaskTargetItem
+	for _, r := range rows {
+		items = append(items, typespec.BaselineTaskTargetItem{
+			TargetID:   r.TargetID,
+			TargetIP:   r.TargetIP,
+			OSType:     r.OSType,
+			OSTypeName: enums.BaselineEnum.GetOSTypeName(r.OSType),
+			TotalRules: int(r.TotalRules),
+			PassCount:  int(r.PassCount),
+			FailCount:  int(r.FailCount),
+			ErrorCount: int(r.ErrCount),
+		})
+	}
+	return items, nil
 }
 
 func (a *BaselineApp) ReloadBaselineRulesFromDB(ctx context.Context) error {

@@ -30,12 +30,12 @@ type BaselineBatchCheckResp struct {
 
 // BaselineBatchTaskProgress 批量任务进度
 type BaselineBatchTaskProgress struct {
-	TaskID           int                    `json:"taskId"`
-	Status           string                 `json:"status"` // running / completed / failed
-	TotalTargets     int                    `json:"totalTargets"`
-	CompletedTargets int                    `json:"completedTargets"`
-	Targets          []BatchTargetProgress  `json:"targets"`
-	CreatedAt        string                 `json:"createdAt"`
+	TaskID           int                   `json:"taskId"`
+	Status           string                `json:"status"` // running / completed / failed
+	TotalTargets     int                   `json:"totalTargets"`
+	CompletedTargets int                   `json:"completedTargets"`
+	Targets          []BatchTargetProgress `json:"targets"`
+	CreatedAt        string                `json:"createdAt"`
 }
 
 // BatchTargetProgress 单个目标进度
@@ -61,6 +61,8 @@ type BaselineCheckResp struct {
 
 type BaselineCheckItem struct {
 	ID              int    `json:"id"`
+	TargetID        int    `json:"targetId"`
+	TargetIP        string `json:"targetIp"`
 	RuleID          int    `json:"ruleId"`
 	RuleName        string `json:"ruleName"`
 	RuleCategory    int    `json:"ruleCategory"`
@@ -124,6 +126,18 @@ type BaselineTaskListItem struct {
 type BaselineTaskListResp struct {
 	List  []BaselineTaskListItem `json:"list"`
 	Total int64                  `json:"total"`
+}
+
+// BaselineTaskTargetItem 任务的目标列表
+type BaselineTaskTargetItem struct {
+	TargetID   int    `json:"targetId"`
+	TargetIP   string `json:"targetIp"`
+	OSType     int    `json:"osType"`
+	OSTypeName string `json:"osTypeName"`
+	TotalRules int    `json:"totalRules"`
+	PassCount  int    `json:"passCount"`
+	FailCount  int    `json:"failCount"`
+	ErrorCount int    `json:"errorCount"`
 }
 
 // BaselineRulesListResp 规则库：总条数、按操作系统/核查分类汇总、明细（供界面展示与验收对照）

@@ -507,9 +507,24 @@ const routes = [
         component: () => import('@/pages/security/HostSecurityHub.vue'),
       },
       {
+        path: '/hostsec/task-detail',
+        name: 'hostsecTaskDetail',
+        component: () => import('@/pages/security/HostTaskDetail.vue'),
+      },
+      {
         path: '/hostsec/rules',
         name: 'hostsecRules',
         component: () => import('@/pages/security/HostDetectionRules.vue'),
+      },
+      {
+        path: '/hostsec/vuln-rules',
+        name: 'hostsecVulnRules',
+        component: () => import('@/pages/security/VulnDetectionRules.vue'),
+      },
+      {
+        path: '/hostsec/malware-rules',
+        name: 'hostsecMalwareRules',
+        component: () => import('@/pages/security/MalwareDetectionRules.vue'),
       },
       {
         path: '/appsec/tasks',

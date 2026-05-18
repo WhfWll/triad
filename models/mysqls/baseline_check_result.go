@@ -129,3 +129,31 @@ func (b *BaselineCheckResult) ListGroupedByTask(ctx context.Context, page, size,
 		Scan(&rows).Error
 	return rows, err
 }
+
+// BaselineTaskTargetRow 任务中的目标聚合行
+type BaselineTaskTargetRow struct {
+	TargetID   int       `gorm:"column:target_id"`
+	TargetIP   string    `gorm:"column:target_ip"`
+	OSType     int       `gorm:"column:os_type"`
+	TotalRules int64     `gorm:"column:total_rules"`
+	PassCount  int64     `gorm:"column:pass_count"`
+	FailCount  int64     `gorm:"column:fail_count"`
+	ErrCount   int64     `gorm:"column:err_count"`
+}
+
+func (b *BaselineCheckResult) GetTargetsByTaskID(ctx context.Context, taskID int) ([]BaselineTaskTargetRow, error) {
+	var rows []BaselineTaskTargetRow
+	err := mysql.FromContext(ctx).Model(b).
+		Select(`target_id,
+			target_ip,
+			MAX(os_type) AS os_type,
+			COUNT(*) AS total_rules,
+			SUM(CASE WHEN check_result = 1 THEN 1 ELSE 0 END) AS pass_count,
+			SUM(CASE WHEN check_result = 2 THEN 1 ELSE 0 END) AS fail_count,
+			SUM(CASE WHEN check_result = 3 THEN 1 ELSE 0 END) AS err_count`).
+		Where("task_id = ?", taskID).
+		Group("target_id, target_ip").
+		Order("target_ip ASC").
+		Scan(&rows).Error
+	return rows, err
+}

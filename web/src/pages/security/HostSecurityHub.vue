@@ -2,13 +2,12 @@
   <div class="security-container">
     <div class="main-title">主机安全检查 · 任务管理</div>
     <p class="page-intro">
-      同一套远程连接（SSH / WinRM）能力，新建任务时区分：<strong>安全配置核查</strong>、<strong>主机漏洞检测</strong>（与核查共用规则库与引擎，仅任务归类不同）、<strong>恶意代码检测</strong>。
+      同一套远程连接（SSH / WinRM）能力，新建任务时区分：<strong>安全配置核查</strong>、<strong>主机漏洞检测</strong>（CVE 版本匹配）、<strong>恶意代码检测</strong>（YARA 规则引擎）。
     </p>
 
     <div class="list_box">
       <div class="search-box">
         <div class="operationbutton">
-          <el-button type="default" size="small" @click="$router.push('/hostsec/rules')">检测规则</el-button>
           <el-button type="primary" size="small" @click="openCreateDialog">新建主机检查任务</el-button>
         </div>
       </div>
@@ -33,7 +32,8 @@
         <el-table-column prop="checkTime" label="时间" width="170" />
         <el-table-column label="操作" width="90">
           <template slot-scope="scope">
-            <el-link :underline="false" class="link_primary" @click="openDetail(scope.row)">详情</el-link>
+            <el-link v-if="scope.row.source === 'baseline'" :underline="false" class="link_primary" @click="openDetailPage(scope.row)">详情</el-link>
+            <el-link v-else :underline="false" class="link_primary" @click="openDetail(scope.row)">详情</el-link>
           </template>
         </el-table-column>
       </el-table>
@@ -57,12 +57,12 @@
         <el-form-item label="任务类型" prop="taskKind">
           <el-radio-group v-model="taskForm.taskKind" @change="onTaskKindChange">
             <el-radio label="baseline">安全配置核查</el-radio>
-            <el-radio label="vuln">主机漏洞检测</el-radio>
+            <el-radio label="vuln">主机漏洞检测（CVE）</el-radio>
             <el-radio label="malware">恶意代码检测</el-radio>
           </el-radio-group>
           <p class="field-hint">
-            <template v-if="taskForm.taskKind === 'vuln'">与「安全配置核查」共用规则库与检测引擎，便于验收「漏洞规则」类指标；结果在列表中归类为漏洞检测。</template>
-            <template v-else-if="taskForm.taskKind === 'malware'">登录后执行恶意行为/特征类脚本检测；当前实现以 SSH 自动连接为主（与操作系统选项一致）。</template>
+            <template v-if="taskForm.taskKind === 'vuln'">SSH 登录后获取软件版本列表，匹配 CVE 数据库（25.8 万条记录）发现已知漏洞。</template>
+            <template v-else-if="taskForm.taskKind === 'malware'">基于 YARA 规则引擎的恶意代码检测，支持 2000+ 条规则（Linux 恶意软件、Webshell、APT、挖矿木马等）。</template>
             <template v-else>对账号、补丁、防火墙、审计等进行基线核查。</template>
           </p>
         </el-form-item>
@@ -199,9 +199,12 @@
             <el-table-column prop="actualValue" label="实际值" :show-overflow-tooltip="true" />
             <el-table-column prop="fixSuggestion" label="修复建议" :show-overflow-tooltip="true" />
           </template>
-          <template v-else>
+          <template v-else-if="detailMode === 'malware'">
             <el-table-column prop="checkTypeName" label="检测类型" width="140" />
             <el-table-column prop="riskName" label="风险" width="90" />
+            <el-table-column prop="matchRule" label="匹配规则" width="160" :show-overflow-tooltip="true" />
+            <el-table-column prop="filePath" label="文件路径" :show-overflow-tooltip="true" />
+            <el-table-column prop="processInfo" label="进程信息" :show-overflow-tooltip="true" />
             <el-table-column prop="description" label="描述" :show-overflow-tooltip="true" />
             <el-table-column prop="fixSuggestion" label="修复建议" :show-overflow-tooltip="true" />
           </template>
@@ -406,7 +409,7 @@ export default {
         if (this.listTab === 'all') {
           await this.loadMerged()
         } else if (this.listTab === 'malware') {
-          const res = await security.getMalwareTaskList({
+          const res = await security.getYaraTaskList({
             page: this.formData.page,
             size: this.pageSize
           })
@@ -460,7 +463,7 @@ export default {
       const take = 25
       const [bRes, mRes] = await Promise.all([
         security.getBaselineTaskList({ page: 1, size: take, scanScene: 0 }),
-        security.getMalwareTaskList({ page: 1, size: take })
+        security.getYaraTaskList({ page: 1, size: take })
       ])
       const merged = []
       if (bRes.code === 200 && bRes.data && bRes.data.list) {
@@ -541,26 +544,47 @@ export default {
       this.submitLoading = true
       try {
         if (this.taskForm.taskKind === 'malware') {
-          for (const t of this.targets) {
-            const res = await security.runMalwareScan({
+          const payload = {
+            targets: this.targets.map(t => ({
               host: t.host,
               port: t.port,
               username: t.username,
               password: t.password,
-              key: t.key,
-              osType: t.osType
-            })
-            if (res.code !== 200) {
-              this.$message({ message: `目标 ${t.host} 执行失败: ${res.msg || '未知错误'}`, type: 'error' })
-            }
+              key: t.transport === 'winrm' ? '' : t.key,
+              osType: t.osType,
+              transport: t.transport === 'winrm' ? 2 : 1,
+              winrmUseHttps: t.transport === 'winrm' ? t.winrmUseHttps : false
+            }))
           }
-          this.$message({ message: `恶意代码检测完成，共 ${this.targets.length} 个目标`, type: 'success' })
           this.createVisible = false
-          this.formData.page = 1
-          this.currentpage = 1
-          this.loadData()
+          const res = await security.runYaraBatchScan(payload)
+          if (res.code === 200) {
+            this.startYaraProgressPolling(res.data.taskId)
+          } else {
+            this.$message({ message: res.msg || '创建任务失败', type: 'error' })
+          }
+        } else if (this.taskForm.taskKind === 'vuln') {
+          const payload = {
+            targets: this.targets.map(t => ({
+              host: t.host,
+              port: t.port,
+              username: t.username,
+              password: t.password,
+              key: t.transport === 'winrm' ? '' : t.key,
+              osType: t.osType,
+              transport: t.transport === 'winrm' ? 2 : 1,
+              winrmUseHttps: t.transport === 'winrm' ? t.winrmUseHttps : false
+            }))
+          }
+          this.createVisible = false
+          const res = await security.runCveBatchScan(payload)
+          if (res.code === 200) {
+            this.startCveProgressPolling(res.data.taskId)
+          } else {
+            this.$message({ message: res.msg || '创建任务失败', type: 'error' })
+          }
         } else {
-          const scanScene = this.taskForm.taskKind === 'vuln' ? 2 : 1
+          const scanScene = 1
           const payload = {
             targets: this.targets.map(t => ({
               host: t.host,
@@ -621,6 +645,82 @@ export default {
       }
       this.progressTimer = setTimeout(() => this.pollProgress(), 2000)
     },
+    startCveProgressPolling(taskId) {
+      this.progressTaskId = taskId
+      this.progressTargets = []
+      this.progressPercent = 0
+      this.progressText = 'CVE 漏洞扫描任务已创建，正在后台执行…'
+      this.progressDone = false
+      this.progressVisible = true
+      this.pollCveProgress()
+    },
+    async pollCveProgress() {
+      if (!this.progressVisible || !this.progressTaskId) return
+      try {
+        const res = await security.getCveBatchProgress({ taskId: this.progressTaskId })
+        if (res.code === 200 && res.data) {
+          const d = res.data
+          this.progressTargets = (d.results || []).map(r => ({
+            host: r.targetIp,
+            status: r.error ? 'failed' : 'completed'
+          }))
+          const total = d.total || 1
+          const done = d.progress || 0
+          this.progressPercent = Math.round((done / total) * 100)
+          this.progressText = `进度：${done}/${total} 个目标完成`
+          if (d.status === 'completed') {
+            this.progressDone = true
+            this.progressPercent = 100
+            this.progressText = `全部完成（${total} 个目标）`
+            this.formData.page = 1
+            this.currentpage = 1
+            this.loadData()
+            return
+          }
+        }
+      } catch (e) {
+        console.error('pollCveProgress error:', e)
+      }
+      this.progressTimer = setTimeout(() => this.pollCveProgress(), 2000)
+    },
+    startYaraProgressPolling(taskId) {
+      this.progressTaskId = taskId
+      this.progressTargets = []
+      this.progressPercent = 0
+      this.progressText = 'YARA 恶意代码检测任务已创建，正在后台执行…'
+      this.progressDone = false
+      this.progressVisible = true
+      this.pollYaraProgress()
+    },
+    async pollYaraProgress() {
+      if (!this.progressVisible || !this.progressTaskId) return
+      try {
+        const res = await security.getYaraBatchProgress({ taskId: this.progressTaskId })
+        if (res.code === 200 && res.data) {
+          const d = res.data
+          this.progressTargets = (d.results || []).map(r => ({
+            host: r.targetIp,
+            status: r.error ? 'failed' : 'completed'
+          }))
+          const total = d.total || 1
+          const done = d.progress || 0
+          this.progressPercent = Math.round((done / total) * 100)
+          this.progressText = `进度：${done}/${total} 个目标完成`
+          if (d.status === 'completed') {
+            this.progressDone = true
+            this.progressPercent = 100
+            this.progressText = `全部完成（${total} 个目标）`
+            this.formData.page = 1
+            this.currentpage = 1
+            this.loadData()
+            return
+          }
+        }
+      } catch (e) {
+        console.error('pollYaraProgress error:', e)
+      }
+      this.progressTimer = setTimeout(() => this.pollYaraProgress(), 2000)
+    },
     progressTagType(status) {
       if (status === 'completed') return 'success'
       if (status === 'failed') return 'danger'
@@ -640,6 +740,16 @@ export default {
         this.progressTimer = null
       }
     },
+    openDetailPage(row) {
+      this.$router.push({
+        path: '/hostsec/task-detail',
+        query: {
+          taskId: row.taskId,
+          kindLabel: row.kindLabel || '安全配置核查',
+          checkTime: row.checkTime || ''
+        }
+      })
+    },
     async openDetail(row) {
       this.detailVisible = true
       this.detailLoading = true
@@ -648,15 +758,7 @@ export default {
       try {
         if (row.source === 'malware') {
           this.detailMode = 'malware'
-          const res = await security.getMalwareList({ taskId: row.taskId })
-          if (res.code === 200) {
-            this.detailRows = res.data.list || []
-          } else {
-            this.$message({ message: res.msg || '加载失败', type: 'error' })
-          }
-        } else {
-          this.detailMode = 'baseline'
-          const res = await security.getBaselineList({ taskId: row.taskId })
+          const res = await security.getYaraResultList({ taskId: row.taskId })
           if (res.code === 200) {
             this.detailRows = res.data.list || []
           } else {
@@ -889,5 +991,9 @@ export default {
 .td-actions .el-button {
   padding: 0 6px;
   margin: 0;
+}
+
+::v-deep .el-table--enable-row-hover .el-table__body tr:hover > td {
+  background-color: rgba(0, 212, 170, 0.08) !important;
 }
 </style>

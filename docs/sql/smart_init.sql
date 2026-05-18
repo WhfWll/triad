@@ -1276,10 +1276,27 @@ CREATE TABLE IF NOT EXISTS `host_baseline_rule` (
 
 -- 示例（可删）：Linux SSH Protocol 2
 -- INSERT INTO `host_baseline_rule` (`rule_code`,`name`,`description`,`category`,`risk`,`os_type`,`commands_json`,`expected_value`,`match_type`,`fix_suggestion`,`risk_description`,`enabled`) VALUES
--- (100001,'示例-SSH协议2','示例规则',9,1,1,'[\"grep ''^Protocol'' /etc/ssh/sshd_config 2>/dev/null || echo missing\"]','Protocol 2','contains','在 sshd_config 中设置 Protocol 2','',1);
+-- (100001,'示例-SSH协议2','示例规则',9,1,1,'["grep ''^Protocol'' /etc/ssh/sshd_config 2>/dev/null || echo missing"]','Protocol 2','contains','在 sshd_config 中设置 Protocol 2','',1);
 
 -- 已部署库若缺列 baseline_check_result.scan_scene 请执行：
 -- ALTER TABLE `baseline_check_result` ADD COLUMN `scan_scene` tinyint(4) NOT NULL DEFAULT '1' COMMENT '1=安全配置核查 2=主机漏洞检测' AFTER `os_type`;
+
+-- 病毒库规则表（用于 YARA 规则管理）
+CREATE TABLE IF NOT EXISTS `malware_rule` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `name` varchar(255) NOT NULL DEFAULT '' COMMENT '规则名称',
+  `description` varchar(512) NOT NULL DEFAULT '' COMMENT '规则描述',
+  `risk_level` int(11) NOT NULL DEFAULT '0' COMMENT '风险等级：1-高危 2-中危 3-低危',
+  `rule_content` text COMMENT 'YARA 规则内容',
+  `os_type` int(11) NOT NULL DEFAULT '0' COMMENT '适用系统类型：1-Linux 2-Windows 3-国产 4-嵌入式 0-通用',
+  `category` varchar(255) NOT NULL DEFAULT '' COMMENT '规则分类，如：挖矿木马、Webshell、APT',
+  `status` int(11) NOT NULL DEFAULT '1' COMMENT '1-启用 0-停用',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_os_type` (`os_type`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='病毒库规则表';
 
 CREATE TABLE IF NOT EXISTS `db_check_result` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',

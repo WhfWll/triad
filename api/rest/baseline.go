@@ -119,6 +119,26 @@ func BaselineTaskList(c *gin.Context) {
 	server.RespSuccess(c, resp)
 }
 
+func BaselineTaskTargets(c *gin.Context) {
+	taskID, err := strconv.Atoi(c.Query("taskId"))
+	if err != nil || taskID <= 0 {
+		server.RespFail(c, 4000, "taskId 参数错误")
+		return
+	}
+	ctx := server.NewContext(context.Background(), c)
+	var app application.BaselineApp
+	items, err := app.GetBaselineTaskTargets(ctx, taskID)
+	if err != nil {
+		log.Errorf("BaselineTaskTargets error: %v", err)
+		server.RespFail(c, 4000, err.Error())
+		return
+	}
+	server.RespSuccess(c, map[string]interface{}{
+		"list":  items,
+		"total": len(items),
+	})
+}
+
 func BaselineRulesList(c *gin.Context) {
 	ctx := server.NewContext(context.Background(), c)
 	var app application.BaselineApp

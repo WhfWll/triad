@@ -431,24 +431,45 @@ func RegisterRoute() *gin.Engine {
 	smartRouterGroup.GET("/riskvul/enums", rest.RiskManageEnum)         // 漏洞风险 - 漏洞风险枚举
 
 	// 安全检查 - 安全配置核查
-	smartRouterGroup.POST("/baseline/check", rest.BaselineCheckRun)            // 安全配置核查 - 执行主机基线检查（单目标）
-	smartRouterGroup.POST("/baseline/check/batch", rest.BaselineBatchCheckRun) // 安全配置核查 - 批量多目标核查（异步）
+	smartRouterGroup.POST("/baseline/check", rest.BaselineCheckRun)                   // 安全配置核查 - 执行主机基线检查（单目标）
+	smartRouterGroup.POST("/baseline/check/batch", rest.BaselineBatchCheckRun)        // 安全配置核查 - 批量多目标核查（异步）
 	smartRouterGroup.GET("/baseline/check/progress", rest.BaselineBatchCheckProgress) // 安全配置核查 - 批量任务进度
-	smartRouterGroup.GET("/baseline/result", rest.BaselineCheckResultList)     // 安全配置核查 - 检查结果列表
-	smartRouterGroup.GET("/baseline/stat", rest.BaselineCheckStat)             // 安全配置核查 - 检查统计
-	smartRouterGroup.GET("/baseline/tasks", rest.BaselineTaskList)             // 安全配置核查 - 核查批次列表
-	smartRouterGroup.GET("/baseline/rules", rest.BaselineRulesList)            // 安全配置核查 - 规则列表
-	smartRouterGroup.POST("/baseline/rules/reload", rest.BaselineRulesReload)  // 安全配置核查 - 从库重载规则（导入 host_baseline_rule 后调用）
-	smartRouterGroup.POST("/baseline/rules/import", rest.BaselineRulesImport)  // 安全配置核查 - 导入规则（JSON格式）
-	smartRouterGroup.GET("/baseline/rules/db", rest.BaselineRulesListFromDB)   // 安全配置核查 - 从数据库获取规则列表
-	smartRouterGroup.GET("/baseline/rule/detail", rest.BaselineRuleDetail)     // 安全配置核查 - 规则详情
-	smartRouterGroup.POST("/baseline/rule/create", rest.BaselineRuleCreate)    // 安全配置核查 - 新增规则
-	smartRouterGroup.POST("/baseline/rule/update", rest.BaselineRuleUpdate)    // 安全配置核查 - 编辑规则
-	smartRouterGroup.GET("/baseline/rule/delete", rest.BaselineRuleDelete)     // 安全配置核查 - 删除规则
+	smartRouterGroup.GET("/baseline/result", rest.BaselineCheckResultList)            // 安全配置核查 - 检查结果列表
+	smartRouterGroup.GET("/baseline/stat", rest.BaselineCheckStat)                    // 安全配置核查 - 检查统计
+	smartRouterGroup.GET("/baseline/tasks", rest.BaselineTaskList)                    // 安全配置核查 - 核查批次列表
+	smartRouterGroup.GET("/baseline/task/targets", rest.BaselineTaskTargets)          // 安全配置核查 - 任务目标列表
+	smartRouterGroup.GET("/baseline/rules", rest.BaselineRulesList)                   // 安全配置核查 - 规则列表
+	smartRouterGroup.POST("/baseline/rules/reload", rest.BaselineRulesReload)         // 安全配置核查 - 从库重载规则（导入 host_baseline_rule 后调用）
+	smartRouterGroup.POST("/baseline/rules/import", rest.BaselineRulesImport)         // 安全配置核查 - 导入规则（JSON格式）
+	smartRouterGroup.GET("/baseline/rules/db", rest.BaselineRulesListFromDB)          // 安全配置核查 - 从数据库获取规则列表
+	smartRouterGroup.GET("/baseline/rule/detail", rest.BaselineRuleDetail)            // 安全配置核查 - 规则详情
+	smartRouterGroup.POST("/baseline/rule/create", rest.BaselineRuleCreate)           // 安全配置核查 - 新增规则
+	smartRouterGroup.POST("/baseline/rule/update", rest.BaselineRuleUpdate)           // 安全配置核查 - 编辑规则
+	smartRouterGroup.GET("/baseline/rule/delete", rest.BaselineRuleDelete)            // 安全配置核查 - 删除规则
+	// 安全检查 - CVE漏洞扫描（基于软件版本匹配）
+	smartRouterGroup.POST("/vulnscan/cve/run", rest.VulnScanCveRun)          // CVE漏洞扫描 - 单目标执行
+	smartRouterGroup.POST("/vulnscan/cve/batch", rest.VulnScanCveBatchRun)   // CVE漏洞扫描 - 批量多目标（异步）
+	smartRouterGroup.GET("/vulnscan/cve/progress", rest.VulnScanCveProgress) // CVE漏洞扫描 - 批量任务进度
 	// 安全检查 - 恶意代码检测
 	smartRouterGroup.POST("/malware/scan", rest.MalwareScanRun)      // 恶意代码检测 - 执行扫描
 	smartRouterGroup.GET("/malware/result", rest.MalwareResultList)  // 恶意代码检测 - 扫描结果
 	smartRouterGroup.GET("/malware/tasks", rest.MalwareScanTaskList) // 恶意代码检测 - 按批次聚合列表
+	// 安全检查 - YARA恶意代码检测（基于YARA规则引擎）
+	smartRouterGroup.POST("/malware/yara/run", rest.MalwareYaraRun)          // YARA恶意代码检测 - 单目标执行
+	smartRouterGroup.POST("/malware/yara/batch", rest.MalwareYaraBatchRun)   // YARA恶意代码检测 - 批量多目标（异步）
+	smartRouterGroup.GET("/malware/yara/progress", rest.MalwareYaraProgress) // YARA恶意代码检测 - 批量任务进度
+	smartRouterGroup.GET("/malware/yara/result", rest.MalwareYaraResultList) // YARA恶意代码检测 - 扫描结果
+	smartRouterGroup.GET("/malware/yara/tasks", rest.MalwareYaraTaskList)    // YARA恶意代码检测 - 按批次聚合列表
+	// 安全检查 - 病毒库规则管理
+	smartRouterGroup.POST("/malware/rule/create", rest.MalwareRuleCreate)   // 病毒库规则 - 新增
+	smartRouterGroup.POST("/malware/rule/update", rest.MalwareRuleUpdate)   // 病毒库规则 - 编辑
+	smartRouterGroup.GET("/malware/rule/delete", rest.MalwareRuleDelete)    // 病毒库规则 - 删除
+	smartRouterGroup.GET("/malware/rule/detail", rest.MalwareRuleDetail)    // 病毒库规则 - 详情
+	smartRouterGroup.GET("/malware/rules", rest.MalwareRuleList)            // 病毒库规则 - 列表
+	smartRouterGroup.POST("/malware/rule/import", rest.MalwareRuleImport)   // 病毒库规则 - 导入（.yar / .json）
+	// 安全检查 - CVE漏洞库查询
+	smartRouterGroup.GET("/cvedb/info", rest.CveDBInfo)   // CVE库 - 统计信息
+	smartRouterGroup.GET("/cvedb/query", rest.CveDBQuery) // CVE库 - 搜索
 	// 安全检查 - 数据库安全检查
 	smartRouterGroup.POST("/db/check", rest.DBCheckRun)        // 数据库检查 - 执行数据库安全基线检查
 	smartRouterGroup.GET("/db/result", rest.DBCheckResultList) // 数据库检查 - 检查结果列表
