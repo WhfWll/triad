@@ -137,6 +137,7 @@ func RegisterRoute() *gin.Engine {
 	smartRouterGroup.GET("/tools/vuldetail", rest.ToolsVulDetail)                            // 漏洞库 - 详情
 	smartRouterGroup.POST("/tools/vuledit", rest.ToolsVulEdit)                               // 漏洞库 - 编辑
 	smartRouterGroup.POST("/tools/vuleditstatus", rest.ToolsVulEditStatus)                   // 漏洞库 - 修改状态
+	smartRouterGroup.POST("/tools/importvulnvulkit", rest.ImportVulnFromVulKit)              // 漏洞库 - 导入VulKit漏洞脚本
 	smartRouterGroup.GET("/tools/enum", rest.ToolsDictionaryEnum)                            // 字典库 - 枚举
 	smartRouterGroup.GET("/tools/dictlist", rest.ToolsDictionaryList)                        // 字典库 - 列表
 	smartRouterGroup.GET("/tools/dictinfo", rest.ToolsDictionaryDetail)                      // 字典库 - 详情
@@ -461,12 +462,12 @@ func RegisterRoute() *gin.Engine {
 	smartRouterGroup.GET("/malware/yara/result", rest.MalwareYaraResultList) // YARA恶意代码检测 - 扫描结果
 	smartRouterGroup.GET("/malware/yara/tasks", rest.MalwareYaraTaskList)    // YARA恶意代码检测 - 按批次聚合列表
 	// 安全检查 - 病毒库规则管理
-	smartRouterGroup.POST("/malware/rule/create", rest.MalwareRuleCreate)   // 病毒库规则 - 新增
-	smartRouterGroup.POST("/malware/rule/update", rest.MalwareRuleUpdate)   // 病毒库规则 - 编辑
-	smartRouterGroup.GET("/malware/rule/delete", rest.MalwareRuleDelete)    // 病毒库规则 - 删除
-	smartRouterGroup.GET("/malware/rule/detail", rest.MalwareRuleDetail)    // 病毒库规则 - 详情
-	smartRouterGroup.GET("/malware/rules", rest.MalwareRuleList)            // 病毒库规则 - 列表
-	smartRouterGroup.POST("/malware/rule/import", rest.MalwareRuleImport)   // 病毒库规则 - 导入（.yar / .json）
+	smartRouterGroup.POST("/malware/rule/create", rest.MalwareRuleCreate) // 病毒库规则 - 新增
+	smartRouterGroup.POST("/malware/rule/update", rest.MalwareRuleUpdate) // 病毒库规则 - 编辑
+	smartRouterGroup.GET("/malware/rule/delete", rest.MalwareRuleDelete)  // 病毒库规则 - 删除
+	smartRouterGroup.GET("/malware/rule/detail", rest.MalwareRuleDetail)  // 病毒库规则 - 详情
+	smartRouterGroup.GET("/malware/rules", rest.MalwareRuleList)          // 病毒库规则 - 列表
+	smartRouterGroup.POST("/malware/rule/import", rest.MalwareRuleImport) // 病毒库规则 - 导入（.yar / .json）
 	// 安全检查 - CVE漏洞库查询
 	smartRouterGroup.GET("/cvedb/info", rest.CveDBInfo)   // CVE库 - 统计信息
 	smartRouterGroup.GET("/cvedb/query", rest.CveDBQuery) // CVE库 - 搜索

@@ -2,6 +2,7 @@
 *   fingerprint：指纹库
 */
 import axios from '@/axios/http';
+import $ajax from '@/axios/axios';
 const fingerprint = {
     // 删除
     deleteFingerprint(params) {
@@ -100,6 +101,11 @@ const vulnerability = {
     //验证日志接口
     verifyLog(params) {
         return axios.get('/tools/vul/verifyLog/', params)
+    },
+    //导入VulKit漏洞脚本（zip压缩包）
+    importVulnVulKit(data) {
+        // 直接传FormData，不要手动设置Content-Type，让浏览器自动处理boundary
+        return $ajax.post('/smart/tools/importvulnvulkit', data)
     }
   
 }

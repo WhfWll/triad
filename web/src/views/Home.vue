@@ -27,21 +27,10 @@
               <span slot="title">仪表盘</span>
             </el-menu-item>
 
-            <el-submenu index="/task" v-if="role != 3">
-              <template slot="title">
-                <i class="el-icon-s-order"></i>
-                <span>任务中心</span>
-              </template>
-              <el-menu-item index="/task">渗透测试</el-menu-item>
-              <el-menu-item index="/vulScanTask">漏洞扫描</el-menu-item>
-              <el-menu-item index="/logicvuln">逻辑漏洞</el-menu-item>
-              <el-menu-item index="/taskgroup">任务组</el-menu-item>
-            </el-submenu>
-
             <el-submenu index="submenu-hostsec" v-if="role != 3">
               <template slot="title">
                 <i class="el-icon-monitor"></i>
-                <span>主机安全检查</span>
+                <span>主机安全</span>
               </template>
               <el-menu-item index="/hostsec/tasks">任务管理</el-menu-item>
               <el-menu-item index="/hostsec/rules">配置核查规则</el-menu-item>
@@ -52,28 +41,19 @@
             <el-submenu index="submenu-appsec" v-if="role != 3">
               <template slot="title">
                 <i class="el-icon-mobile-phone"></i>
-                <span>应用安全检查</span>
+                <span>应用安全</span>
               </template>
               <el-menu-item index="/appsec/tasks">任务管理</el-menu-item>
-              <el-menu-item index="/appsec/rules">检测规则</el-menu-item>
+              <el-menu-item index="/appsec/vul-db">漏洞库</el-menu-item>
             </el-submenu>
 
             <el-submenu index="submenu-datasec" v-if="role != 3">
               <template slot="title">
                 <i class="el-icon-document"></i>
-                <span>数据安全检查</span>
+                <span>数据安全</span>
               </template>
               <el-menu-item index="/datasec/tasks">任务管理</el-menu-item>
               <el-menu-item index="/datasec/rules">检测规则</el-menu-item>
-            </el-submenu>
-
-            <el-submenu index="/report">
-              <template slot="title">
-                <i class="el-icon-document"></i>
-                <span>报告中心</span>
-              </template>
-              <el-menu-item index="/reportlist">报告清单</el-menu-item>
-              <el-menu-item index="/createreport" v-if="false">生成报告</el-menu-item>
             </el-submenu>
 
             <el-submenu index="/experienceSet" v-if="role != 3">
@@ -94,22 +74,6 @@
               <el-menu-item index="/dictionary">字典库</el-menu-item>
               <el-menu-item index="/auxiliarytool">辅助工具</el-menu-item>
             </el-submenu>
-
-            <el-submenu index="/assetview" v-if="role != 3">
-              <template slot="title">
-                <i class="el-icon-monitor"></i>
-                <span>资产中心</span>
-              </template>
-              <el-menu-item index="/assetview">资产概览</el-menu-item>
-              <el-menu-item index="/assettree">资产树</el-menu-item>
-            </el-submenu>
-
-            <el-menu-item index="/riskvuln" v-if="role != 3">
-              <i class="el-icon-warning"></i>
-              <span slot="title">漏洞中心</span>
-            </el-menu-item>
-
-
 
             <el-submenu index="/usermanagement" v-if="role == 2 || role == 4">
               <template slot="title">
@@ -263,15 +227,16 @@ export default {
         '/vulScanTask': '漏洞扫描',
         '/logicvuln': '逻辑漏洞',
         '/taskgroup': '任务组',
-        '/hostsec/tasks': '主机安全检查 · 任务管理',
-        '/hostsec/rules': '主机安全检查 · 配置核查规则',
-        '/hostsec/vuln-rules': '主机安全检查 · 漏洞扫描规则',
-        '/hostsec/malware-rules': '主机安全检查 · 病毒库规则',
-        '/appsec/tasks': '应用安全检查 · 任务管理',
-        '/appsec/rules': '应用安全检查 · 检测规则',
-        '/datasec/tasks': '数据安全检查 · 任务管理',
-        '/datasec/rules': '数据安全检查 · 检测规则',
-        '/hostsecurityhub': '主机安全检查 · 任务管理',
+        '/hostsec/tasks': '主机安全 · 任务管理',
+        '/hostsec/rules': '主机安全 · 配置核查规则',
+        '/hostsec/vuln-rules': '主机安全 · 漏洞扫描规则',
+        '/hostsec/malware-rules': '主机安全 · 病毒库规则',
+        '/appsec/tasks': '应用安全 · 任务管理',
+        '/appsec/rules': '应用安全 · 检测规则',
+        '/appsec/vul-db': '应用安全 · 漏洞库',
+        '/datasec/tasks': '数据安全 · 任务管理',
+        '/datasec/rules': '数据安全 · 检测规则',
+        '/hostsecurityhub': '主机安全 · 任务管理',
         '/baseline': '安全配置核查',
         '/hostbaseline': '安全配置核查',
         '/malware': '恶意代码检测',

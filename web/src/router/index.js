@@ -537,6 +537,11 @@ const routes = [
         component: () => import('@/pages/security/AppDetectionRules.vue'),
       },
       {
+        path: '/appsec/vul-db',
+        name: 'appsecVulDB',
+        component: () => import('@/pages/security/AppVulnerabilityDB.vue'),
+      },
+      {
         path: '/datasec/tasks',
         name: 'datasecTasks',
         component: () => import('@/pages/security/DataSecTaskHub.vue'),
