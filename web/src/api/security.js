@@ -148,6 +148,23 @@ const security = {
   },
   queryCveDB: (params) => {
     return axios.get('/smart/cvedb/query', params)
+  },
+
+  // 扫描策略管理 (后端路由: /smart/strategy/*)
+  getStrategyList: (params) => {
+    return axios.get('/smart/strategy/list', params)
+  },
+  getStrategyDetail: (params) => {
+    return axios.get('/smart/strategy/detail', params)
+  },
+  createStrategy: (data) => {
+    return axios.postJson('/smart/strategy/create', data)
+  },
+  updateStrategy: (data) => {
+    return axios.postJson('/smart/strategy/update', data)
+  },
+  deleteStrategy: (params) => {
+    return axios.get('/smart/strategy/delete', params)
   }
 }
 

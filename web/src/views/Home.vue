@@ -44,6 +44,7 @@
                 <span>应用安全</span>
               </template>
               <el-menu-item index="/appsec/tasks">任务管理</el-menu-item>
+              <el-menu-item index="/appsec/strategy">扫描策略</el-menu-item>
               <el-menu-item index="/appsec/vul-db">漏洞库</el-menu-item>
             </el-submenu>
 

@@ -61,74 +61,6 @@
       </el-pagination>
     </div>
 
-    <el-dialog title="新建动态扫描任务" :visible.sync="dialogVisible" width="650px">
-      <el-form :model="taskForm" :rules="rules" ref="taskForm" label-width="120px">
-        <el-form-item label="任务名称" prop="name">
-          <el-input v-model="taskForm.name" placeholder="请输入任务名称"></el-input>
-        </el-form-item>
-        <el-form-item label="目标地址" prop="targetUrl">
-          <el-input v-model="taskForm.targetUrl" placeholder="请输入目标URL"></el-input>
-        </el-form-item>
-        <el-form-item label="扫描模式" prop="scanMode">
-          <el-radio-group v-model="taskForm.scanMode">
-            <el-radio :label="1">CrawlerX爬虫</el-radio>
-            <el-radio :label="2">MITM代理模式</el-radio>
-            <el-radio :label="3">两者结合</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="最大深度" prop="maxDepth" v-if="taskForm.scanMode !== 2">
-          <el-input-number v-model="taskForm.maxDepth" :min="1" :max="10" :step="1"></el-input-number>
-        </el-form-item>
-        <el-form-item label="并发数" prop="concurrency">
-          <el-input-number v-model="taskForm.concurrency" :min="1" :max="20" :step="1"></el-input-number>
-        </el-form-item>
-        <el-form-item label="Cookie" prop="cookie">
-          <el-input type="textarea" v-model="taskForm.cookie" placeholder="可选，登录后的Cookie" :rows="2"></el-input>
-        </el-form-item>
-        <el-form-item label="登录配置" prop="loginConfig">
-          <div class="login-config">
-            <el-checkbox v-model="taskForm.enableLogin">启用自动登录</el-checkbox>
-            <div v-if="taskForm.enableLogin" class="login-form">
-              <el-input v-model="taskForm.loginUrl" placeholder="登录页面URL" size="small" style="margin-bottom: 10px"></el-input>
-              <el-input v-model="taskForm.loginUsername" placeholder="用户名" size="small" style="margin-bottom: 10px"></el-input>
-              <el-input type="password" v-model="taskForm.loginPassword" placeholder="密码" size="small"></el-input>
-            </div>
-          </div>
-        </el-form-item>
-        <el-form-item label="检测类型" prop="checkTypes">
-          <el-select v-model="taskForm.checkTypes" multiple placeholder="请选择检测类型">
-            <el-option label="SQL注入" :value="1"></el-option>
-            <el-option label="XSS" :value="2"></el-option>
-            <el-option label="SSRF" :value="3"></el-option>
-            <el-option label="XXE" :value="4"></el-option>
-            <el-option label="命令注入" :value="5"></el-option>
-            <el-option label="文件包含" :value="6"></el-option>
-            <el-option label="文件上传" :value="7"></el-option>
-            <el-option label="CSRF" :value="8"></el-option>
-            <el-option label="信息泄露" :value="9"></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="代理配置" prop="proxyConfig">
-          <div class="proxy-config">
-            <el-checkbox v-model="taskForm.enableProxy">使用代理</el-checkbox>
-            <div v-if="taskForm.enableProxy" class="proxy-form">
-              <el-select v-model="taskForm.proxyType" placeholder="代理类型" size="small" style="margin-bottom: 10px; width: 100%">
-                <el-option label="HTTP" :value="1"></el-option>
-                <el-option label="HTTPS" :value="2"></el-option>
-                <el-option label="SOCKS5" :value="3"></el-option>
-              </el-select>
-              <el-input v-model="taskForm.proxyHost" placeholder="代理地址" size="small" style="margin-bottom: 10px"></el-input>
-              <el-input-number v-model="taskForm.proxyPort" :min="1" :max="65535" :step="1" size="small" placeholder="端口"></el-input-number>
-            </div>
-          </div>
-        </el-form-item>
-      </el-form>
-      <span slot="footer">
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitForm">确定</el-button>
-      </span>
-    </el-dialog>
-
     <el-dialog title="扫描结果详情" :visible.sync="detailVisible" width="1000px">
       <div v-if="detailData">
         <div class="detail-header">
@@ -245,7 +177,6 @@ export default {
   },
   data() {
     return {
-      dialogVisible: false,
       detailVisible: false,
       vulnDetailVisible: false,
       activeTab: 'vulns',
@@ -264,28 +195,7 @@ export default {
       },
       pageSize: 10,
       currentpage: 1,
-      totalpage: 0,
-      taskForm: {
-        name: '',
-        targetUrl: '',
-        scanMode: 1,
-        maxDepth: 3,
-        concurrency: 5,
-        cookie: '',
-        enableLogin: false,
-        loginUrl: '',
-        loginUsername: '',
-        loginPassword: '',
-        checkTypes: [],
-        enableProxy: false,
-        proxyType: 1,
-        proxyHost: '',
-        proxyPort: 8080
-      },
-      rules: {
-        name: [{ required: true, message: '请输入任务名称', trigger: 'blur' }],
-        targetUrl: [{ required: true, message: '请输入目标URL', trigger: 'blur' }]
-      }
+      totalpage: 0
     }
   },
   mounted() {
@@ -306,38 +216,7 @@ export default {
       }
     },
     btnCreate() {
-      this.dialogVisible = true
-      this.taskForm = {
-        name: '',
-        targetUrl: '',
-        scanMode: 1,
-        maxDepth: 3,
-        concurrency: 5,
-        cookie: '',
-        enableLogin: false,
-        loginUrl: '',
-        loginUsername: '',
-        loginPassword: '',
-        checkTypes: [],
-        enableProxy: false,
-        proxyType: 1,
-        proxyHost: '',
-        proxyPort: 8080
-      }
-    },
-    async submitForm() {
-      this.$refs.taskForm.validate(async (valid) => {
-        if (valid) {
-          const res = await security.runDynamicScan(this.taskForm)
-          if (res.code == 200) {
-            this.$message({ message: '任务创建成功', type: 'success' })
-            this.dialogVisible = false
-            this.getData()
-          } else {
-            this.$message({ message: res.msg, type: 'error' })
-          }
-        }
-      })
+      this.$router.push({ path: '/appsec/task/new', query: { type: 'dyn' } })
     },
     async handleDel(row) {
       this.$confirm('确认删除该任务？', '提示', {

@@ -532,6 +532,11 @@ const routes = [
         component: () => import('@/pages/security/AppSecTaskHub.vue'),
       },
       {
+        path: '/appsec/task/new',
+        name: 'appsecTaskNew',
+        component: () => import('@/pages/security/AppScanTaskNew.vue'),
+      },
+      {
         path: '/appsec/rules',
         name: 'appsecRules',
         component: () => import('@/pages/security/AppDetectionRules.vue'),
@@ -540,6 +545,21 @@ const routes = [
         path: '/appsec/vul-db',
         name: 'appsecVulDB',
         component: () => import('@/pages/security/AppVulnerabilityDB.vue'),
+      },
+      {
+        path: '/appsec/strategy',
+        name: 'appsecStrategy',
+        component: () => import('@/pages/security/AppScanStrategy.vue'),
+      },
+      {
+        path: '/appsec/strategy/new',
+        name: 'appsecStrategyNew',
+        component: () => import('@/pages/security/AppScanStrategyEdit.vue'),
+      },
+      {
+        path: '/appsec/strategy/edit',
+        name: 'appsecStrategyEdit',
+        component: () => import('@/pages/security/AppScanStrategyEdit.vue'),
       },
       {
         path: '/datasec/tasks',

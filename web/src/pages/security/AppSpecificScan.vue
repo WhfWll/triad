@@ -64,54 +64,6 @@
       </el-pagination>
     </div>
 
-    <el-dialog title="新建专项应用检测任务" :visible.sync="dialogVisible" width="600px">
-      <el-form :model="taskForm" :rules="rules" ref="taskForm" label-width="100px">
-        <el-form-item label="任务名称" prop="name">
-          <el-input v-model="taskForm.name" placeholder="请输入任务名称"></el-input>
-        </el-form-item>
-        <el-form-item label="应用类型" prop="appType">
-          <el-select v-model="taskForm.appType" placeholder="请选择应用类型">
-            <el-option label="万户OA" :value="1"></el-option>
-            <el-option label="用友NC" :value="2"></el-option>
-            <el-option label="蓝凌EKP" :value="3"></el-option>
-            <el-option label="云时空" :value="4"></el-option>
-            <el-option label="亿赛通" :value="5"></el-option>
-            <el-option label="D-Link" :value="6"></el-option>
-            <el-option label="通达OA" :value="7"></el-option>
-            <el-option label="WordPress" :value="8"></el-option>
-            <el-option label="ThinkPHP" :value="9"></el-option>
-            <el-option label="Spring Boot" :value="10"></el-option>
-            <el-option label="通用CMS" :value="11"></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="目标地址" prop="targetUrl">
-          <el-input v-model="taskForm.targetUrl" placeholder="请输入目标URL"></el-input>
-        </el-form-item>
-        <el-form-item label="Cookie" prop="cookie">
-          <el-input type="textarea" v-model="taskForm.cookie" placeholder="可选，登录后的Cookie" :rows="2"></el-input>
-        </el-form-item>
-        <el-form-item label="检测类型" prop="checkTypes">
-          <el-select v-model="taskForm.checkTypes" multiple placeholder="请选择检测类型">
-            <el-option label="远程代码执行" :value="1"></el-option>
-            <el-option label="未授权访问" :value="2"></el-option>
-            <el-option label="SQL注入" :value="3"></el-option>
-            <el-option label="文件上传" :value="4"></el-option>
-            <el-option label="弱口令" :value="5"></el-option>
-            <el-option label="XSS" :value="6"></el-option>
-            <el-option label="SSRF" :value="7"></el-option>
-            <el-option label="信息泄露" :value="8"></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="自定义Header" prop="customHeaders">
-          <el-input type="textarea" v-model="taskForm.customHeaders" placeholder="可选，JSON格式的Header" :rows="2"></el-input>
-        </el-form-item>
-      </el-form>
-      <span slot="footer">
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitForm">确定</el-button>
-      </span>
-    </el-dialog>
-
     <el-dialog title="检测结果详情" :visible.sync="detailVisible" width="900px">
       <div v-if="detailData">
         <div class="detail-header">
@@ -180,7 +132,6 @@ export default {
   },
   data() {
     return {
-      dialogVisible: false,
       detailVisible: false,
       multipleSelection: [],
       tableData: [],
@@ -191,20 +142,7 @@ export default {
       },
       pageSize: 10,
       currentpage: 1,
-      totalpage: 0,
-      taskForm: {
-        name: '',
-        appType: 1,
-        targetUrl: '',
-        cookie: '',
-        checkTypes: [],
-        customHeaders: ''
-      },
-      rules: {
-        name: [{ required: true, message: '请输入任务名称', trigger: 'blur' }],
-        appType: [{ required: true, message: '请选择应用类型', trigger: 'change' }],
-        targetUrl: [{ required: true, message: '请输入目标URL', trigger: 'blur' }]
-      }
+      totalpage: 0
     }
   },
   mounted() {
@@ -225,29 +163,7 @@ export default {
       }
     },
     btnCreate() {
-      this.dialogVisible = true
-      this.taskForm = {
-        name: '',
-        appType: 1,
-        targetUrl: '',
-        cookie: '',
-        checkTypes: [],
-        customHeaders: ''
-      }
-    },
-    async submitForm() {
-      this.$refs.taskForm.validate(async (valid) => {
-        if (valid) {
-          const res = await security.runAppSpecificScan(this.taskForm)
-          if (res.code == 200) {
-            this.$message({ message: '任务创建成功', type: 'success' })
-            this.dialogVisible = false
-            this.getData()
-          } else {
-            this.$message({ message: res.msg, type: 'error' })
-          }
-        }
-      })
+      this.$router.push({ path: '/appsec/task/new', query: { type: 'app' } })
     },
     async handleDel(row) {
       this.$confirm('确认删除该任务？', '提示', {
