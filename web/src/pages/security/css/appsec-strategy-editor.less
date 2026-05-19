@@ -1,0 +1,159 @@
+.nessus-editor {
+  padding-bottom: 16px;
+}
+
+.editor-header {
+  margin-bottom: 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.breadcrumb {
+  font-size: 22px;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin-bottom: 8px;
+}
+.crumb-muted {
+  color: #64748b;
+  font-weight: 500;
+}
+.crumb-sep {
+  margin: 0 8px;
+  color: #475569;
+}
+.crumb-current {
+  color: #f1f5f9;
+}
+.back-link {
+  font-size: 13px;
+  color: #00d4aa;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.back-link:hover {
+  text-decoration: underline;
+}
+
+.editor-tabs {
+  display: flex;
+  gap: 0;
+  margin-top: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.tab-btn {
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #94a3b8;
+  cursor: pointer;
+  margin-bottom: -1px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.tab-btn:hover {
+  color: #e2e8f0;
+}
+.tab-btn.active {
+  color: #00d4aa;
+  border-bottom-color: #00d4aa;
+}
+.tab-badge {
+  background: rgba(0, 212, 170, 0.2);
+  color: #00d4aa;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+.editor-body {
+  margin-top: 0;
+  padding: 0;
+  min-height: 480px;
+}
+
+.settings-layout {
+  display: flex;
+  min-height: 420px;
+}
+
+.settings-sidebar {
+  width: 200px;
+  flex-shrink: 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 16px 0;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.nav-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 10px 16px;
+  font-size: 13px;
+  color: #94a3b8;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+}
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: #e2e8f0;
+}
+.nav-item.active {
+  background: rgba(0, 212, 170, 0.08);
+  color: #00d4aa;
+  border-left-color: #00d4aa;
+  font-weight: 600;
+}
+
+.settings-panel {
+  flex: 1;
+  padding: 24px 32px;
+  max-width: 720px;
+}
+
+.plugins-layout {
+  padding: 24px 32px;
+}
+
+.panel-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin: 0 0 8px;
+}
+.panel-hint {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+
+.nessus-form /deep/ .el-form-item__label {
+  color: #cbd5e1;
+  font-weight: 600;
+  padding-bottom: 6px;
+}
+
+.editor-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding: 16px 32px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.plugins-layout /deep/ .vuln-selector {
+  padding: 0;
+  background: transparent;
+}
