@@ -203,12 +203,20 @@ func (t task) StatusEnum(status int) string {
 
 /************* 任务类型 **************/
 const (
-	TaskTypeMultipleTask = 1 // 综合任务
+	TaskTypeMultipleTask        = 1 // 综合任务
+	TaskTypeAppSecDynamic       = 2 // 应用安全-动态扫描
+	TaskTypeAppSecApp           = 3 // 应用安全-专项应用检测
+	TaskTypeDataSecDB           = 4 // 数据安全-数据库基线检查
+	TaskTypeDataSecSensitive    = 5 // 数据安全-敏感数据发现
 )
 
 func (t task) AllTypeEnum() map[int]string {
 	enum := map[int]string{
-		TaskTypeMultipleTask: "综合任务",
+		TaskTypeMultipleTask:     "综合任务",
+		TaskTypeAppSecDynamic:    "应用安全-动态扫描",
+		TaskTypeAppSecApp:        "应用安全-专项应用检测",
+		TaskTypeDataSecDB:        "数据安全-数据库检查",
+		TaskTypeDataSecSensitive: "数据安全-敏感数据发现",
 	}
 	return enum
 }

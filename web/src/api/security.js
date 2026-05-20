@@ -12,20 +12,58 @@ const security = {
     return axios.get('/smart/malware/tasks', params)
   },
 
-  // 数据库安全检查 (后端路由: /smart/db/*)
+  // 数据库安全检查（任务化 /smart/datasec/db/*，旧 /smart/db/* 仍可用）
   runDBCheck: (data) => {
-    return axios.postJson('/smart/db/check', data)
+    return axios.postJson('/smart/datasec/db/run', data)
   },
   getDBCheckList: (params) => {
-    return axios.get('/smart/db/result', params)
+    return axios.get('/smart/datasec/db/list', params)
+  },
+  getDBCheckDetail: (params) => {
+    return axios.get('/smart/datasec/db/detail', params)
   },
 
-  // 敏感数据发现 (后端路由: /smart/sensitive/*)
+  // 敏感数据发现（任务化 /smart/datasec/sensitive/*）
   runSensitiveScan: (data) => {
-    return axios.postJson('/smart/sensitive/scan', data)
+    return axios.postJson('/smart/datasec/sensitive/run', data)
   },
   getSensitiveDataList: (params) => {
-    return axios.get('/smart/sensitive/result', params)
+    return axios.get('/smart/datasec/sensitive/list', params)
+  },
+  getSensitiveScanDetail: (params) => {
+    return axios.get('/smart/datasec/sensitive/detail', params)
+  },
+
+  // 数据安全检测规则 (/smart/datasec/rules/*)
+  getDatasecRules: () => {
+    return axios.get('/smart/datasec/rules')
+  },
+  reloadDatasecRules: () => {
+    return axios.postJson('/smart/datasec/rules/reload', {})
+  },
+  importDatasecRules: (data) => {
+    return axios.postJson('/smart/datasec/rules/import', data)
+  },
+  importDatasecBuiltinRules: () => {
+    return axios.postJson('/smart/datasec/rules/import-builtin', {})
+  },
+  previewDatasecCveImport: () => {
+    return axios.get('/smart/datasec/rules/cve-preview')
+  },
+  importDatasecRulesFromCve: (data) => {
+    return axios.postJson('/smart/datasec/rules/import-cve', data || {})
+  },
+  getDatasecRuleDetail: (params) => {
+    return axios.get('/smart/datasec/rule/detail', params)
+  },
+  createDatasecRule: (data) => {
+    return axios.postJson('/smart/datasec/rule/create', data)
+  },
+  updateDatasecRule: (data) => {
+    return axios.postJson('/smart/datasec/rule/update', data)
+  },
+  deleteDatasecRule: (params) => {
+    return axios.get('/smart/datasec/rule/delete', params)
   },
   getSensitiveStat: (params) => {
     return axios.get('/smart/sensitive/stat', params)
@@ -78,20 +116,26 @@ const security = {
     return axios.get('/smart/baseline/enums')
   },
 
-  // 专项应用检测 (后端暂无接口)
-  getAppSpecificList: () => {
-    return Promise.resolve({ code: 200, data: { list: [], total: 0 } })
+  // 专项应用检测（后端调用 scanner.exe）
+  getAppSpecificList: (params) => {
+    return axios.get('/smart/appsec/appspecific/list', params)
   },
-  runAppSpecificScan: () => {
-    return Promise.resolve({ code: 200, msg: '功能开发中' })
+  runAppSpecificScan: (data) => {
+    return axios.postJson('/smart/appsec/appspecific/run', data)
   },
 
-  // 动态扫描 (后端暂无接口)
-  getDynamicScanList: () => {
-    return Promise.resolve({ code: 200, data: { list: [], total: 0 } })
+  // 动态扫描（后端调用 scanner.exe）
+  getDynamicScanList: (params) => {
+    return axios.get('/smart/appsec/dynamic/list', params)
   },
-  runDynamicScan: () => {
-    return Promise.resolve({ code: 200, msg: '功能开发中' })
+  runDynamicScan: (data) => {
+    return axios.postJson('/smart/appsec/dynamic/run', data)
+  },
+  getDynamicScanDetail: (params) => {
+    return axios.get('/smart/appsec/dynamic/detail', params)
+  },
+  getAppSpecificScanDetail: (params) => {
+    return axios.get('/smart/appsec/appspecific/detail', params)
   },
 
   // CVE漏洞扫描 (后端路由: /smart/vulnscan/cve/*)

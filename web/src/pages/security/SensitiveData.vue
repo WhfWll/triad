@@ -277,8 +277,19 @@ export default {
       }).catch(() => {})
     },
     async handleDetail(row) {
-      this.detailData = row
-      this.detailVisible = true
+      const id = row.id || row.ID
+      if (!id) {
+        this.detailData = row
+        this.detailVisible = true
+        return
+      }
+      const res = await security.getSensitiveScanDetail({ id })
+      if (res.code == 200) {
+        this.detailData = res.data
+        this.detailVisible = true
+      } else {
+        this.$message({ message: res.msg, type: 'error' })
+      }
     },
     handlesearch() {
       this.formData.page = 1

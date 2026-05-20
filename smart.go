@@ -41,6 +41,15 @@ func main() {
 	if err := config.Load("project_dir", &projectDir); err == nil && projectDir != "" {
 		enums.InitSystemPaths(projectDir)
 	}
+	// Windows 开发：config 指向 /opt/laozhi/ 时，若 CVE 库在当前工程目录则回退到 cwd
+	if wd, err := os.Getwd(); err == nil {
+		cveInWd := filepath.Join(wd, "data", "default-cve.db")
+		if _, err := os.Stat(cveInWd); err == nil {
+			if _, err := os.Stat(filepath.Join(enums.SystemUpgradeProjectDir, "data", "default-cve.db")); os.IsNotExist(err) {
+				enums.InitSystemPaths(wd + string(os.PathSeparator))
+			}
+		}
+	}
 
 	err = logger.Setup()
 	if err != nil {
@@ -49,8 +58,11 @@ func main() {
 	}
 	mysql.Setup()
 
+	services.InitCveDB()
 	// 从数据库加载基线规则（不再从 JSON 文件加载）
 	services.InitBaselineRulesFromDB(context.Background())
+	services.EnsureDatasecRuleTable(context.Background())
+	services.InitDatasecRulesFromDB(context.Background())
 	redis.Setup()
 	crons.Start()
 

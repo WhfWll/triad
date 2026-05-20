@@ -542,6 +542,11 @@ const routes = [
         component: () => import('@/pages/security/AppScanTaskConfigure.vue'),
       },
       {
+        path: '/appsec/task/detail',
+        name: 'appsecTaskDetail',
+        component: () => import('@/pages/security/AppSecTaskDetail.vue'),
+      },
+      {
         path: '/appsec/task/plugins',
         redirect: to => ({
           path: '/appsec/task/configure',

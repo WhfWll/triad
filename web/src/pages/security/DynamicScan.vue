@@ -1,7 +1,7 @@
 <template>
   <div class="security-container">
     <div class="main-title" v-if="!embedded">动态扫描</div>
-    
+
     <div class="list_box">
       <div class="search-box">
         <div class="operationbutton">
@@ -9,7 +9,14 @@
         </div>
         <div class="serach-condition">
           <div class="search-text">
-            <el-input placeholder="搜索任务名称" @keydown.enter.native="handlesearch" v-model="formData.search" class="input-with-select" size="small" clearable></el-input>
+            <el-input
+              placeholder="搜索任务名称"
+              @keydown.enter.native="handlesearch"
+              v-model="formData.search"
+              class="input-with-select"
+              size="small"
+              clearable
+            />
             <el-button type="primary" size="small" @click="handlesearch">搜索</el-button>
           </div>
           <div>
@@ -19,16 +26,18 @@
       </div>
 
       <el-table :data="tableData" style="width: 100%" class="myTable" @selection-change="handleSelectionChange">
-        <el-table-column width="55" type="selection">
+        <el-table-column width="55" type="selection" />
+        <el-table-column prop="name" label="任务名称" :show-overflow-tooltip="true" />
+        <el-table-column label="扫描目标" min-width="220" :show-overflow-tooltip="true">
+          <template slot-scope="scope">
+            <span>{{ scope.row.targetSummary || scope.row.targetUrl }}</span>
+            <el-tag v-if="scope.row.targetCount > 1" size="mini" type="info" class="target-count-tag">
+              {{ scope.row.targetCount }}个
+            </el-tag>
+          </template>
         </el-table-column>
-        <el-table-column prop="name" label="任务名称" :show-overflow-tooltip="true">
-        </el-table-column>
-        <el-table-column prop="targetUrl" label="目标地址" :show-overflow-tooltip="true">
-        </el-table-column>
-        <el-table-column prop="pageCount" label="爬取页面数">
-        </el-table-column>
-        <el-table-column prop="vulnCount" label="发现漏洞数">
-        </el-table-column>
+        <el-table-column prop="pageCount" label="爬取页面数" />
+        <el-table-column prop="vulnCount" label="发现漏洞数" />
         <el-table-column prop="riskLevel" label="风险等级">
           <template slot-scope="scope">
             <span :class="getRiskClass(scope.row.riskLevel)">{{ getRiskName(scope.row.riskLevel) }}</span>
@@ -36,13 +45,11 @@
         </el-table-column>
         <el-table-column prop="status" label="状态">
           <template slot-scope="scope">
-            <span :class="getStatusClass(scope.row.status)">{{ getStatusName(scope.row.status) }}</span>
+            <span :class="getStatusClass(scope.row.status)">{{ getStatusName(scope.row.status, 'dyn') }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间">
-        </el-table-column>
-        <el-table-column prop="scanTime" label="扫描时间">
-        </el-table-column>
+        <el-table-column prop="createTime" label="创建时间" />
+        <el-table-column prop="scanTime" label="扫描时间" />
         <el-table-column label="操作" width="100">
           <template slot-scope="scope">
             <el-link :underline="false" class="link_primary" @click="handleDetail(scope.row)">详情</el-link>
@@ -57,115 +64,15 @@
         :total="totalpage"
         :current-page="currentpage"
         @current-change="handlecurrentchange"
-        @size-change="handleSizeChange">
-      </el-pagination>
+        @size-change="handleSizeChange"
+      />
     </div>
-
-    <el-dialog title="扫描结果详情" :visible.sync="detailVisible" width="1000px">
-      <div v-if="detailData">
-        <div class="detail-header">
-          <h3>{{ detailData.name }}</h3>
-          <p>目标: {{ detailData.targetUrl }}</p>
-        </div>
-        
-        <div class="detail-stats">
-          <div class="stat-item pages">
-            <span class="stat-label">爬取页面数</span>
-            <span class="stat-value">{{ detailData.pageCount || 0 }}</span>
-          </div>
-          <div class="stat-item critical">
-            <span class="stat-label">严重漏洞</span>
-            <span class="stat-value">{{ detailData.criticalCount || 0 }}</span>
-          </div>
-          <div class="stat-item high">
-            <span class="stat-label">高危漏洞</span>
-            <span class="stat-value">{{ detailData.highRiskCount || 0 }}</span>
-          </div>
-          <div class="stat-item medium">
-            <span class="stat-label">中危漏洞</span>
-            <span class="stat-value">{{ detailData.middleRiskCount || 0 }}</span>
-          </div>
-          <div class="stat-item low">
-            <span class="stat-label">低危漏洞</span>
-            <span class="stat-value">{{ detailData.lowRiskCount || 0 }}</span>
-          </div>
-        </div>
-
-        <el-tabs v-model="activeTab" class="detail-tabs">
-          <el-tab-pane label="漏洞列表" name="vulns">
-            <el-table :data="detailData.vulns || []" style="width: 100%">
-              <el-table-column prop="name" label="漏洞名称" :show-overflow-tooltip="true">
-              </el-table-column>
-              <el-table-column prop="type" label="漏洞类型" :show-overflow-tooltip="true">
-                <template slot-scope="scope">{{ getVulnTypeName(scope.row.type) }}</template>
-              </el-table-column>
-              <el-table-column prop="riskLevel" label="风险等级">
-                <template slot-scope="scope">
-                  <span :class="getRiskClass(scope.row.riskLevel)">{{ getRiskName(scope.row.riskLevel) }}</span>
-                </template>
-              </el-table-column>
-              <el-table-column prop="url" label="漏洞URL" :show-overflow-tooltip="true">
-              </el-table-column>
-              <el-table-column label="操作" width="120">
-                <template slot-scope="scope">
-                  <el-button type="text" size="small" @click="showVulnDetail(scope.row)">查看详情</el-button>
-                </template>
-              </el-table-column>
-            </el-table>
-          </el-tab-pane>
-          <el-tab-pane label="站点地图" name="sitemap">
-            <div class="sitemap-tree">
-              <el-tree
-                :data="siteMapTree"
-                :props="treeProps"
-                :expand-on-click-node="false"
-                node-key="path">
-              </el-tree>
-            </div>
-          </el-tab-pane>
-        </el-tabs>
-      </div>
-      <span slot="footer">
-        <el-button @click="detailVisible = false">关闭</el-button>
-      </span>
-    </el-dialog>
-
-    <el-dialog title="漏洞详情" :visible.sync="vulnDetailVisible" width="700px">
-      <div v-if="currentVuln">
-        <h4 style="color: #00d4aa; margin-bottom: 15px">{{ currentVuln.name }}</h4>
-        <el-descriptions :column="1" border>
-          <el-descriptions-item label="漏洞类型">{{ getVulnTypeName(currentVuln.type) }}</el-descriptions-item>
-          <el-descriptions-item label="风险等级">
-            <span :class="getRiskClass(currentVuln.riskLevel)" style="padding: 4px 12px">{{ getRiskName(currentVuln.riskLevel) }}</span>
-          </el-descriptions-item>
-          <el-descriptions-item label="漏洞URL">{{ currentVuln.url }}</el-descriptions-item>
-          <el-descriptions-item label="请求方式">{{ currentVuln.method || 'GET' }}</el-descriptions-item>
-        </el-descriptions>
-        
-        <div class="detail-section">
-          <h4 style="color: #00d4aa; margin-top: 20px; margin-bottom: 10px">请求报文</h4>
-          <pre class="code-block">{{ currentVuln.request || '暂无' }}</pre>
-        </div>
-
-        <div class="detail-section">
-          <h4 style="color: #00d4aa; margin-bottom: 10px">响应报文</h4>
-          <pre class="code-block">{{ currentVuln.response || '暂无' }}</pre>
-        </div>
-
-        <div class="detail-section">
-          <h4 style="color: #00d4aa; margin-bottom: 10px">修复建议</h4>
-          <p style="color: #94a3b8; line-height: 1.6">{{ currentVuln.suggestion || '暂无' }}</p>
-        </div>
-      </div>
-      <span slot="footer">
-        <el-button @click="vulnDetailVisible = false">关闭</el-button>
-      </span>
-    </el-dialog>
   </div>
 </template>
 
 <script>
 import security from '@/api/security.js'
+import { getRiskName, getRiskClass, getStatusName, getStatusClass } from './appsecTaskLabels.js'
 
 export default {
   name: 'DynamicScan',
@@ -177,31 +84,38 @@ export default {
   },
   data() {
     return {
-      detailVisible: false,
-      vulnDetailVisible: false,
-      activeTab: 'vulns',
       multipleSelection: [],
       tableData: [],
-      detailData: {},
-      currentVuln: null,
-      siteMapTree: [],
-      treeProps: {
-        label: 'name',
-        children: 'children'
-      },
       formData: {
         search: '',
         page: 1
       },
       pageSize: 10,
       currentpage: 1,
-      totalpage: 0
+      totalpage: 0,
+      pollTimer: null
     }
   },
   mounted() {
     this.getData()
   },
+  activated() {
+    if (this.embedded) {
+      this.getData()
+      this.startPollIfNeeded()
+    }
+  },
+  deactivated() {
+    this.stopPoll()
+  },
+  beforeDestroy() {
+    this.stopPoll()
+  },
   methods: {
+    getRiskName,
+    getRiskClass,
+    getStatusName,
+    getStatusClass,
     async getData() {
       const res = await security.getDynamicScanList({
         page: this.formData.page,
@@ -209,57 +123,36 @@ export default {
         search: this.formData.search
       })
       if (res.code == 200) {
-        this.tableData = res.data.list
-        this.totalpage = res.data.total
+        this.tableData = (res.data && res.data.list) || []
+        this.totalpage = (res.data && res.data.total) || 0
+        this.startPollIfNeeded()
       } else {
         this.$message({ message: res.msg, type: 'error' })
+      }
+    },
+    startPollIfNeeded() {
+      this.stopPoll()
+      if (!this.embedded) return
+      if (!this.tableData.some(r => r.status === 2)) return
+      this.pollTimer = setInterval(() => {
+        this.getData()
+        if (!this.tableData.some(r => r.status === 2)) this.stopPoll()
+      }, 3000)
+    },
+    stopPoll() {
+      if (this.pollTimer) {
+        clearInterval(this.pollTimer)
+        this.pollTimer = null
       }
     },
     btnCreate() {
       this.$router.push({ path: '/appsec/task/new', query: { type: 'dyn' } })
     },
-    async handleDel(row) {
-      this.$confirm('确认删除该任务？', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(() => {
-        this.$message({ message: '删除成功', type: 'success' })
-        this.getData()
-      }).catch(() => {})
-    },
-    async handleDetail(row) {
-      this.detailData = row
-      this.siteMapTree = this.buildSiteMapTree(row.pages || [])
-      this.detailVisible = true
-      this.activeTab = 'vulns'
-    },
-    showVulnDetail(vuln) {
-      this.currentVuln = vuln
-      this.vulnDetailVisible = true
-    },
-    buildSiteMapTree(pages) {
-      const tree = []
-      const map = {}
-      pages.forEach(page => {
-        const url = page.url || page
-        const parts = url.replace(/^https?:\/\//, '').split('/').filter(Boolean)
-        let current = tree
-        parts.forEach((part, index) => {
-          const path = parts.slice(0, index + 1).join('/')
-          if (!map[path]) {
-            const node = {
-              name: part,
-              path: path,
-              children: []
-            }
-            map[path] = node
-            current.push(node)
-          }
-          current = map[path].children
-        })
+    handleDetail(row) {
+      this.$router.push({
+        path: '/appsec/task/detail',
+        query: { id: row.id, type: 'dyn' }
       })
-      return tree
     },
     handlesearch() {
       this.formData.page = 1
@@ -284,26 +177,6 @@ export default {
     },
     handleSelectionChange(val) {
       this.multipleSelection = val
-    },
-    getRiskName(risk) {
-      const map = { 0: '严重', 1: '高危', 2: '中危', 3: '低危', 4: '信息' }
-      return map[risk] || '未知'
-    },
-    getRiskClass(risk) {
-      const map = { 0: 'risk-critical', 1: 'risk-high', 2: 'risk-medium', 3: 'risk-low', 4: 'risk-info' }
-      return map[risk] || 'risk-default'
-    },
-    getStatusName(status) {
-      const map = { 1: '等待扫描', 2: '扫描中', 3: '已完成' }
-      return map[status] || '未知'
-    },
-    getStatusClass(status) {
-      const map = { 1: 'status-wait', 2: 'status-running', 3: 'status-complete' }
-      return map[status] || 'status-default'
-    },
-    getVulnTypeName(type) {
-      const map = { 1: 'SQL注入', 2: 'XSS', 3: 'SSRF', 4: 'XXE', 5: '命令注入', 6: '文件包含', 7: '文件上传', 8: 'CSRF', 9: '信息泄露' }
-      return map[type] || '未知'
     }
   }
 }
@@ -333,90 +206,4 @@ export default {
 .status-wait { background: rgba(234, 179, 8, 0.2); color: #eab308; }
 .status-running { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
 .status-complete { background: rgba(16, 185, 129, 0.2); color: #10b981; }
-
-.detail-header {
-  margin-bottom: 20px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #2d3748;
-}
-
-.detail-header h3 {
-  color: #00d4aa;
-  margin-bottom: 5px;
-}
-
-.detail-header p {
-  color: #94a3b8;
-}
-
-.detail-stats {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 20px;
-}
-
-.stat-item {
-  flex: 1;
-  padding: 15px;
-  border-radius: 8px;
-  text-align: center;
-}
-
-.stat-item.pages { background: rgba(0, 212, 170, 0.1); border: 1px solid rgba(0, 212, 170, 0.3); }
-.stat-item.critical { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); }
-.stat-item.high { background: rgba(249, 115, 22, 0.1); border: 1px solid rgba(249, 115, 22, 0.3); }
-.stat-item.medium { background: rgba(234, 179, 8, 0.1); border: 1px solid rgba(234, 179, 8, 0.3); }
-.stat-item.low { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); }
-
-.stat-label {
-  display: block;
-  font-size: 12px;
-  color: #94a3b8;
-  margin-bottom: 5px;
-}
-
-.stat-value {
-  display: block;
-  font-size: 24px;
-  font-weight: bold;
-}
-
-.stat-item.pages .stat-value { color: #00d4aa; }
-.stat-item.critical .stat-value { color: #ef4444; }
-.stat-item.high .stat-value { color: #f97316; }
-.stat-item.medium .stat-value { color: #eab308; }
-.stat-item.low .stat-value { color: #10b981; }
-
-.detail-tabs {
-  margin-top: 20px;
-}
-
-.sitemap-tree {
-  max-height: 400px;
-  overflow-y: auto;
-  background: rgba(0, 0, 0, 0.1);
-  padding: 15px;
-  border-radius: 4px;
-}
-
-.code-block {
-  background: #1a1a2e;
-  padding: 15px;
-  border-radius: 4px;
-  color: #94a3b8;
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
-  overflow-x: auto;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.login-config, .proxy-config {
-  width: 100%;
-}
-
-.login-form, .proxy-form {
-  margin-top: 10px;
-  padding-left: 20px;
-}
 </style>

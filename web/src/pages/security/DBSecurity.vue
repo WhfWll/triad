@@ -243,8 +243,19 @@ export default {
       }).catch(() => {})
     },
     async handleDetail(row) {
-      this.detailData = row
-      this.detailVisible = true
+      const id = row.id || row.ID
+      if (!id) {
+        this.detailData = row
+        this.detailVisible = true
+        return
+      }
+      const res = await security.getDBCheckDetail({ id })
+      if (res.code == 200) {
+        this.detailData = res.data
+        this.detailVisible = true
+      } else {
+        this.$message({ message: res.msg, type: 'error' })
+      }
     },
     handlesearch() {
       this.formData.page = 1
@@ -295,7 +306,10 @@ export default {
       return map[status] || 'status-default'
     },
     getCategoryName(category) {
-      const map = { 1: '认证安全', 2: '授权管理', 3: '配置安全', 4: '审计日志', 5: '网络安全', 6: '加密保护' }
+      const map = {
+        1: '身份认证', 2: '权限控制', 3: '配置安全', 4: '审计日志',
+        5: '网络安全', 6: '加密', 7: 'SQL 注入', 8: '敏感数据识别'
+      }
       return map[category] || '未知'
     }
   }

@@ -129,11 +129,13 @@
             page-mode="vuln"
           />
         </div>
-      </div>
 
-      <div class="editor-footer">
-        <el-button @click="goBackOrPick">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="saveStrategy">保存策略</el-button>
+        <div class="editor-footer">
+          <div class="editor-footer-inner">
+            <el-button @click="goBackOrPick">取消</el-button>
+            <el-button type="primary" :loading="saving" @click="saveStrategy">保存策略</el-button>
+          </div>
+        </div>
       </div>
     </template>
   </div>
@@ -158,11 +160,12 @@ import {
   saveBuiltinOverride,
   mergeScanConfig
 } from './appsecStrategyStorage.js'
+import { applyScanAssessmentDefaults } from './appsecBuiltinStrategies.js'
 
 const PANEL_META = {
   general: { title: '基本信息', hint: '策略名称与说明，便于在列表中识别。' },
-  assessment: { title: '扫描评估', hint: '测试模式、安全测试、漏洞利用与测试强度。' },
   port: { title: '端口扫描', hint: '配置扫描端口范围、方式与超时。' },
+  login: { title: '登录凭证', hint: '为需登录的 Web 目标配置 Cookie 或 Header，扫描时自动携带。' },
   crawler: { title: '爬虫配置', hint: '配置 Web 爬取深度、范围与速度。' },
   advanced: { title: '代理设置', hint: '通过 HTTP/HTTPS/SOCKS5 代理发起扫描。' }
 }
@@ -203,14 +206,14 @@ export default {
     sidebarItems() {
       const s = this.strategySections
       const items = [{ key: 'general', label: '基本信息' }]
-      if (s.scan) items.push({ key: 'assessment', label: '扫描评估' })
       if (s.port) items.push({ key: 'port', label: '端口扫描' })
       if (s.crawler) items.push({ key: 'crawler', label: '爬虫配置' })
       if (s.advanced) items.push({ key: 'advanced', label: '代理设置' })
+      if (s.login) items.push({ key: 'login', label: '登录凭证' })
       return items
     },
     configSectionKey() {
-      const map = { assessment: 'assessment', port: 'port', crawler: 'crawler', advanced: 'advanced' }
+      const map = { port: 'port', crawler: 'crawler', advanced: 'advanced', login: 'login' }
       return map[this.activeSection] || ''
     },
     panelTitle() {
@@ -347,6 +350,7 @@ export default {
       }
 
       this.syncPluginSelectionFromForm()
+      applyScanAssessmentDefaults(this.scanConfig)
 
       this.saving = true
       try {

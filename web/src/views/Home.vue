@@ -57,25 +57,6 @@
               <el-menu-item index="/datasec/rules">检测规则</el-menu-item>
             </el-submenu>
 
-            <el-submenu index="/experienceSet" v-if="role != 3">
-              <template slot="title">
-                <i class="el-icon-setting"></i>
-                <span>场景管理</span>
-              </template>
-              <el-menu-item index="/taskscenario">任务场景</el-menu-item>
-            </el-submenu>
-
-            <el-submenu index="/toolmanagement" v-if="role != 3">
-              <template slot="title">
-                <i class="el-icon-tools"></i>
-                <span>工具管理</span>
-              </template>
-              <el-menu-item index="/vulnerability">漏洞库</el-menu-item>
-              <el-menu-item index="/fingerprint">指纹库</el-menu-item>
-              <el-menu-item index="/dictionary">字典库</el-menu-item>
-              <el-menu-item index="/auxiliarytool">辅助工具</el-menu-item>
-            </el-submenu>
-
             <el-submenu index="/usermanagement" v-if="role == 2 || role == 4">
               <template slot="title">
                 <i class="el-icon-user"></i>
@@ -92,15 +73,6 @@
               </template>
               <el-menu-item index="/systemsetting">系统配置</el-menu-item>
               <el-menu-item index="/node">节点管理</el-menu-item>
-            </el-submenu>
-
-            <el-submenu index="/log" v-if="role !== 1 && role !== 2">
-              <template slot="title">
-                <i class="el-icon-document-copy"></i>
-                <span>日志管理</span>
-              </template>
-              <el-menu-item index="/log">日志审计</el-menu-item>
-              <el-menu-item index="/logconfig">日志配置</el-menu-item>
             </el-submenu>
           </el-menu>
         </el-scrollbar>
@@ -235,6 +207,7 @@ export default {
         '/appsec/tasks': '应用安全 · 任务管理',
         '/appsec/task/new': '应用安全 · 选择扫描策略',
         '/appsec/task/configure': '应用安全 · 新建扫描',
+        '/appsec/task/detail': '应用安全 · 任务详情',
         '/appsec/task/plugins': '应用安全 · 新建扫描',
         '/appsec/strategy': '应用安全 · 扫描策略',
         '/appsec/rules': '应用安全 · 检测规则',

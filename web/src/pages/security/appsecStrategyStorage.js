@@ -47,9 +47,17 @@ export function mergeScanConfig(base, patch) {
   if (patch.vulIdsConfig) {
     out.vulIdsConfig = [...patch.vulIdsConfig]
   }
-  ;['testMode', 'safeTest', 'vulExploit', 'testIntensity'].forEach(k => {
+  ;['testMode', 'safeTest', 'vulExploit'].forEach(k => {
     if (patch[k] !== undefined) out[k] = patch[k]
   })
+  delete out.testIntensity
+  if (patch.websiteLogin) {
+    out.websiteLogin = {
+      ...(out.websiteLogin || { isOpen: false, list: [] }),
+      ...patch.websiteLogin,
+      list: patch.websiteLogin.list ? [...patch.websiteLogin.list] : (out.websiteLogin && out.websiteLogin.list) || []
+    }
+  }
   if (patch.webCrawler) out.webCrawler = { ...out.webCrawler, ...patch.webCrawler }
   if (patch.portScan) out.portScan = { ...out.portScan, ...patch.portScan }
   if (patch.proxy) out.proxy = { ...out.proxy, ...patch.proxy }

@@ -1360,3 +1360,25 @@ CREATE TABLE IF NOT EXISTS `sensitive_data_result` (
   KEY `idx_target_id` (`target_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='敏感数据发现结果';
 
+-- 数据安全检测规则（导入后任务扫描会优先使用库中启用规则；无库规则时回退内置约 24 条）
+CREATE TABLE IF NOT EXISTS `datasec_rule` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `rule_code` int(11) NOT NULL COMMENT '规则编号，与 db_check_result.rule_id 对应',
+  `name` varchar(255) NOT NULL DEFAULT '' COMMENT '规则名称',
+  `description` varchar(512) NOT NULL DEFAULT '' COMMENT '规则描述',
+  `category` int(11) NOT NULL DEFAULT '0' COMMENT '分类：身份认证/权限/SQL注入/敏感数据等',
+  `risk` int(11) NOT NULL DEFAULT '0' COMMENT '风险等级 0-4',
+  `db_type` int(11) NOT NULL DEFAULT '0' COMMENT '适用数据库 0=全部 1=MySQL 2=PG 3=Mongo 4=Redis 5=CouchDB',
+  `queries_json` text COMMENT '检查 SQL/命令 JSON 数组',
+  `expected_value` varchar(512) NOT NULL DEFAULT '' COMMENT '期望值说明',
+  `match_type` varchar(32) NOT NULL DEFAULT 'contains' COMMENT 'contains|exact|not_contains|empty|always',
+  `fix_suggestion` text COMMENT '修复建议',
+  `risk_description` varchar(512) NOT NULL DEFAULT '' COMMENT '风险说明',
+  `enabled` tinyint(4) NOT NULL DEFAULT '1' COMMENT '1=启用 0=停用',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_rule_code` (`rule_code`),
+  KEY `idx_db_type_enabled` (`db_type`, `enabled`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='数据安全检测规则表';
+

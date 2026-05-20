@@ -59,26 +59,60 @@
       </div>
     </template>
 
-    <template v-if="showPanel('assessment')">
-      <el-divider v-if="!section" content-position="left">扫描配置</el-divider>
-      <el-form-item label="测试模式">
-        <el-radio-group v-model="config.testMode">
-          <el-radio label="principle">原理验证（安全，仅验证漏洞是否存在）</el-radio>
-          <el-radio label="version">版本匹配（根据版本号匹配漏洞）</el-radio>
-        </el-radio-group>
+    <template v-if="showPanel('login')">
+      <el-form-item label-width="0" class="switch-row">
+        <el-switch v-model="websiteLogin.isOpen" active-text="开启" inactive-text="关闭" />
+        <span class="form-tip">扫描需登录页面时，可配置 Cookie 或自定义 Header</span>
       </el-form-item>
-      <el-form-item label="安全测试">
-        <el-switch v-model="config.safeTest" active-text="开启" inactive-text="关闭" />
-        <span class="form-tip">过滤可能导致服务崩溃的漏洞脚本</span>
-      </el-form-item>
-      <el-form-item label="漏洞利用">
-        <el-switch v-model="config.vulExploit" active-text="开启" inactive-text="关闭" />
-        <span class="form-tip">尝试利用漏洞进行后渗透测试</span>
-      </el-form-item>
-      <el-form-item label="测试强度">
-        <el-slider v-model="config.testIntensity" :min="1" :max="5" :step="1" show-stops style="width: 300px" />
-        <span class="form-tip">强度 {{ config.testIntensity }}</span>
-      </el-form-item>
+      <template v-if="websiteLogin.isOpen">
+        <div class="login-toolbar">
+          <el-button size="small" type="primary" @click="addLoginRow">新增登录</el-button>
+        </div>
+        <el-table :data="websiteLogin.list" size="small" class="login-table" empty-text="暂无登录凭证">
+          <el-table-column prop="target" label="登录地址" min-width="160">
+            <template slot-scope="scope">
+              <span v-if="!scope.row._editing">{{ scope.row.target || '-' }}</span>
+              <el-input v-else v-model="scope.row.target" size="small" placeholder="http://example.com/login" />
+            </template>
+          </el-table-column>
+          <el-table-column prop="verifyType" label="凭证类型" width="130">
+            <template slot-scope="scope">
+              <span v-if="!scope.row._editing">{{ loginTypeLabel(scope.row.verifyType) }}</span>
+              <el-select v-else v-model="scope.row.verifyType" size="small" style="width: 110px">
+                <el-option v-for="item in loginTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
+              </el-select>
+            </template>
+          </el-table-column>
+          <el-table-column prop="verifyValue" label="凭证" min-width="140">
+            <template slot-scope="scope">
+              <span v-if="!scope.row._editing" class="login-value-preview">{{ scope.row.verifyValue || '-' }}</span>
+              <el-input
+                v-else
+                v-model="scope.row.verifyValue"
+                type="textarea"
+                :rows="2"
+                size="small"
+                placeholder="Cookie 或 Header 内容"
+              />
+            </template>
+          </el-table-column>
+          <el-table-column prop="verifyStatusZh" label="状态" width="88">
+            <template slot-scope="scope">
+              <span v-if="scope.row.verifyStatusZh" :class="loginStatusClass(scope.row.verifyStatus)">
+                {{ scope.row.verifyStatusZh }}
+              </span>
+              <span v-else class="login-status-pending">-</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="140">
+            <template slot-scope="scope">
+              <el-link v-if="scope.row._editing" :underline="false" @click="saveLoginRow(scope)">保存</el-link>
+              <el-link v-else :underline="false" @click="editLoginRow(scope)">编辑</el-link>
+              <el-link :underline="false" @click="removeLoginRow(scope)">删除</el-link>
+            </template>
+          </el-table-column>
+        </el-table>
+      </template>
     </template>
 
     <template v-if="showPanel('crawler')">
@@ -175,6 +209,7 @@
 
 <script>
 import { vulnerability } from '@/api/tool.js'
+import task from '@/api/task.js'
 import { PORT_RANGE_MAP } from '../appsecPortRanges.js'
 import { getStrategySections } from '../appsecBuiltinStrategies.js'
 
@@ -185,11 +220,12 @@ export default {
     strategyId: { type: String, default: 'builtin-full' },
     /** scan=仅扫描/爬虫/端口；vuln=仅漏洞脚本；all=全部 */
     pageMode: { type: String, default: 'all', validator: v => ['scan', 'vuln', 'all'].includes(v) },
-    /** 单面板：assessment | port | crawler | advanced | vuln */
+    /** 单面板：login | port | crawler | advanced | vuln */
     section: { type: String, default: '' }
   },
   data() {
     return {
+      loginTypeOptions: [],
       enumOptions: { class: [], type: [], risk: [] },
       vulnList: [],
       syncingVulnIds: false,
@@ -229,6 +265,10 @@ export default {
     vulnTableMaxHeight() {
       if (this.section === 'vuln' || this.pageMode === 'vuln') return 560
       return 360
+    },
+    websiteLogin() {
+      this.ensureWebsiteLogin()
+      return this.config.websiteLogin
     }
   },
   watch: {
@@ -259,7 +299,8 @@ export default {
     }
   },
   async mounted() {
-    await this.fetchEnums()
+    this.ensureWebsiteLogin()
+    await Promise.all([this.fetchEnums(), this.fetchLoginTypes()])
     this.applyVulnIdsFromConfig()
     this.guessPortRangeType()
     if (this.showPanel('vuln')) {
@@ -267,6 +308,89 @@ export default {
     }
   },
   methods: {
+    ensureWebsiteLogin() {
+      if (!this.config) return
+      if (!this.config.websiteLogin) {
+        this.$set(this.config, 'websiteLogin', { isOpen: false, list: [] })
+      } else if (!Array.isArray(this.config.websiteLogin.list)) {
+        this.$set(this.config.websiteLogin, 'list', [])
+      }
+    },
+    async fetchLoginTypes() {
+      try {
+        const res = await task.taskEnum()
+        if (res && res.code === 200 && res.data && res.data.webLoginType) {
+          this.loginTypeOptions = this.normalizeEnumList(res.data.webLoginType)
+          if (this.loginTypeOptions.length && this.websiteLogin.list.length) {
+            const def = this.loginTypeOptions[0].value
+            this.websiteLogin.list.forEach(row => {
+              if (row.verifyType == null || row.verifyType === '') row.verifyType = def
+            })
+          }
+        }
+      } catch {
+        this.loginTypeOptions = [
+          { label: 'Cookie', value: 1 },
+          { label: 'Header', value: 2 }
+        ]
+      }
+    },
+    loginTypeLabel(value) {
+      const hit = this.loginTypeOptions.find(x => x.value === value)
+      return (hit && hit.label) || '-'
+    },
+    loginStatusClass(status) {
+      if (status === 1) return 'login-status-ok'
+      if (status === 2) return 'login-status-warn'
+      return 'login-status-fail'
+    },
+    addLoginRow() {
+      const defType = (this.loginTypeOptions[0] && this.loginTypeOptions[0].value) || 1
+      this.websiteLogin.list.push({
+        target: '',
+        verifyType: defType,
+        verifyValue: '',
+        verifyStatus: 0,
+        verifyStatusZh: '',
+        _editing: true
+      })
+    },
+    editLoginRow(scope) {
+      this.$set(this.websiteLogin.list[scope.$index], '_editing', true)
+    },
+    removeLoginRow(scope) {
+      this.websiteLogin.list.splice(scope.$index, 1)
+    },
+    async saveLoginRow(scope) {
+      const row = this.websiteLogin.list[scope.$index]
+      if (!row.target || !String(row.target).trim()) {
+        this.$message.warning('请填写登录地址')
+        return
+      }
+      if (!row.verifyValue || !String(row.verifyValue).trim()) {
+        this.$message.warning('请填写凭证内容')
+        return
+      }
+      try {
+        const res = await task.websitelogincheck({
+          task_check_target: row.target,
+          target: row.target,
+          verifyType: row.verifyType,
+          verifyValue: row.verifyValue
+        })
+        if (res.code == 200) {
+          row.verifyStatus = res.data.statusCode
+          row.verifyStatusZh = res.data.status
+          row._editing = false
+          this.$message.success('凭证校验完成')
+        } else {
+          this.$message.error(res.msg || '校验失败')
+        }
+      } catch {
+        row._editing = false
+        this.$message.warning('校验接口不可用，已保存凭证（未校验）')
+      }
+    },
     getSelectedVulnIds() {
       return [...this.selectedVulnIds]
     },
@@ -279,7 +403,7 @@ export default {
     },
     showPanel(key) {
       const areaMap = {
-        assessment: 'scan',
+        login: 'login',
         port: 'port',
         crawler: 'crawler',
         advanced: 'advanced',
@@ -512,7 +636,8 @@ export default {
 .vuln-selector {
   padding: 16px;
   background: rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 212, 170, 0.1);
   margin-bottom: 10px;
 }
 .vuln-toolbar {
@@ -551,9 +676,11 @@ export default {
   font-size: 13px;
   margin: 0 0 10px;
 }
-.vuln-table {
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 4px;
+.vuln-table,
+.login-table {
+  border: 1px solid rgba(0, 212, 170, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
 }
 /deep/ .el-divider__text {
   color: #00d4aa;
@@ -573,5 +700,36 @@ export default {
 }
 /deep/ .vuln-table .el-table--enable-row-hover .el-table__body tr:hover > td {
   background: rgba(0, 212, 170, 0.05) !important;
+}
+.login-toolbar {
+  margin-bottom: 12px;
+}
+.login-value-preview {
+  display: inline-block;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.login-status-ok {
+  color: #34d399;
+}
+.login-status-warn {
+  color: #fbbf24;
+}
+.login-status-fail {
+  color: #f87171;
+}
+.login-status-pending {
+  color: #64748b;
+}
+/deep/ .login-table .el-table__header th {
+  background: rgba(0, 0, 0, 0.4) !important;
+  color: #94a3b8;
+}
+/deep/ .login-table .el-table__body td {
+  background: rgba(0, 0, 0, 0.2) !important;
+  color: #cbd5e1;
 }
 </style>

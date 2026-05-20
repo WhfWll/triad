@@ -4,6 +4,7 @@ import {
   isBuiltinStrategyId,
   loadCustomStrategy
 } from './appsecBuiltinStrategies.js'
+import { loadBuiltinOverride, mergeScanConfig } from './appsecStrategyStorage.js'
 
 const DRAFT_KEY = 'appsec_task_draft'
 
@@ -39,10 +40,20 @@ export function initStrategyFromRoute(strategyId, isCustomQuery) {
   if (!isCustomQuery && isBuiltinStrategyId(strategyId)) {
     const builtin = getBuiltinStrategy(strategyId)
     if (!builtin) return null
+    const override = loadBuiltinOverride(strategyId)
+    let config = cloneBuiltinConfig(strategyId)
+    if (override && override.config) {
+      config = mergeScanConfig(config, override.config)
+    }
     return {
       isCustom: false,
-      strategyMeta: { ...builtin },
-      scanConfig: cloneBuiltinConfig(strategyId)
+      strategyMeta: {
+        ...builtin,
+        name: (override && override.name) || builtin.name,
+        desc: (override && override.desc) || builtin.desc,
+        icon: (override && override.icon) || builtin.icon
+      },
+      scanConfig: config
     }
   }
 
@@ -64,10 +75,20 @@ export function initStrategyFromRoute(strategyId, isCustomQuery) {
   if (isBuiltinStrategyId(strategyId)) {
     const builtin = getBuiltinStrategy(strategyId)
     if (!builtin) return null
+    const override = loadBuiltinOverride(strategyId)
+    let config = cloneBuiltinConfig(strategyId)
+    if (override && override.config) {
+      config = mergeScanConfig(config, override.config)
+    }
     return {
       isCustom: false,
-      strategyMeta: { ...builtin },
-      scanConfig: cloneBuiltinConfig(strategyId)
+      strategyMeta: {
+        ...builtin,
+        name: (override && override.name) || builtin.name,
+        desc: (override && override.desc) || builtin.desc,
+        icon: (override && override.icon) || builtin.icon
+      },
+      scanConfig: config
     }
   }
 

@@ -5,10 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
 
+	"smart/tools/enums"
+
+	log "github.com/sirupsen/logrus"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -55,23 +59,91 @@ type CveMatchResult struct {
 }
 
 var (
-	globalCveDB *CveDB
-	cveDBOnce   sync.Once
+	globalCveDB   *CveDB
+	cveDBOnce     sync.Once
+	resolvedCveDB string
 )
+
+// ResolveCveDBPath 解析 default-cve.db 路径（开发/部署多目录兼容）
+func ResolveCveDBPath() string {
+	if resolvedCveDB != "" {
+		if _, err := os.Stat(resolvedCveDB); err == nil {
+			return resolvedCveDB
+		}
+	}
+	candidates := []string{
+		"data/default-cve.db",
+		"default-cve.db",
+	}
+	if wd, err := os.Getwd(); err == nil {
+		candidates = append(candidates,
+			filepath.Join(wd, "data", "default-cve.db"),
+			filepath.Join(wd, "default-cve.db"),
+		)
+	}
+	if exe, err := os.Executable(); err == nil {
+		root := filepath.Dir(exe)
+		candidates = append(candidates,
+			filepath.Join(root, "data", "default-cve.db"),
+			filepath.Join(root, "default-cve.db"),
+		)
+	}
+	if enums.SystemUpgradeProjectDir != "" && enums.SystemUpgradeProjectDir != "/opt/laozhi/" {
+		base := strings.TrimRight(enums.SystemUpgradeProjectDir, `/\`)
+		candidates = append(candidates,
+			filepath.Join(base, "data", "default-cve.db"),
+			filepath.Join(base, "default-cve.db"),
+		)
+	}
+	seen := make(map[string]struct{})
+	for _, p := range candidates {
+		p = filepath.Clean(p)
+		if _, ok := seen[p]; ok {
+			continue
+		}
+		seen[p] = struct{}{}
+		if fi, err := os.Stat(p); err == nil && !fi.IsDir() {
+			resolvedCveDB = p
+			return p
+		}
+	}
+	return ""
+}
+
+// InitCveDB 启动时初始化 CVE 库（打日志便于排查）
+func InitCveDB() {
+	_ = GetCveDB()
+}
 
 func GetCveDB() *CveDB {
 	cveDBOnce.Do(func() {
-		dbPath := "data/default-cve.db"
-		if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+		dbPath := ResolveCveDBPath()
+		if dbPath == "" {
+			log.Warn("default-cve.db not found; tried data/default-cve.db and project paths")
 			return
 		}
 		db, err := sql.Open("sqlite3", dbPath)
 		if err != nil {
+			log.Errorf("open cve db %s: %v", dbPath, err)
+			return
+		}
+		if err := db.Ping(); err != nil {
+			log.Errorf("ping cve db %s: %v", dbPath, err)
+			_ = db.Close()
 			return
 		}
 		globalCveDB = &CveDB{db: db}
+		log.Infof("CVE database loaded: %s", dbPath)
 	})
 	return globalCveDB
+}
+
+// CveDBResolvedPath 当前使用的 CVE 库路径
+func CveDBResolvedPath() string {
+	if resolvedCveDB != "" {
+		return resolvedCveDB
+	}
+	return ResolveCveDBPath()
 }
 
 func (d *CveDB) IsAvailable() bool {

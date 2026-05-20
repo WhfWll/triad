@@ -115,6 +115,8 @@ const (
 	DBCheckCategoryAuditLog       = 4 // 审计日志
 	DBCheckCategoryNetwork        = 5 // 网络安全
 	DBCheckCategoryEncryption     = 6 // 加密
+	DBCheckCategorySQLInjection   = 7 // SQL 注入
+	DBCheckCategorySensitiveData  = 8 // 敏感数据识别
 )
 
 type baseline struct{}
@@ -243,6 +245,8 @@ func (baseline) GetDBCheckCategoryName(c int) string {
 		DBCheckCategoryAuditLog:       "审计日志",
 		DBCheckCategoryNetwork:        "网络安全",
 		DBCheckCategoryEncryption:     "加密",
+		DBCheckCategorySQLInjection:   "SQL 注入",
+		DBCheckCategorySensitiveData:  "敏感数据识别",
 	}
 	if v, ok := m[c]; ok {
 		return v

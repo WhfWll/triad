@@ -1,0 +1,106 @@
+// AppSec 深色 UI 设计令牌（单一来源）
+// 新页面/组件请 @import 本文件，勿在 Vue 内硬编码零散色值
+
+// --- 背景层级 ---
+@appsec-bg-page: transparent; // 页面底由全局布局承担
+@appsec-bg-surface: #1a1a2e; // 主卡片 .list_box
+@appsec-bg-surface-header: #16162a; // 表头
+@appsec-bg-surface-inset: #0f0f1a; // 代码块、深色嵌套区
+@appsec-bg-surface-muted: rgba(0, 0, 0, 0.2); // 侧栏、二级面板
+@appsec-bg-surface-label: rgba(30, 41, 59, 0.95); // descriptions 标签列
+@appsec-bg-surface-row: rgba(15, 23, 42, 0.9); // descriptions 内容列
+
+// --- 品牌色 ---
+@appsec-accent: #00d4aa;
+@appsec-accent-hover: #00e6b8;
+@appsec-accent-muted: rgba(0, 212, 170, 0.12);
+@appsec-accent-soft: rgba(0, 212, 170, 0.08);
+@appsec-on-accent: #0f0f1a; // 主按钮文字
+
+// --- 文字 ---
+@appsec-text-primary: #e2e8f0;
+@appsec-text-strong: #f1f5f9;
+@appsec-text-body: #94a3b8;
+@appsec-text-muted: #64748b;
+@appsec-text-disabled: #475569;
+
+// --- 边框 ---
+@appsec-border-subtle: rgba(255, 255, 255, 0.08);
+@appsec-border-default: rgba(0, 212, 170, 0.12);
+@appsec-border-strong: rgba(0, 212, 170, 0.2);
+
+// --- 语义色（风险/状态）---
+@appsec-risk-critical: #ef4444;
+@appsec-risk-high: #f35f28;
+@appsec-risk-medium: #fbbf24;
+@appsec-risk-low: #60a5fa;
+@appsec-risk-info: #94a3b8;
+@appsec-status-success: #34d399;
+@appsec-status-warn: #fbbf24;
+@appsec-status-danger: #f87171;
+
+// --- 圆角 / 间距（偏大一号，偏现代控制台风格）---
+@appsec-radius-xs: 4px;
+@appsec-radius-sm: 6px; // 按钮、输入框、标签
+@appsec-radius-md: 10px; // 内嵌面板、表格容器
+@appsec-radius-lg: 12px; // 主卡片 .list_box
+@appsec-radius-xl: 16px; // 顶栏大卡片、统计区
+@appsec-space-xs: 8px;
+@appsec-space-sm: 12px;
+@appsec-space-md: 16px;
+@appsec-space-lg: 24px;
+
+// --- 字体 ---
+@appsec-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+@appsec-font-size-xs: 11px;
+@appsec-font-size-sm: 13px;
+@appsec-font-size-base: 14px;
+@appsec-font-size-lg: 16px;
+@appsec-font-size-xl: 18px;
+@appsec-font-size-title: 20px;
+@appsec-font-weight-medium: 500;
+@appsec-font-weight-semibold: 600;
+
+// --- 阴影 ---
+@appsec-shadow-card: 0 2px 4px rgba(0, 212, 170, 0.12);
+@appsec-shadow-dropdown: 0 4px 20px rgba(0, 0, 0, 0.3);
+
+// --- Mixins ---
+.appsec-card() {
+  background: @appsec-bg-surface;
+  border-radius: @appsec-radius-md;
+  box-shadow: @appsec-shadow-card;
+  padding: @appsec-space-lg;
+  box-sizing: border-box;
+}
+
+.appsec-panel-title() {
+  font-size: @appsec-font-size-xl;
+  font-weight: @appsec-font-weight-semibold;
+  color: @appsec-text-primary;
+  margin: 0 0 @appsec-space-xs;
+}
+
+.appsec-code-block() {
+  background: @appsec-bg-surface-inset;
+  color: @appsec-text-body;
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: @appsec-font-size-sm;
+  line-height: 1.5;
+  padding: @appsec-space-sm;
+  border-radius: @appsec-radius-sm;
+  overflow: auto;
+}
+
+// 次要按钮（无 type 或 default）— 在 .security-container /deep/ 下使用
+.appsec-btn-secondary() {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: @appsec-border-strong !important;
+  color: #cbd5e1 !important;
+  &:hover,
+  &:focus {
+    background: @appsec-accent-soft !important;
+    border-color: rgba(0, 212, 170, 0.38) !important;
+    color: @appsec-accent !important;
+  }
+}

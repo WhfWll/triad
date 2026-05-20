@@ -110,6 +110,7 @@
         <p class="panel-hint">选择本次任务要执行的漏洞脚本（对应后端 vulIdsConfig）。未选择时将按策略默认规则执行。</p>
         <scan-strategy-config-form
           v-if="scanConfig"
+          ref="pluginsForm"
           :key="'plugins-' + effectiveStrategyId"
           :config="scanConfig"
           :strategy-id="effectiveStrategyId"
@@ -117,12 +118,13 @@
           page-mode="vuln"
         />
       </div>
-    </div>
 
-    <!-- 底栏操作 -->
-    <div class="editor-footer">
-      <el-button @click="goPrev">取消</el-button>
-      <el-button type="primary" :loading="submitting" @click="submitTask">保存并启动扫描</el-button>
+      <div class="editor-footer">
+        <div class="editor-footer-inner">
+          <el-button @click="goPrev">取消</el-button>
+          <el-button type="primary" :loading="submitting" @click="submitTask">保存并启动扫描</el-button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -137,12 +139,14 @@ import {
   clearTaskDraft,
   initStrategyFromRoute
 } from './appsecTaskDraft.js'
+import { applyScanAssessmentDefaults } from './appsecBuiltinStrategies.js'
 
 const PANEL_META = {
   general: { title: '基础配置', hint: '任务名称、扫描目标及应用类型（专项检测）。' },
   port: { title: '端口扫描', hint: '配置扫描端口范围、方式与超时。' },
   crawler: { title: '爬虫配置', hint: '配置 Web 爬取深度、范围与速度。' },
-  advanced: { title: '代理设置', hint: '通过 HTTP/HTTPS/SOCKS5 代理发起扫描。' }
+  advanced: { title: '代理设置', hint: '通过 HTTP/HTTPS/SOCKS5 代理发起扫描。' },
+  login: { title: '登录凭证', hint: '为需登录的 Web 目标配置 Cookie 或 Header。' }
 }
 
 export default {
@@ -194,10 +198,11 @@ export default {
       if (s.port) items.push({ key: 'port', label: '端口扫描' })
       if (s.crawler) items.push({ key: 'crawler', label: '爬虫配置' })
       if (s.advanced) items.push({ key: 'advanced', label: '代理设置' })
+      if (s.login) items.push({ key: 'login', label: '登录凭证' })
       return items
     },
     configSectionKey() {
-      const map = { port: 'port', crawler: 'crawler', advanced: 'advanced' }
+      const map = { port: 'port', crawler: 'crawler', advanced: 'advanced', login: 'login' }
       return map[this.activeSection] || ''
     },
     panelTitle() {
@@ -272,6 +277,14 @@ export default {
     persistDraft() {
       if (this.scanConfig) saveTaskDraft(this.buildDraft())
     },
+    countTargets(text) {
+      if (!text) return 0
+      const parts = String(text)
+        .split(/[\n,，;；]+/)
+        .map(s => s.trim())
+        .filter(Boolean)
+      return new Set(parts).size
+    },
     validateForm() {
       if (!this.form.name) {
         this.$message({ message: '请输入任务名称', type: 'warning' })
@@ -306,10 +319,23 @@ export default {
       clearTaskDraft()
       this.$router.push({ path: '/appsec/tasks', query: { tab: this.scanType } })
     },
+    syncPluginSelectionFromForm() {
+      const form = this.$refs.pluginsForm
+      if (form && typeof form.getSelectedVulnIds === 'function') {
+        const ids = form.getSelectedVulnIds()
+        if (this.scanConfig) {
+          this.$set(this.scanConfig, 'vulIdsConfig', ids)
+        }
+      }
+    },
     async submitTask() {
       if (!this.validateForm()) return
+      if (this.needsVulnStep) {
+        this.syncPluginSelectionFromForm()
+      }
       this.persistDraft()
       const draft = this.buildDraft()
+      if (draft.scanConfig) applyScanAssessmentDefaults(draft.scanConfig)
       this.submitting = true
       try {
         const api = this.isDynamic ? security.runDynamicScan : security.runAppSpecificScan
@@ -322,7 +348,9 @@ export default {
         })
         if (res.code == 200) {
           clearTaskDraft()
-          this.$message({ message: '任务创建成功', type: 'success' })
+          const n = this.countTargets(draft.form.targetUrl)
+          const msg = n > 1 ? `任务已创建，共 ${n} 个扫描目标` : '任务创建成功'
+          this.$message({ message: msg, type: 'success' })
           this.goBack()
         } else {
           this.$message({ message: res.msg || '创建失败', type: 'error' })

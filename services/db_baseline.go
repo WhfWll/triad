@@ -77,9 +77,16 @@ func (c *DBBaselineChecker) RunDBCheck(ctx context.Context, task *DBCheckTask) (
 	}
 
 	rules := getDBBaselineRules(task.DBType)
-	report.TotalRules = len(rules)
 
+	execRules := make([]dbRuleDef, 0, len(rules))
 	for _, rule := range rules {
+		if !rule.KnowledgeOnly {
+			execRules = append(execRules, rule)
+		}
+	}
+	report.TotalRules = len(execRules)
+
+	for _, rule := range execRules {
 		select {
 		case <-ctx.Done():
 			return report, ctx.Err()
@@ -157,28 +164,13 @@ type dbRuleDef struct {
 	ExpectedValue string
 	FixSuggestion string
 	CheckFunc     func(string) bool
+	KnowledgeOnly bool // CVE 知识库条目，不参与在线 SQL 基线执行
 }
 
 func containsCheck(expected string) func(string) bool {
 	return func(actual string) bool {
 		return strings.Contains(actual, expected)
 	}
-}
-
-func getDBBaselineRules(dbType int) []dbRuleDef {
-	switch dbType {
-	case enums.DBSupportTypeMySQL:
-		return getMySQLBaselineRules()
-	case enums.DBSupportTypePostgreSQL:
-		return getPostgreSQLBaselineRules()
-	case enums.DBSupportTypeMongoDB:
-		return getMongoDBBaselineRules()
-	case enums.DBSupportTypeRedis:
-		return getRedisBaselineRules()
-	case enums.DBSupportTypeCouchDB:
-		return getCouchDBBaselineRules()
-	}
-	return nil
 }
 
 func getMySQLBaselineRules() []dbRuleDef {

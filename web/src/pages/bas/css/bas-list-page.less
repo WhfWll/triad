@@ -1,8 +1,10 @@
+@import '../../security/css/appsec-tokens.less';
+
 .list_box {
-  background: #1a1a2e;
-  box-shadow: 0px 2px 4px 0px rgba(0, 212, 170, 0.12);
-  padding: 24px;
-  border-radius: 8px;
+  background: @appsec-bg-surface;
+  box-shadow: @appsec-shadow-card;
+  padding: @appsec-space-lg;
+  border-radius: @appsec-radius-lg;
   box-sizing: border-box;
 }
 
@@ -51,9 +53,9 @@
 
 /deep/ .input-with-select .el-input__inner {
   background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(0, 212, 170, 0.2);
-  color: #94a3b8;
-  border-radius: 4px;
+  border-color: @appsec-border-strong;
+  color: @appsec-text-body;
+  border-radius: @appsec-radius-sm;
   height: 32px;
 }
 
@@ -61,7 +63,7 @@
   padding: 0 16px;
   height: 32px;
   line-height: 30px;
-  border-radius: 4px;
+  border-radius: @appsec-radius-sm;
 }
 
 /deep/ .el-button--primary {
@@ -212,7 +214,10 @@
 }
 
 /deep/ .myTable {
-  background: #1a1a2e;
+  background: @appsec-bg-surface;
+  border-radius: @appsec-radius-md;
+  overflow: hidden;
+  border: 1px solid @appsec-border-default;
 }
 
 /deep/ .el-table__header-wrapper,
@@ -234,7 +239,82 @@
 }
 
 /deep/ .el-table--enable-row-hover .el-table__body tr:hover > td {
-  background-color: rgba(0, 212, 170, 0.08);
+  background-color: rgba(0, 212, 170, 0.08) !important;
+}
+
+// 覆盖 App.vue 全局浅色表格 hover，避免暗色页文字看不清
+.security-container {
+  /deep/ .el-table th {
+    color: #94a3b8 !important;
+    background: #16162a !important;
+  }
+
+  /deep/ .el-table td {
+    color: #94a3b8 !important;
+    background: transparent !important;
+  }
+
+  /deep/ .el-table--enable-row-hover .el-table__body tr:hover > td {
+    background-color: rgba(0, 212, 170, 0.12) !important;
+    color: #e2e8f0 !important;
+  }
+
+  /deep/ .el-table--enable-row-hover .el-table__body tr:hover > td .cell {
+    color: #e2e8f0 !important;
+  }
+
+  /deep/ .el-table--enable-row-hover .el-table__body tr:hover > td .link_primary {
+    color: #00d4aa !important;
+  }
+
+  // 次要按钮（刷新、重置筛选、取消等）— 避免 Element 默认白底
+  /deep/ .el-button--default,
+  /deep/ .el-button:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(.el-button--info):not(.el-button--text) {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-color: rgba(0, 212, 170, 0.22) !important;
+    color: #cbd5e1 !important;
+    &:hover,
+    &:focus {
+      background: rgba(0, 212, 170, 0.1) !important;
+      border-color: rgba(0, 212, 170, 0.38) !important;
+      color: #00d4aa !important;
+    }
+  }
+
+  /deep/ .el-button--default.is-disabled,
+  /deep/ .el-button.is-disabled:not(.el-button--primary) {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #64748b !important;
+  }
+
+  /deep/ .el-button--primary {
+    background: #00d4aa !important;
+    border-color: #00d4aa !important;
+    color: #0f0f1a !important;
+    font-weight: 500;
+    border-radius: @appsec-radius-sm !important;
+    &:hover,
+    &:focus {
+      background: #00e6b8 !important;
+      border-color: #00e6b8 !important;
+      color: #0f0f1a !important;
+    }
+  }
+
+  /deep/ .el-button--default,
+  /deep/ .el-button:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(.el-button--info):not(.el-button--text) {
+    border-radius: @appsec-radius-sm !important;
+  }
+
+  /deep/ .el-input__inner,
+  /deep/ .el-textarea__inner {
+    border-radius: @appsec-radius-sm !important;
+  }
+
+  /deep/ .el-tag {
+    border-radius: @appsec-radius-sm;
+  }
 }
 
 /deep/ .el-table thead {

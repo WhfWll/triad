@@ -3,10 +3,12 @@ package services
 import (
 	"archive/zip"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -46,12 +48,122 @@ func ImportVulnerabilitiesFromUpload(src io.Reader, filename string) (*VulkitImp
 		return nil, fmt.Errorf("读取上传文件失败: %v", err)
 	}
 
+	lowerName := strings.ToLower(filename)
 	switch {
-	case strings.HasSuffix(strings.ToLower(filename), ".zip"):
+	case strings.HasSuffix(lowerName, ".zip"):
 		return importVulnsFromZip(data)
+	case strings.HasSuffix(lowerName, ".json"):
+		return importVulnsFromJson(data)
+	case strings.HasSuffix(lowerName, ".yak"):
+		scriptName := strings.TrimSuffix(filepath.Base(filename), filepath.Ext(filename))
+		if err := importSingleVuln(data, scriptName, filename); err != nil {
+			return nil, err
+		}
+		return &VulkitImportResult{Total: 1, Success: 1}, nil
 	default:
-		return nil, fmt.Errorf("不支持的文件格式: %s，请上传 .zip 文件", filename)
+		return nil, fmt.Errorf("不支持的文件格式: %s，请上传 .zip、.json 或 .yak 文件", filename)
 	}
+}
+
+// VulnExportItem 对应 webScanner 导出的 vulns_export.json 单条记录
+type VulnExportItem struct {
+	Pocname          string `json:"pocname"`
+	Name             string `json:"name"`
+	VulId            string `json:"VulId"`
+	VulIdLower       string `json:"vulId"`
+	Risk             int    `json:"risk"`
+	Type             int    `json:"type"`
+	Class            int    `json:"class"`
+	OperatingSystem  int    `json:"operatingSystem"`
+	Description      string `json:"description"`
+	FixSuggest       string `json:"fixSuggest"`
+	AffectRange      string `json:"affectRange"`
+	CVE              string `json:"cve"`
+	CNVD             string `json:"cnvd"`
+	CNNVD            string `json:"cnnvd"`
+	VerifyType       string `json:"verifyType"`
+	ExploitImpact    int    `json:"exploitImpact"`
+	ScriptType       string `json:"scriptType"`
+}
+
+func importVulnsFromJson(data []byte) (*VulkitImportResult, error) {
+	var items []VulnExportItem
+	if err := json.Unmarshal(data, &items); err != nil {
+		return nil, fmt.Errorf("解析 JSON 失败: %v", err)
+	}
+	if len(items) == 0 {
+		return nil, fmt.Errorf("JSON 中未包含漏洞记录")
+	}
+
+	result := &VulkitImportResult{}
+	for _, item := range items {
+		if item.Pocname == "" {
+			continue
+		}
+
+		now := time.Now()
+		exploitImpact := item.ExploitImpact
+		if exploitImpact == 0 {
+			exploitImpact = 2
+		}
+		cve := item.CVE
+		vulID := item.VulId
+		if vulID == "" {
+			vulID = item.VulIdLower
+		}
+		if vulID == "" {
+			vulID = cve
+		}
+		if vulID == "" {
+			vulID = "BUILTIN-" + strings.ToUpper(strings.ReplaceAll(item.Pocname, " ", "-"))
+		}
+		risk := item.Risk
+		if risk == 0 {
+			risk = 3
+		}
+		vulType := item.Type
+		if vulType == 0 {
+			vulType = 74
+		}
+		vulClass := item.Class
+		if vulClass == 0 {
+			vulClass = 1
+		}
+		scriptType := item.ScriptType
+		if scriptType == "" {
+			scriptType = "universal"
+		}
+		verifyType := 1
+		if item.VerifyType != "" {
+			if v, err := strconv.Atoi(item.VerifyType); err == nil && v > 0 {
+				verifyType = v
+			}
+		}
+
+		dbResult := mysql.DB.Exec(`INSERT INTO vul_libraries (data_type, vul_id, name, cve, risk, type, class, description, affect_range, fix_suggest, status, pocname, verify_type, exploit_impact, script_type, cnvd, cnnvd, operating_system, create_time, update_time)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			ON DUPLICATE KEY UPDATE name=VALUES(name), cve=VALUES(cve), risk=VALUES(risk), type=VALUES(type), class=VALUES(class),
+			description=VALUES(description), affect_range=VALUES(affect_range), fix_suggest=VALUES(fix_suggest), status=VALUES(status),
+			verify_type=VALUES(verify_type), exploit_impact=VALUES(exploit_impact), script_type=VALUES(script_type),
+			cnvd=VALUES(cnvd), cnnvd=VALUES(cnnvd), operating_system=VALUES(operating_system), update_time=VALUES(update_time)`,
+			1, vulID, item.Name, cve, risk, vulType, vulClass, item.Description, item.AffectRange, item.FixSuggest,
+			2, item.Pocname, verifyType, exploitImpact, scriptType, item.CNVD, item.CNNVD, item.OperatingSystem, now, now,
+		)
+		if dbResult.Error != nil {
+			result.Errors = append(result.Errors, fmt.Sprintf("%s: %v", item.Pocname, dbResult.Error))
+			continue
+		}
+		result.Success++
+		result.Total++
+	}
+
+	if result.Total == 0 {
+		if len(result.Errors) > 0 {
+			return nil, fmt.Errorf("导入失败: %s", result.Errors[0])
+		}
+		return nil, fmt.Errorf("JSON 中无有效漏洞记录（需包含 pocname 字段）")
+	}
+	return result, nil
 }
 
 func importVulnsFromZip(data []byte) (*VulkitImportResult, error) {

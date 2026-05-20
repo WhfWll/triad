@@ -346,3 +346,29 @@ func (t *TaskTask) GetTaskTrendStatByTaskIds(ctx context.Context, startTime, dat
 
 	return TaskTrendStatList
 }
+
+// GetAppSecTaskList 应用安全任务列表（按 task_type 筛选）
+func (t *TaskTask) GetAppSecTaskList(ctx context.Context, taskType, userID, page, limit int, search string) ([]TaskTask, int64, error) {
+	var (
+		list  []TaskTask
+		count int64
+		db    = mysql.FromContext(ctx).Model(&TaskTask{}).Where("task_type = ?", taskType)
+	)
+	if userID > 0 {
+		db = db.Where("user_id = ?", userID)
+	}
+	if search != "" {
+		db = db.Where("task_name LIKE ?", "%"+search+"%")
+	}
+	if err := db.Count(&count).Error; err != nil {
+		return nil, 0, err
+	}
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	err := db.Order("create_time DESC").Limit(limit).Offset((page - 1) * limit).Find(&list).Error
+	return list, count, err
+}

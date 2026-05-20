@@ -41,77 +41,74 @@ export const BUILTIN_STRATEGIES = [
   }
 ]
 
+/** 扫描评估默认：仅原理验证，其余关闭（界面已隐藏，保存/建任务时仍写入） */
+export const DEFAULT_SCAN_ASSESSMENT = {
+  testMode: 'principle',
+  safeTest: false,
+  vulExploit: false
+}
+
+const DEFAULT_WEBSITE_LOGIN = { isOpen: false, list: [] }
+
+function withAssessmentDefaults(cfg) {
+  return {
+    ...DEFAULT_SCAN_ASSESSMENT,
+    websiteLogin: JSON.parse(JSON.stringify(DEFAULT_WEBSITE_LOGIN)),
+    ...cfg,
+    ...DEFAULT_SCAN_ASSESSMENT,
+    websiteLogin: cfg.websiteLogin
+      ? { ...DEFAULT_WEBSITE_LOGIN, ...cfg.websiteLogin, list: [...(cfg.websiteLogin.list || [])] }
+      : JSON.parse(JSON.stringify(DEFAULT_WEBSITE_LOGIN))
+  }
+}
+
 const BUILTIN_CONFIGS = {
-  'builtin-full': {
-    testMode: 'principle',
-    safeTest: true,
-    vulExploit: false,
-    testIntensity: 3,
+  'builtin-full': withAssessmentDefaults({
     vulIdsConfig: [],
     webCrawler: { isOpen: true, maxDepth: 5, scanRange: 0, crawlerSpeed: 2 },
     portScan: { isOpen: true, scanPort: '21,22,23,80,443,445,3306,8000,8080', tcpScanType: 1, timeout: 10, concurrent: 100 },
     proxy: { isOpen: false, proto: 1, addr: '', port: '' }
-  },
-  'builtin-highrisk': {
-    testMode: 'principle',
-    safeTest: true,
-    vulExploit: false,
-    testIntensity: 4,
+  }),
+  'builtin-highrisk': withAssessmentDefaults({
     vulIdsConfig: [],
     webCrawler: { isOpen: true, maxDepth: 3, scanRange: 0, crawlerSpeed: 2 },
     portScan: { isOpen: true, scanPort: '80,443,3306,8080', tcpScanType: 1, timeout: 10, concurrent: 100 },
     proxy: { isOpen: false, proto: 1, addr: '', port: '' }
-  },
-  'builtin-web': {
-    testMode: 'principle',
-    safeTest: true,
-    vulExploit: false,
-    testIntensity: 3,
+  }),
+  'builtin-web': withAssessmentDefaults({
     vulIdsConfig: [],
     webCrawler: { isOpen: true, maxDepth: 6, scanRange: 0, crawlerSpeed: 3 },
     portScan: { isOpen: false, scanPort: '', tcpScanType: 1, timeout: 10, concurrent: 100 },
     proxy: { isOpen: false, proto: 1, addr: '', port: '' }
-  },
-  'builtin-weakpass': {
-    testMode: 'principle',
-    safeTest: false,
-    vulExploit: false,
-    testIntensity: 2,
+  }),
+  'builtin-weakpass': withAssessmentDefaults({
     vulIdsConfig: [],
     webCrawler: { isOpen: false, maxDepth: 1, scanRange: 0, crawlerSpeed: 1 },
     portScan: { isOpen: true, scanPort: '21,22,23,3306,3389,5432,6379', tcpScanType: 1, timeout: 10, concurrent: 50 },
     proxy: { isOpen: false, proto: 1, addr: '', port: '' }
-  },
-  'builtin-component': {
-    testMode: 'version',
-    safeTest: true,
-    vulExploit: false,
-    testIntensity: 3,
+  }),
+  'builtin-component': withAssessmentDefaults({
     vulIdsConfig: [],
     webCrawler: { isOpen: false, maxDepth: 1, scanRange: 0, crawlerSpeed: 1 },
     portScan: { isOpen: true, scanPort: '80,443,8080,8000,8443', tcpScanType: 1, timeout: 10, concurrent: 100 },
     proxy: { isOpen: false, proto: 1, addr: '', port: '' }
-  },
-  'builtin-portscan': {
-    testMode: 'principle',
-    safeTest: true,
-    vulExploit: false,
-    testIntensity: 1,
+  }),
+  'builtin-portscan': withAssessmentDefaults({
     vulIdsConfig: [],
     webCrawler: { isOpen: false, maxDepth: 1, scanRange: 0, crawlerSpeed: 1 },
     portScan: { isOpen: true, scanPort: '1-65535', tcpScanType: 2, timeout: 5, concurrent: 200 },
     proxy: { isOpen: false, proto: 1, addr: '', port: '' }
-  }
+  })
 }
 
 /** 各策略在任务配置页显示的区块 */
 const STRATEGY_SECTIONS = {
-  'builtin-full': { vuln: true, scan: true, crawler: true, port: true, advanced: true },
-  'builtin-highrisk': { vuln: true, scan: true, crawler: true, port: true, advanced: true },
-  'builtin-web': { vuln: true, scan: true, crawler: true, port: false, advanced: true },
-  'builtin-weakpass': { vuln: true, scan: true, crawler: false, port: true, advanced: false },
-  'builtin-component': { vuln: true, scan: true, crawler: false, port: true, advanced: true },
-  'builtin-portscan': { vuln: false, scan: true, crawler: false, port: true, advanced: false }
+  'builtin-full': { vuln: true, scan: true, crawler: true, port: true, advanced: true, login: true },
+  'builtin-highrisk': { vuln: true, scan: true, crawler: true, port: true, advanced: true, login: true },
+  'builtin-web': { vuln: true, scan: true, crawler: true, port: false, advanced: true, login: true },
+  'builtin-weakpass': { vuln: true, scan: true, crawler: false, port: true, advanced: false, login: true },
+  'builtin-component': { vuln: true, scan: true, crawler: false, port: true, advanced: true, login: true },
+  'builtin-portscan': { vuln: false, scan: true, crawler: false, port: true, advanced: false, login: false }
 }
 
 export function getBuiltinStrategy(id) {
@@ -128,7 +125,26 @@ export function cloneBuiltinConfig(id) {
 }
 
 export function getStrategySections(strategyId) {
-  return STRATEGY_SECTIONS[strategyId] || STRATEGY_SECTIONS['builtin-full']
+  const s = STRATEGY_SECTIONS[strategyId] || STRATEGY_SECTIONS['builtin-full']
+  return { login: false, ...s }
+}
+
+/** 统一扫描评估默认值（界面已移除扫描评估页） */
+export function applyScanAssessmentDefaults(config) {
+  if (!config) return config
+  Object.assign(config, DEFAULT_SCAN_ASSESSMENT)
+  delete config.testIntensity
+  if (!config.websiteLogin) {
+    config.websiteLogin = JSON.parse(JSON.stringify(DEFAULT_WEBSITE_LOGIN))
+  } else if (!Array.isArray(config.websiteLogin.list)) {
+    config.websiteLogin.list = []
+  } else {
+    config.websiteLogin.list = config.websiteLogin.list.map(row => {
+      const { _editing, ...rest } = row || {}
+      return rest
+    })
+  }
+  return config
 }
 
 /** 供策略管理页使用的完整内置策略列表（含 config，合并本地覆盖） */

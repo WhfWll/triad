@@ -29,7 +29,8 @@ const ScannerErrorPrefix = "__scanner_error__:"
 const defaultScannerProcessTimeout = 2 * time.Hour
 
 type scannerRuntimeConfig struct {
-	ProcessTimeoutSeconds int `json:"process_timeout_seconds"`
+	ProcessTimeoutSeconds int    `json:"process_timeout_seconds"`
+	ExecutablePath        string `json:"executable_path"`
 }
 
 func formatScannerError(stage, target, scannerCmd string, err error) string {
@@ -48,6 +49,46 @@ func getScannerProcessTimeout() time.Duration {
 		return defaultScannerProcessTimeout
 	}
 	return time.Duration(scannerConfig.ProcessTimeoutSeconds) * time.Second
+}
+
+// resolveScannerExecutable 解析 scanner 可执行文件路径（配置 / 环境变量 / 工作目录 / 常见开发路径）
+func resolveScannerExecutable() (string, error) {
+	if env := strings.TrimSpace(os.Getenv("SCANNER_PATH")); env != "" {
+		if _, err := os.Stat(env); err == nil {
+			return env, nil
+		}
+		return "", fmt.Errorf("SCANNER_PATH 指向的文件不存在: %s", env)
+	}
+
+	var cfg scannerRuntimeConfig
+	_ = config.Load("scanner", &cfg)
+	if p := strings.TrimSpace(cfg.ExecutablePath); p != "" {
+		if _, err := os.Stat(p); err == nil {
+			return p, nil
+		}
+		return "", fmt.Errorf("scanner.executable_path 配置无效: %s", p)
+	}
+
+	workDir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	name := "scanner"
+	if runtime.GOOS == "windows" {
+		name = "scanner.exe"
+	}
+	candidates := []string{
+		filepath.Join(workDir, name),
+		filepath.Join(workDir, "..", "webScanner", name),
+		filepath.Join(workDir, "..", "..", "webScanner", name),
+		`D:\goproject\webScanner\` + name,
+	}
+	for _, p := range candidates {
+		if _, err := os.Stat(p); err == nil {
+			return p, nil
+		}
+	}
+	return "", fmt.Errorf("未找到 scanner 可执行文件，请将 scanner.exe 放到程序工作目录，或设置环境变量 SCANNER_PATH，或在配置 scanner.executable_path 中指定路径")
 }
 
 // 通用YAML配置模板常量
@@ -140,7 +181,7 @@ testMode:
 principleVerifyScripts:
   enabled: true                               # 是否启用原理验证脚本过滤
 {{- if .ScriptListFile}}
-  scriptListFile: {{.ScriptListFile}}         # 外部脚本列表文件路径
+  scriptListFile: "{{.ScriptListFile}}"       # 外部脚本列表文件路径
 {{- end}}
 {{- if .ScriptNames}}
   scriptNames:                                # 脚本名称列表（分布式环境推荐）
@@ -227,16 +268,11 @@ func InvokeScanner(ctx context.Context, target string, configJson enums.ConfigJs
 	processTimeout := getScannerProcessTimeout()
 	ctxTimeout, cancel := context.WithTimeout(ctx, processTimeout)
 	defer cancel()
-	// 获取当前工作目录并组装 scanner.exe 的完整路径
-	workDir, err := os.Getwd()
+	scannerCmd, err := resolveScannerExecutable()
 	if err != nil {
-		log.Errorf("获取工作目录失败: %v", err)
+		log.Errorf("解析 scanner 路径失败: %v", err)
 		callBackFunc(ctx, ScannerErrorPrefix+formatScannerError("prepare scanner command failed", target, "", err))
 		return
-	}
-	scannerCmd := filepath.Join(workDir, "scanner")
-	if runtime.GOOS == "windows" {
-		scannerCmd = filepath.Join(workDir, "scanner.exe")
 	}
 	//fmt.Println("[command]:", scannerCmd, scriptParamList)
 	log.Infof("invoke scanner process timeout: %s", processTimeout)
@@ -301,6 +337,14 @@ func generateRandomFileName() string {
 		return fmt.Sprintf("scanner_%d.log", time.Now().Unix())
 	}
 	return fmt.Sprintf("scanner_%s.log", hex.EncodeToString(bytes))
+}
+
+// pathForYAML 将路径写入 YAML 双引号字符串（Windows 反斜杠会触发 \U 等非法转义）
+func pathForYAML(path string) string {
+	if path == "" {
+		return path
+	}
+	return filepath.ToSlash(path)
 }
 
 // cleanupTempFile 清理临时文件
@@ -509,10 +553,13 @@ func saveScannerConfig(ctx context.Context, addr, target string, configJson enum
 	tpl := template.Must(template.New("config").Parse(configContent))
 
 	var buf bytes.Buffer
-	// 处理脚本列表参数
-	scripts := strings.Split(scriptParam, ",")
-	if len(scripts) == 0 {
-		scripts = []string{""} // 默认脚本
+	// 处理脚本列表参数（仅 universal 类型；原理验证走 principleVerifyScripts.scriptListFile）
+	scripts := make([]string, 0)
+	for _, name := range strings.Split(strings.Trim(scriptParam, ","), ",") {
+		name = strings.TrimSpace(name)
+		if name != "" {
+			scripts = append(scripts, name)
+		}
 	}
 	// 修改模板执行部分
 	if err := tpl.Execute(&buf, struct {
@@ -553,7 +600,7 @@ func saveScannerConfig(ctx context.Context, addr, target string, configJson enum
 		PostExploitEnable:   scanConfig.PostExploit,
 		RandomFileName:      generateRandomFileName(),
 		ScriptNames:         make([]string, 0),
-		ScriptListFile:      tempScriptListFile,
+		ScriptListFile:      pathForYAML(tempScriptListFile),
 		TestModeConfig:      testModeConfig,
 		PortScanConfig:      portScanConfig,
 		WeakPassConfig:      weakPassConfig,
@@ -850,11 +897,7 @@ func generatePortScanConfig(ctx context.Context, configJson enums.ConfigJson) *P
 				log.Errorf("写入指纹规则内容失败: %v", err)
 				rulesFile = "fingerprint-rules.yml" // 使用默认文件名作为备选
 			} else {
-				rulesFile = tempFile.Name()
-				// Windows系统需要转换路径分隔符为双反斜杠
-				if runtime.GOOS == "windows" {
-					rulesFile = strings.ReplaceAll(rulesFile, "\\", "\\\\")
-				}
+				rulesFile = pathForYAML(tempFile.Name())
 				log.Infof("指纹规则文件已创建: %s, 包含 %d 条规则", rulesFile, len(fingerList))
 			}
 		}
@@ -1163,7 +1206,7 @@ func generateRecordingFileConfig(ctx context.Context, target string, configJson 
 					return config
 				}
 
-				config.FilePath = recordingFilePath
+				config.FilePath = pathForYAML(recordingFilePath)
 				log.Infof("已生成录制文件: %s", recordingFilePath)
 				break
 			}
@@ -1177,20 +1220,23 @@ func generateRecordingFileConfig(ctx context.Context, target string, configJson 
 func generateTestModeConfig(ctx context.Context, configJson enums.ConfigJson) *TestModeResult {
 	var principleVerify, versionMatch bool
 
-	// 根据TestMode设置测试模式参数
-	switch configJson.TestMode {
-	case "1":
+	// 根据TestMode设置测试模式参数（兼容渗透任务 "1"/"2" 与应用安全 "principle"/"version"）
+	mode := strings.ToLower(strings.TrimSpace(configJson.TestMode))
+	switch mode {
+	case "1", "principle":
 		principleVerify = true
-		versionMatch = false
-	case "2":
-		principleVerify = false
+	case "2", "version":
 		versionMatch = true
-	case "1,2":
+	case "1,2", "principle,version", "version,principle":
 		principleVerify = true
 		versionMatch = true
 	default:
-		principleVerify = false
-		versionMatch = false
+		if strings.Contains(mode, "principle") {
+			principleVerify = true
+		}
+		if strings.Contains(mode, "version") {
+			versionMatch = true
+		}
 	}
 
 	testModeConfig := &TestModeResult{
@@ -1282,10 +1328,13 @@ func BuildScanConfig(ctx context.Context, targetURL string, configJson enums.Con
 	tpl := template.Must(template.New("config").Parse(configTemplate))
 
 	var buf bytes.Buffer
-	// 处理脚本列表参数
-	scripts := strings.Split(scriptParam, ",")
-	if len(scripts) == 0 {
-		scripts = []string{""} // 默认脚本
+	// 处理脚本列表参数（仅 universal 类型；原理验证走 principleVerifyScripts.scriptListFile）
+	scripts := make([]string, 0)
+	for _, name := range strings.Split(strings.Trim(scriptParam, ","), ",") {
+		name = strings.TrimSpace(name)
+		if name != "" {
+			scripts = append(scripts, name)
+		}
 	}
 
 	// 提取脚本名称列表（用于分布式环境）
@@ -1342,7 +1391,7 @@ func BuildScanConfig(ctx context.Context, targetURL string, configJson enums.Con
 		ScanMode:            scanConfig.ScanMode,
 		PostExploitEnable:   scanConfig.PostExploit,
 		RandomFileName:      generateRandomFileName(),
-		ScriptListFile:      tempScriptListFile,
+		ScriptListFile:      pathForYAML(tempScriptListFile),
 		ScriptNames:         scriptNames,
 		TestModeConfig:      testModeConfig,
 		PortScanConfig:      portScanConfig,

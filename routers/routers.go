@@ -481,5 +481,32 @@ func RegisterRoute() *gin.Engine {
 	// 安全检查通用枚举
 	smartRouterGroup.GET("/baseline/enums", rest.BaselineEnums) // 安全检查通用枚举
 
+	// 应用安全扫描（Web 动态扫描 / 专项应用检测，调用 scanner.exe）
+	smartRouterGroup.POST("/appsec/dynamic/run", rest.AppSecDynamicScanRun)            // 应用安全 - 动态扫描创建
+	smartRouterGroup.GET("/appsec/dynamic/list", rest.AppSecDynamicScanList)           // 应用安全 - 动态扫描列表
+	smartRouterGroup.GET("/appsec/dynamic/detail", rest.AppSecDynamicScanDetail)       // 应用安全 - 动态扫描详情
+	smartRouterGroup.POST("/appsec/appspecific/run", rest.AppSecAppSpecificScanRun)    // 应用安全 - 专项应用检测创建
+	smartRouterGroup.GET("/appsec/appspecific/list", rest.AppSecAppSpecificScanList)   // 应用安全 - 专项应用检测列表
+	smartRouterGroup.GET("/appsec/appspecific/detail", rest.AppSecAppSpecificScanDetail) // 应用安全 - 专项应用检测详情
+
+	// 数据安全（任务化：数据库基线检查 / 敏感数据发现）
+	smartRouterGroup.POST("/datasec/db/run", rest.DataSecDBCheckRun)                 // 数据安全 - 数据库检查创建
+	smartRouterGroup.GET("/datasec/db/list", rest.DataSecDBCheckList)               // 数据安全 - 数据库检查任务列表
+	smartRouterGroup.GET("/datasec/db/detail", rest.DataSecDBCheckDetail)           // 数据安全 - 数据库检查任务详情
+	smartRouterGroup.POST("/datasec/sensitive/run", rest.DataSecSensitiveScanRun)   // 数据安全 - 敏感数据扫描创建
+	smartRouterGroup.GET("/datasec/sensitive/list", rest.DataSecSensitiveScanList)   // 数据安全 - 敏感数据任务列表
+	smartRouterGroup.GET("/datasec/sensitive/detail", rest.DataSecSensitiveScanDetail) // 数据安全 - 敏感数据任务详情
+	// 数据安全 - 检测规则库
+	smartRouterGroup.GET("/datasec/rules", rest.DataSecRulesList)                        // 规则列表与统计
+	smartRouterGroup.POST("/datasec/rules/reload", rest.DataSecRulesReload)            // 从库重载规则
+	smartRouterGroup.POST("/datasec/rules/import", rest.DataSecRulesImport)             // JSON 导入规则
+	smartRouterGroup.POST("/datasec/rules/import-builtin", rest.DataSecRulesImportBuiltin) // 导入内置规则到库
+	smartRouterGroup.GET("/datasec/rules/cve-preview", rest.DataSecCveImportPreview)       // CVE 库可导入条数预览
+	smartRouterGroup.POST("/datasec/rules/import-cve", rest.DataSecRulesImportFromCve)       // 从 default-cve.db 导入
+	smartRouterGroup.GET("/datasec/rule/detail", rest.DataSecRuleDetail)               // 规则详情
+	smartRouterGroup.POST("/datasec/rule/create", rest.DataSecRuleCreate)              // 新增规则
+	smartRouterGroup.POST("/datasec/rule/update", rest.DataSecRuleUpdate)              // 编辑规则
+	smartRouterGroup.GET("/datasec/rule/delete", rest.DataSecRuleDelete)               // 删除规则
+
 	return router
 }
