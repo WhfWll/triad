@@ -584,9 +584,19 @@ const routes = [
         component: () => import('@/pages/security/DataSecTaskHub.vue'),
       },
       {
+        path: '/datasec/task/detail',
+        name: 'datasecTaskDetail',
+        component: () => import('@/pages/security/DataSecTaskDetail.vue'),
+      },
+      {
         path: '/datasec/rules',
         name: 'datasecRules',
         component: () => import('@/pages/security/DataDetectionRules.vue'),
+      },
+      {
+        path: '/datasec/targets',
+        name: 'datasecTargets',
+        component: () => import('@/pages/security/DataSecTargetLibrary.vue'),
       },
       {
         path: '/hostsecurityhub',

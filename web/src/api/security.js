@@ -13,6 +13,9 @@ const security = {
   },
 
   // 数据库安全检查（任务化 /smart/datasec/db/*，旧 /smart/db/* 仍可用）
+  testDataSecDBConn: (data) => {
+    return axios.postJson('/smart/datasec/db/test-conn', data)
+  },
   runDBCheck: (data) => {
     return axios.postJson('/smart/datasec/db/run', data)
   },
@@ -21,6 +24,38 @@ const security = {
   },
   getDBCheckDetail: (params) => {
     return axios.get('/smart/datasec/db/detail', params)
+  },
+  rerunDataSecTask: (data) => {
+    return axios.postJson('/smart/datasec/task/rerun', data)
+  },
+  cloneDataSecTaskTargets: (params) => {
+    return axios.get('/smart/datasec/task/clone-targets', params)
+  },
+
+  // 数据库目标库
+  getDatasecTargetList: (params) => {
+    return axios.get('/smart/datasec/target/list', params)
+  },
+  saveDatasecTarget: (data) => {
+    return axios.postJson('/smart/datasec/target/save', data)
+  },
+  deleteDatasecTarget: (params) => {
+    return axios.get('/smart/datasec/target/delete', params)
+  },
+  importDatasecTargets: (data) => {
+    return axios.postJson('/smart/datasec/target/import', data)
+  },
+  exportDatasecTargets: (params) => {
+    return axios.get('/smart/datasec/target/export', params)
+  },
+  saveDatasecTargetsFromTask: (data) => {
+    return axios.postJson('/smart/datasec/target/save-from-task', data)
+  },
+  testDatasecTargetConn: (data) => {
+    return axios.postJson('/smart/datasec/target/test-conn', data)
+  },
+  batchTestDatasecTargetConn: (data) => {
+    return axios.postJson('/smart/datasec/target/batch-test-conn', data)
   },
 
   // 敏感数据发现（任务化 /smart/datasec/sensitive/*）

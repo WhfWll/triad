@@ -87,7 +87,7 @@ func BuildDatasecRulesFromCve(limit int) ([]DatasecRuleExportItem, error) {
 		name := TruncateUTF8Bytes(fmt.Sprintf("[%s] %s", cveID, title), 255)
 		fix := strings.TrimSpace(SanitizeUTF8(solution))
 		if fix == "" {
-			fix = "请参考 CVE 公告升级数据库或应用官方补丁；后续版本将支持基于 SELECT VERSION() 的自动匹配。"
+			fix = "请参考 CVE 公告升级数据库或应用官方补丁；数据库安全检查任务已支持基于实例版本的 CVE 在线匹配。"
 		}
 		out = append(out, DatasecRuleExportItem{
 			Name:            name,

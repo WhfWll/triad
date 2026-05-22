@@ -490,12 +490,23 @@ func RegisterRoute() *gin.Engine {
 	smartRouterGroup.GET("/appsec/appspecific/detail", rest.AppSecAppSpecificScanDetail) // 应用安全 - 专项应用检测详情
 
 	// 数据安全（任务化：数据库基线检查 / 敏感数据发现）
+	smartRouterGroup.POST("/datasec/db/test-conn", rest.DataSecDBTestConn)           // 数据安全 - 数据库连接测试
 	smartRouterGroup.POST("/datasec/db/run", rest.DataSecDBCheckRun)                 // 数据安全 - 数据库检查创建
 	smartRouterGroup.GET("/datasec/db/list", rest.DataSecDBCheckList)               // 数据安全 - 数据库检查任务列表
 	smartRouterGroup.GET("/datasec/db/detail", rest.DataSecDBCheckDetail)           // 数据安全 - 数据库检查任务详情
 	smartRouterGroup.POST("/datasec/sensitive/run", rest.DataSecSensitiveScanRun)   // 数据安全 - 敏感数据扫描创建
 	smartRouterGroup.GET("/datasec/sensitive/list", rest.DataSecSensitiveScanList)   // 数据安全 - 敏感数据任务列表
 	smartRouterGroup.GET("/datasec/sensitive/detail", rest.DataSecSensitiveScanDetail) // 数据安全 - 敏感数据任务详情
+	smartRouterGroup.GET("/datasec/task/clone-targets", rest.DataSecTaskCloneTargets)   // 数据安全 - 复制历史任务目标
+	smartRouterGroup.POST("/datasec/task/rerun", rest.DataSecTaskRerun)                 // 数据安全 - 再次检测
+	smartRouterGroup.GET("/datasec/target/list", rest.DataSecDBTargetList)              // 数据安全 - 目标库列表
+	smartRouterGroup.POST("/datasec/target/save", rest.DataSecDBTargetSave)             // 数据安全 - 目标库保存
+	smartRouterGroup.GET("/datasec/target/delete", rest.DataSecDBTargetDelete)          // 数据安全 - 目标库删除
+	smartRouterGroup.POST("/datasec/target/import", rest.DataSecDBTargetImport)         // 数据安全 - 目标库导入
+	smartRouterGroup.GET("/datasec/target/export", rest.DataSecDBTargetExport)          // 数据安全 - 目标库导出
+	smartRouterGroup.POST("/datasec/target/save-from-task", rest.DataSecSaveTargetsToLibrary) // 保存任务目标到库
+	smartRouterGroup.POST("/datasec/target/test-conn", rest.DataSecDBTargetTestConn)         // 目标库单条连接测试
+	smartRouterGroup.POST("/datasec/target/batch-test-conn", rest.DataSecDBTargetBatchTestConn) // 目标库批量连接测试
 	// 数据安全 - 检测规则库
 	smartRouterGroup.GET("/datasec/rules", rest.DataSecRulesList)                        // 规则列表与统计
 	smartRouterGroup.POST("/datasec/rules/reload", rest.DataSecRulesReload)            // 从库重载规则

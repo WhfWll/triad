@@ -4,7 +4,7 @@
     <p class="page-intro">
       规则存储于 <strong>datasec_rule</strong> 表。库中有启用规则时，数据库安全检查任务将优先使用库规则；否则使用内置规则（约 {{ builtinHint }} 条）。
       需求指标 <strong>3800+</strong> 条：可从本地 <strong>data/default-cve.db</strong> 导入数据库相关 CVE（约 {{ cvePreview.availableInDb || '—' }} 条可用）。
-      CVE 规则为<strong>知识库条目</strong>，在线基线扫描仍执行可执行的 SQL 规则；版本匹配核查可后续增强。
+      CVE 规则为<strong>知识库条目</strong>；任务扫描时会<strong>自动探测版本并在线匹配 CVE</strong>（最多展示 50 条命中）。
       <router-link class="link-to-tasks" to="/datasec/tasks">前往任务管理</router-link>
     </p>
 

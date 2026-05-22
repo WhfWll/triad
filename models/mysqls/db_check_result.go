@@ -55,3 +55,7 @@ func (d *DBCheckResult) GetByTaskID(ctx context.Context, taskID int) ([]DBCheckR
 func (d *DBCheckResult) DeleteByTaskID(ctx context.Context, taskID int) error {
 	return mysql.FromContext(ctx).Model(d).Where("task_id = ?", taskID).Delete(nil).Error
 }
+
+func (d *DBCheckResult) DeleteByTargetID(ctx context.Context, targetID int) error {
+	return mysql.FromContext(ctx).Model(d).Where("target_id = ?", targetID).Delete(nil).Error
+}

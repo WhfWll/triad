@@ -216,11 +216,7 @@ func (m *DBConnManager) executeSQLQuery(ctx context.Context, db *sql.DB, query s
 
 		row := make(map[string]string)
 		for i, col := range columns {
-			if values[i] != nil {
-				row[col] = fmt.Sprintf("%v", values[i])
-			} else {
-				row[col] = "NULL"
-			}
+			row[col] = sqlCellToString(values[i])
 		}
 		results = append(results, row)
 	}
@@ -287,6 +283,22 @@ func (m *DBConnManager) executeCouchHTTP(ctx context.Context, conn *DBConnection
 
 	row := map[string]string{"response": string(body)}
 	return []map[string]string{row}, nil
+}
+
+func sqlCellToString(v interface{}) string {
+	if v == nil {
+		return "NULL"
+	}
+	switch t := v.(type) {
+	case []byte:
+		return string(t)
+	case string:
+		return t
+	case time.Time:
+		return t.Format("2006-01-02 15:04:05")
+	default:
+		return fmt.Sprintf("%v", t)
+	}
 }
 
 func (m *DBConnManager) GetDatabases(ctx context.Context, conn *DBConnection) ([]string, error) {

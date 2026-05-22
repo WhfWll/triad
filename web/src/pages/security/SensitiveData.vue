@@ -6,6 +6,7 @@
       <div class="search-box">
         <div class="operationbutton">
           <el-button type="primary" size="small" @click="btnCreate">新建扫描任务</el-button>
+          <router-link to="/datasec/targets"><el-button size="small">目标库管理</el-button></router-link>
         </div>
         <div class="serach-condition">
           <div class="search-text">
@@ -28,7 +29,10 @@
             <span :class="getDBTypeClass(scope.row.dbType)">{{ getDBTypeName(scope.row.dbType) }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="dbHost" label="数据库地址" :show-overflow-tooltip="true">
+        <el-table-column prop="dbHost" label="扫描目标" :show-overflow-tooltip="true">
+          <template slot-scope="scope">
+            <span>{{ scope.row.targetSummary || scope.row.dbHost }}</span>
+          </template>
         </el-table-column>
         <el-table-column prop="totalCount" label="发现数据条数">
         </el-table-column>
@@ -46,9 +50,11 @@
         </el-table-column>
         <el-table-column prop="scanTime" label="扫描时间">
         </el-table-column>
-        <el-table-column label="操作" width="100">
+        <el-table-column label="操作" width="220">
           <template slot-scope="scope">
             <el-link :underline="false" class="link_primary" @click="handleDetail(scope.row)">详情</el-link>
+            <el-link :underline="false" class="link_primary" @click="handleRerun(scope.row)">再次检测</el-link>
+            <el-link :underline="false" class="link_primary" @click="handleCopyTargets(scope.row)">复制目标</el-link>
           </template>
         </el-table-column>
       </el-table>
@@ -64,7 +70,7 @@
       </el-pagination>
     </div>
 
-    <el-dialog title="新建敏感数据扫描任务" :visible.sync="dialogVisible" width="600px">
+    <el-dialog title="新建敏感数据扫描任务" :visible.sync="dialogVisible" width="720px">
       <el-form :model="taskForm" :rules="rules" ref="taskForm" label-width="100px">
         <el-form-item label="任务名称" prop="name">
           <el-input v-model="taskForm.name" placeholder="请输入任务名称"></el-input>
@@ -78,21 +84,14 @@
             <el-option label="CouchDB" :value="5"></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="数据库地址" prop="dbHost">
-          <el-input v-model="taskForm.dbHost" placeholder="请输入数据库地址"></el-input>
-        </el-form-item>
-        <el-form-item label="端口" prop="dbPort">
-          <el-input type="number" v-model="taskForm.dbPort" placeholder="请输入端口号"></el-input>
-        </el-form-item>
-        <el-form-item label="数据库名称" prop="dbName">
-          <el-input v-model="taskForm.dbName" placeholder="请输入数据库名称"></el-input>
-        </el-form-item>
-        <el-form-item label="用户名" prop="dbUser">
-          <el-input v-model="taskForm.dbUser" placeholder="请输入用户名"></el-input>
-        </el-form-item>
-        <el-form-item label="密码" prop="dbPassword">
-          <el-input type="password" v-model="taskForm.dbPassword" placeholder="请输入密码"></el-input>
-        </el-form-item>
+        <data-sec-target-list
+          v-model="taskForm.targets"
+          :db-type="taskForm.dbType"
+          :library-picks="taskForm.libraryPicks"
+          @pick-library="pickerVisible = true"
+          @remove-library="removeLibraryPick"
+          @import-db-type="taskForm.dbType = $event"
+        />
         <el-form-item label="敏感数据类型" prop="dataTypes">
           <el-select v-model="taskForm.dataTypes" multiple placeholder="请选择敏感数据类型">
             <el-option label="身份证号" :value="1"></el-option>
@@ -111,78 +110,29 @@
       </el-form>
       <span slot="footer">
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitForm">确定</el-button>
+        <el-button @click="saveTargetsToLibrary">保存到目标库</el-button>
+        <el-button :loading="testConnLoading" @click="testAllConnections">测试全部连接</el-button>
+        <el-button type="primary" @click="submitForm">开始扫描（{{ targetTotal }} 个目标）</el-button>
       </span>
     </el-dialog>
 
-    <el-dialog title="扫描结果详情" :visible.sync="detailVisible" width="900px">
-      <div v-if="detailData">
-        <div class="detail-header">
-          <h3>{{ detailData.name }}</h3>
-          <p>数据库: {{ getDBTypeName(detailData.dbType) }} - {{ detailData.dbHost }}:{{ detailData.dbPort }}</p>
-        </div>
-        
-        <div class="detail-summary">
-          <div class="summary-item">
-            <span class="summary-label">总发现条数</span>
-            <span class="summary-value total">{{ detailData.totalCount || 0 }}</span>
-          </div>
-          <div class="summary-item">
-            <span class="summary-label">高敏感</span>
-            <span class="summary-value high">{{ detailData.highCount || 0 }}</span>
-          </div>
-          <div class="summary-item">
-            <span class="summary-label">中敏感</span>
-            <span class="summary-value medium">{{ detailData.mediumCount || 0 }}</span>
-          </div>
-          <div class="summary-item">
-            <span class="summary-label">低敏感</span>
-            <span class="summary-value low">{{ detailData.lowCount || 0 }}</span>
-          </div>
-        </div>
-
-        <div class="detail-section">
-          <h4>数据类型分布</h4>
-          <div class="type-distribution">
-            <div v-for="item in detailData.typeStats" :key="item.dataType" class="type-item">
-              <span class="type-name">{{ getDataTypeName(item.dataType) }}</span>
-              <span class="type-count">{{ item.count }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="detail-section">
-          <h4>敏感数据详情</h4>
-          <el-table :data="detailData.items || []" style="width: 100%">
-            <el-table-column prop="tableName" label="表名" :show-overflow-tooltip="true">
-            </el-table-column>
-            <el-table-column prop="columnName" label="字段名" :show-overflow-tooltip="true">
-            </el-table-column>
-            <el-table-column prop="dataType" label="数据类型">
-              <template slot-scope="scope">{{ getDataTypeName(scope.row.dataType) }}</template>
-            </el-table-column>
-            <el-table-column prop="sensitivityLevel" label="敏感等级">
-              <template slot-scope="scope"><span :class="getSensitivityClass(scope.row.sensitivityLevel)">{{ getSensitivityName(scope.row.sensitivityLevel) }}</span></template>
-            </el-table-column>
-            <el-table-column prop="sampleData" label="示例数据" :show-overflow-tooltip="true">
-            </el-table-column>
-            <el-table-column prop="count" label="数量">
-            </el-table-column>
-          </el-table>
-        </div>
-      </div>
-      <span slot="footer">
-        <el-button @click="detailVisible = false">关闭</el-button>
-      </span>
-    </el-dialog>
+    <data-sec-target-picker
+      :visible.sync="pickerVisible"
+      :db-type="taskForm.dbType"
+      :exclude-ids="taskForm.libraryTargetIds"
+      @pick="onPickLibrary"
+    />
   </div>
 </template>
 
 <script>
 import security from '@/api/security.js'
+import DataSecTargetList from './components/DataSecTargetList.vue'
+import DataSecTargetPicker from './components/DataSecTargetPicker.vue'
 
 export default {
   name: 'SensitiveData',
+  components: { DataSecTargetList, DataSecTargetPicker },
   props: {
     embedded: {
       type: Boolean,
@@ -192,10 +142,10 @@ export default {
   data() {
     return {
       dialogVisible: false,
-      detailVisible: false,
+      pickerVisible: false,
+      testConnLoading: false,
       multipleSelection: [],
       tableData: [],
-      detailData: {},
       formData: {
         search: '',
         page: 1
@@ -206,20 +156,20 @@ export default {
       taskForm: {
         name: '',
         dbType: 1,
-        dbHost: '',
-        dbPort: 3306,
-        dbName: '',
-        dbUser: '',
-        dbPassword: '',
+        targets: [],
+        libraryTargetIds: [],
+        libraryPicks: [],
         dataTypes: []
       },
       rules: {
         name: [{ required: true, message: '请输入任务名称', trigger: 'blur' }],
-        dbType: [{ required: true, message: '请选择数据库类型', trigger: 'change' }],
-        dbHost: [{ required: true, message: '请输入数据库地址', trigger: 'blur' }],
-        dbUser: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-        dbPassword: [{ required: true, message: '请输入密码', trigger: 'blur' }]
+        dbType: [{ required: true, message: '请选择数据库类型', trigger: 'change' }]
       }
+    }
+  },
+  computed: {
+    targetTotal() {
+      return (this.taskForm.targets || []).length + (this.taskForm.libraryTargetIds || []).length
     }
   },
   mounted() {
@@ -241,21 +191,121 @@ export default {
     },
     btnCreate() {
       this.dialogVisible = true
+      this.resetTaskForm()
+    },
+    resetTaskForm() {
       this.taskForm = {
         name: '',
         dbType: 1,
-        dbHost: '',
-        dbPort: 3306,
-        dbName: '',
-        dbUser: '',
-        dbPassword: '',
+        targets: [],
+        libraryTargetIds: [],
+        libraryPicks: [],
         dataTypes: []
+      }
+    },
+    onPickLibrary(rows) {
+      const ids = new Set(this.taskForm.libraryTargetIds || [])
+      const picks = (this.taskForm.libraryPicks || []).slice()
+      rows.forEach((r) => {
+        if (!ids.has(r.id)) {
+          ids.add(r.id)
+          picks.push(r)
+        }
+      })
+      this.taskForm.libraryTargetIds = Array.from(ids)
+      this.taskForm.libraryPicks = picks
+    },
+    removeLibraryPick(id) {
+      this.taskForm.libraryTargetIds = (this.taskForm.libraryTargetIds || []).filter((x) => x !== id)
+      this.taskForm.libraryPicks = (this.taskForm.libraryPicks || []).filter((x) => x.id !== id)
+    },
+    buildDbPayload() {
+      return {
+        name: (this.taskForm.name || '').trim(),
+        dbType: Number(this.taskForm.dbType) || 1,
+        libraryTargetIds: this.taskForm.libraryTargetIds || [],
+        targets: (this.taskForm.targets || []).map((t) => {
+          const port = parseInt(t.dbPort, 10)
+          return {
+            dbHost: (t.dbHost || '').trim(),
+            dbPort: Number.isFinite(port) ? port : 0,
+            dbName: (t.dbName || '').trim(),
+            dbUser: (t.dbUser || '').trim(),
+            dbPassword: t.dbPassword || ''
+          }
+        }),
+        dataTypes: this.taskForm.dataTypes || [],
+        scanAllDb: false
+      }
+    },
+    buildTargetPayload(t) {
+      const port = parseInt(t.dbPort, 10)
+      return {
+        dbType: Number(this.taskForm.dbType) || 1,
+        dbHost: (t.dbHost || '').trim(),
+        dbPort: Number.isFinite(port) ? port : 0,
+        dbName: (t.dbName || '').trim(),
+        dbUser: (t.dbUser || '').trim(),
+        dbPassword: t.dbPassword || ''
+      }
+    },
+    async testAllConnections() {
+      const targets = this.taskForm.targets || []
+      const libIds = this.taskForm.libraryTargetIds || []
+      if (!targets.length && !libIds.length) {
+        this.$message({ message: '请至少添加一个目标', type: 'warning' })
+        return
+      }
+      this.testConnLoading = true
+      let ok = 0
+      let fail = 0
+      try {
+        if (libIds.length) {
+          const res = await security.batchTestDatasecTargetConn({ ids: libIds })
+          if (res.code === 200 && res.data) {
+            ok += res.data.ok || 0
+            fail += res.data.fail || 0
+          } else {
+            fail += libIds.length
+          }
+        }
+        for (let i = 0; i < targets.length; i++) {
+          const t = targets[i]
+          if (!t.dbHost || !t.dbUser) {
+            fail++
+            continue
+          }
+          const res = await security.testDataSecDBConn(this.buildTargetPayload(t))
+          if (res.code === 200 && res.data && res.data.ok) ok++
+          else fail++
+        }
+        const msg = fail === 0
+          ? `全部 ${ok} 个目标连接成功`
+          : `成功 ${ok} 个，失败 ${fail} 个（请检查地址与凭据）`
+        this.$message({ message: msg, type: fail === 0 ? 'success' : 'warning', duration: 5000 })
+      } catch (e) {
+        this.$message({ message: '全部连接测试失败: ' + (e.message || ''), type: 'error' })
+      } finally {
+        this.testConnLoading = false
       }
     },
     async submitForm() {
       this.$refs.taskForm.validate(async (valid) => {
-        if (valid) {
-          const res = await security.runSensitiveScan(this.taskForm)
+        if (!valid) return
+        const targets = this.taskForm.targets || []
+        const libCount = (this.taskForm.libraryTargetIds || []).length
+        if (!targets.length && !libCount) {
+          this.$message({ message: '请至少添加一个目标', type: 'warning' })
+          return
+        }
+        for (let i = 0; i < targets.length; i++) {
+          const t = targets[i]
+          if (!(t.dbHost || '').trim() || !(t.dbUser || '').trim() || !t.dbPassword) {
+            this.$message({ message: `请完善第 ${i + 1} 个目标的地址、用户名和密码`, type: 'warning' })
+            return
+          }
+        }
+        const res = await security.runSensitiveScan(this.buildDbPayload())
           if (res.code == 200) {
             this.$message({ message: '任务创建成功', type: 'success' })
             this.dialogVisible = false
@@ -263,8 +313,66 @@ export default {
           } else {
             this.$message({ message: res.msg, type: 'error' })
           }
-        }
       })
+    },
+    async handleRerun(row) {
+      const id = row.id || row.ID
+      if (!id) return
+      try {
+        const res = await security.rerunDataSecTask({ id, kind: 'sensitive', name: `${row.name || '任务'}-再次检测` })
+        if (res.code === 200) {
+          this.$message({ message: '已创建再次检测任务', type: 'success' })
+          this.getData()
+        } else {
+          this.$message({ message: res.msg || '操作失败', type: 'error' })
+        }
+      } catch (e) {
+        this.$message({ message: '操作失败: ' + (e.message || ''), type: 'error' })
+      }
+    },
+    async handleCopyTargets(row) {
+      const id = row.id || row.ID
+      if (!id) return
+      try {
+        const res = await security.cloneDataSecTaskTargets({ id, kind: 'sensitive' })
+        if (res.code === 200 && res.data) {
+          this.dialogVisible = true
+          this.taskForm = {
+            name: `${row.name || '任务'}-复制`,
+            dbType: res.data.dbType || row.dbType || 1,
+            targets: res.data.targets || [],
+            libraryTargetIds: [],
+            libraryPicks: [],
+            dataTypes: res.data.dataTypes || []
+          }
+          this.$message({ message: '已复制历史任务目标', type: 'success' })
+        } else {
+          this.$message({ message: res.msg || '复制失败', type: 'error' })
+        }
+      } catch (e) {
+        this.$message({ message: '复制失败: ' + (e.message || ''), type: 'error' })
+      }
+    },
+    async saveTargetsToLibrary() {
+      const targets = this.taskForm.targets || []
+      if (!targets.length) {
+        this.$message({ message: '请先手动添加目标（目标库条目无需重复保存）', type: 'warning' })
+        return
+      }
+      try {
+        const res = await security.saveDatasecTargetsFromTask({
+          dbType: this.taskForm.dbType,
+          groupName: '',
+          targets: targets.map((t) => this.buildTargetPayload(t))
+        })
+        if (res.code === 200) {
+          this.$message({ message: `已保存 ${(res.data && res.data.saved) || 0} 个目标到目标库`, type: 'success' })
+        } else {
+          this.$message({ message: res.msg || '保存失败', type: 'error' })
+        }
+      } catch (e) {
+        this.$message({ message: '保存失败: ' + (e.message || ''), type: 'error' })
+      }
     },
     async handleDel(row) {
       this.$confirm('确认删除该任务？', '提示', {
@@ -276,20 +384,16 @@ export default {
         this.getData()
       }).catch(() => {})
     },
-    async handleDetail(row) {
+    handleDetail(row) {
       const id = row.id || row.ID
       if (!id) {
-        this.detailData = row
-        this.detailVisible = true
+        this.$message({ message: '无效的任务', type: 'warning' })
         return
       }
-      const res = await security.getSensitiveScanDetail({ id })
-      if (res.code == 200) {
-        this.detailData = res.data
-        this.detailVisible = true
-      } else {
-        this.$message({ message: res.msg, type: 'error' })
-      }
+      this.$router.push({
+        path: '/datasec/task/detail',
+        query: { id, kind: 'sensitive', from: 'sensitive' }
+      })
     },
     handlesearch() {
       this.formData.page = 1
@@ -331,18 +435,6 @@ export default {
       const map = { 1: 'status-wait', 2: 'status-running', 3: 'status-complete' }
       return map[status] || 'status-default'
     },
-    getDataTypeName(type) {
-      const map = { 1: '身份证号', 2: '银行卡号', 3: '护照号', 4: '手机号', 5: '邮箱', 6: '地址', 7: '出生日期', 8: '姓名', 9: 'Token', 10: '证书信息', 11: '密码哈希' }
-      return map[type] || '未知'
-    },
-    getSensitivityName(level) {
-      const map = { 1: '高敏感', 2: '中敏感', 3: '低敏感' }
-      return map[level] || '未知'
-    },
-    getSensitivityClass(level) {
-      const map = { 1: 'sensitivity-high', 2: 'sensitivity-medium', 3: 'sensitivity-low' }
-      return map[level] || 'sensitivity-default'
-    }
   }
 }
 </script>
@@ -377,96 +469,4 @@ export default {
 .status-running { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
 .status-complete { background: rgba(16, 185, 129, 0.2); color: #10b981; }
 
-.detail-header {
-  margin-bottom: 20px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #2d3748;
-}
-
-.detail-header h3 {
-  color: #00d4aa;
-  margin-bottom: 5px;
-}
-
-.detail-header p {
-  color: #94a3b8;
-}
-
-.detail-summary {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 20px;
-}
-
-.summary-item {
-  flex: 1;
-  padding: 15px;
-  border-radius: 8px;
-  text-align: center;
-  background: rgba(0, 212, 170, 0.05);
-  border: 1px solid rgba(0, 212, 170, 0.2);
-}
-
-.summary-label {
-  display: block;
-  font-size: 12px;
-  color: #94a3b8;
-  margin-bottom: 5px;
-}
-
-.summary-value {
-  display: block;
-  font-size: 28px;
-  font-weight: bold;
-}
-
-.summary-value.total { color: #00d4aa; }
-.summary-value.high { color: #ef4444; }
-.summary-value.medium { color: #f97316; }
-.summary-value.low { color: #10b981; }
-
-.detail-section {
-  margin-bottom: 20px;
-}
-
-.detail-section h4 {
-  color: #00d4aa;
-  margin-bottom: 15px;
-  font-size: 14px;
-}
-
-.type-distribution {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.type-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: rgba(0, 212, 170, 0.1);
-  border-radius: 4px;
-}
-
-.type-name {
-  color: #94a3b8;
-  font-size: 12px;
-}
-
-.type-count {
-  color: #00d4aa;
-  font-weight: bold;
-}
-
-.sensitivity-high, .sensitivity-medium, .sensitivity-low {
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-}
-
-.sensitivity-high { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
-.sensitivity-medium { background: rgba(249, 115, 22, 0.2); color: #f97316; }
-.sensitivity-low { background: rgba(16, 185, 129, 0.2); color: #10b981; }
 </style>

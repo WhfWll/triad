@@ -6,6 +6,7 @@
       <div class="search-box">
         <div class="operationbutton">
           <el-button type="primary" size="small" @click="btnCreate">新建检查任务</el-button>
+          <router-link to="/datasec/targets"><el-button size="small">目标库管理</el-button></router-link>
         </div>
         <div class="serach-condition">
           <div class="search-text">
@@ -28,27 +29,48 @@
             <span :class="getDBTypeClass(scope.row.dbType)">{{ getDBTypeName(scope.row.dbType) }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="dbHost" label="数据库地址" :show-overflow-tooltip="true">
+        <el-table-column prop="dbHost" label="扫描目标" :show-overflow-tooltip="true">
+          <template slot-scope="scope">
+            <span>{{ scope.row.targetSummary || scope.row.dbHost }}</span>
+          </template>
         </el-table-column>
-        <el-table-column prop="dbName" label="数据库名称" :show-overflow-tooltip="true">
-        </el-table-column>
-        <el-table-column prop="riskLevel" label="风险等级">
+        <el-table-column prop="riskLevel" label="风险等级" width="88">
           <template slot-scope="scope">
             <span :class="getRiskClass(scope.row.riskLevel)">{{ getRiskName(scope.row.riskLevel) }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态">
+        <el-table-column label="基线" width="96">
+          <template slot-scope="scope">
+            <span v-if="scope.row.baselineTotal">{{ scope.row.baselineFail || 0 }}/{{ scope.row.baselineTotal }}</span>
+            <span v-else class="text-muted">-</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="cveMatchCount" label="CVE" width="64">
+          <template slot-scope="scope">
+            <span v-if="scope.row.cveMatchCount">{{ scope.row.cveMatchCount }}</span>
+            <span v-else class="text-muted">-</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="totalCount" label="敏感" width="64">
+          <template slot-scope="scope">
+            <span v-if="scope.row.totalCount">{{ scope.row.totalCount }}</span>
+            <span v-else class="text-muted">-</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="status" label="状态" width="88">
           <template slot-scope="scope">
             <span :class="getStatusClass(scope.row.status)">{{ getStatusName(scope.row.status) }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间">
+        <el-table-column prop="createTime" label="创建时间" width="160">
         </el-table-column>
-        <el-table-column prop="checkTime" label="检查时间">
+        <el-table-column prop="checkTime" label="检查时间" width="160">
         </el-table-column>
-        <el-table-column label="操作" width="100">
+        <el-table-column label="操作" width="220" fixed="right">
           <template slot-scope="scope">
             <el-link :underline="false" class="link_primary" @click="handleDetail(scope.row)">详情</el-link>
+            <el-link :underline="false" class="link_primary" @click="handleRerun(scope.row)">再次检测</el-link>
+            <el-link :underline="false" class="link_primary" @click="handleCopyTargets(scope.row)">复制目标</el-link>
           </template>
         </el-table-column>
       </el-table>
@@ -64,7 +86,7 @@
       </el-pagination>
     </div>
 
-    <el-dialog title="新建数据库安全检查任务" :visible.sync="dialogVisible" width="600px">
+    <el-dialog title="新建数据库安全检查任务" :visible.sync="dialogVisible" width="720px">
       <el-form :model="taskForm" :rules="rules" ref="taskForm" label-width="100px">
         <el-form-item label="任务名称" prop="name">
           <el-input v-model="taskForm.name" placeholder="请输入任务名称"></el-input>
@@ -78,79 +100,46 @@
             <el-option label="CouchDB" :value="5"></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="数据库地址" prop="dbHost">
-          <el-input v-model="taskForm.dbHost" placeholder="请输入数据库地址"></el-input>
+        <data-sec-target-list
+          v-model="taskForm.targets"
+          :db-type="taskForm.dbType"
+          :library-picks="taskForm.libraryPicks"
+          @pick-library="pickerVisible = true"
+          @remove-library="removeLibraryPick"
+          @import-db-type="taskForm.dbType = $event"
+        />
+        <el-form-item label="敏感数据">
+          <el-checkbox v-model="taskForm.scanSensitive">同时扫描敏感数据（库表字段）</el-checkbox>
         </el-form-item>
-        <el-form-item label="端口" prop="dbPort">
-          <el-input type="number" v-model="taskForm.dbPort" placeholder="请输入端口号"></el-input>
-        </el-form-item>
-        <el-form-item label="数据库名称" prop="dbName">
-          <el-input v-model="taskForm.dbName" placeholder="请输入数据库名称"></el-input>
-        </el-form-item>
-        <el-form-item label="用户名" prop="dbUser">
-          <el-input v-model="taskForm.dbUser" placeholder="请输入用户名"></el-input>
-        </el-form-item>
-        <el-form-item label="密码" prop="dbPassword">
-          <el-input type="password" v-model="taskForm.dbPassword" placeholder="请输入密码"></el-input>
+        <el-form-item v-if="taskForm.scanSensitive" label="扫描范围">
+          <el-checkbox v-model="taskForm.scanAllDb">扫描实例下全部库（默认仅当前库）</el-checkbox>
         </el-form-item>
       </el-form>
       <span slot="footer">
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitForm">确定</el-button>
+        <el-button @click="saveTargetsToLibrary">保存到目标库</el-button>
+        <el-button :loading="testConnLoading" @click="testAllConnections">测试全部连接</el-button>
+        <el-button type="primary" @click="submitForm">开始检查（{{ targetTotal }} 个目标）</el-button>
       </span>
     </el-dialog>
 
-    <el-dialog title="检查结果详情" :visible.sync="detailVisible" width="800px">
-      <div v-if="detailData">
-        <div class="detail-header">
-          <h3>{{ detailData.name }}</h3>
-          <p>数据库: {{ getDBTypeName(detailData.dbType) }} - {{ detailData.dbHost }}:{{ detailData.dbPort }}</p>
-        </div>
-        <div class="detail-stats">
-          <div class="stat-item critical">
-            <span class="stat-label">严重风险</span>
-            <span class="stat-value">{{ detailData.criticalCount || 0 }}</span>
-          </div>
-          <div class="stat-item high">
-            <span class="stat-label">高危风险</span>
-            <span class="stat-value">{{ detailData.highRiskCount || 0 }}</span>
-          </div>
-          <div class="stat-item medium">
-            <span class="stat-label">中危风险</span>
-            <span class="stat-value">{{ detailData.middleRiskCount || 0 }}</span>
-          </div>
-          <div class="stat-item low">
-            <span class="stat-label">低危风险</span>
-            <span class="stat-value">{{ detailData.lowRiskCount || 0 }}</span>
-          </div>
-        </div>
-        <el-table :data="detailData.items || []" style="width: 100%">
-          <el-table-column prop="category" label="检查类别">
-            <template slot-scope="scope">{{ getCategoryName(scope.row.category) }}</template>
-          </el-table-column>
-          <el-table-column prop="riskLevel" label="风险等级">
-            <template slot-scope="scope"><span :class="getRiskClass(scope.row.riskLevel)">{{ getRiskName(scope.row.riskLevel) }}</span></template>
-          </el-table-column>
-          <el-table-column prop="result" label="检查结果" :show-overflow-tooltip="true">
-          </el-table-column>
-          <el-table-column prop="description" label="描述" :show-overflow-tooltip="true">
-          </el-table-column>
-          <el-table-column prop="suggestion" label="修复建议" :show-overflow-tooltip="true">
-          </el-table-column>
-        </el-table>
-      </div>
-      <span slot="footer">
-        <el-button @click="detailVisible = false">关闭</el-button>
-      </span>
-    </el-dialog>
+    <data-sec-target-picker
+      :visible.sync="pickerVisible"
+      :db-type="taskForm.dbType"
+      :exclude-ids="taskForm.libraryTargetIds"
+      @pick="onPickLibrary"
+    />
   </div>
 </template>
 
 <script>
 import security from '@/api/security.js'
+import DataSecTargetList from './components/DataSecTargetList.vue'
+import DataSecTargetPicker from './components/DataSecTargetPicker.vue'
 
 export default {
   name: 'DBSecurity',
+  components: { DataSecTargetList, DataSecTargetPicker },
   props: {
     embedded: {
       type: Boolean,
@@ -160,10 +149,10 @@ export default {
   data() {
     return {
       dialogVisible: false,
-      detailVisible: false,
+      pickerVisible: false,
+      testConnLoading: false,
       multipleSelection: [],
       tableData: [],
-      detailData: {},
       formData: {
         search: '',
         page: 1
@@ -174,19 +163,21 @@ export default {
       taskForm: {
         name: '',
         dbType: 1,
-        dbHost: '',
-        dbPort: 3306,
-        dbName: '',
-        dbUser: '',
-        dbPassword: ''
+        targets: [],
+        libraryTargetIds: [],
+        libraryPicks: [],
+        scanSensitive: true,
+        scanAllDb: false
       },
       rules: {
         name: [{ required: true, message: '请输入任务名称', trigger: 'blur' }],
-        dbType: [{ required: true, message: '请选择数据库类型', trigger: 'change' }],
-        dbHost: [{ required: true, message: '请输入数据库地址', trigger: 'blur' }],
-        dbUser: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-        dbPassword: [{ required: true, message: '请输入密码', trigger: 'blur' }]
+        dbType: [{ required: true, message: '请选择数据库类型', trigger: 'change' }]
       }
+    }
+  },
+  computed: {
+    targetTotal() {
+      return (this.taskForm.targets || []).length + (this.taskForm.libraryTargetIds || []).length
     }
   },
   mounted() {
@@ -208,20 +199,122 @@ export default {
     },
     btnCreate() {
       this.dialogVisible = true
+      this.resetTaskForm()
+    },
+    resetTaskForm() {
       this.taskForm = {
         name: '',
         dbType: 1,
-        dbHost: '',
-        dbPort: 3306,
-        dbName: '',
-        dbUser: '',
-        dbPassword: ''
+        targets: [],
+        libraryTargetIds: [],
+        libraryPicks: [],
+        scanSensitive: true,
+        scanAllDb: false
+      }
+    },
+    onPickLibrary(rows) {
+      const ids = new Set(this.taskForm.libraryTargetIds || [])
+      const picks = (this.taskForm.libraryPicks || []).slice()
+      rows.forEach((r) => {
+        if (!ids.has(r.id)) {
+          ids.add(r.id)
+          picks.push(r)
+        }
+      })
+      this.taskForm.libraryTargetIds = Array.from(ids)
+      this.taskForm.libraryPicks = picks
+    },
+    removeLibraryPick(id) {
+      this.taskForm.libraryTargetIds = (this.taskForm.libraryTargetIds || []).filter((x) => x !== id)
+      this.taskForm.libraryPicks = (this.taskForm.libraryPicks || []).filter((x) => x.id !== id)
+    },
+    buildDbPayload() {
+      return {
+        name: (this.taskForm.name || '').trim(),
+        dbType: Number(this.taskForm.dbType) || 1,
+        scanSensitive: !!this.taskForm.scanSensitive,
+        scanAllDb: !!this.taskForm.scanAllDb,
+        libraryTargetIds: this.taskForm.libraryTargetIds || [],
+        targets: (this.taskForm.targets || []).map((t) => {
+          const port = parseInt(t.dbPort, 10)
+          return {
+            dbHost: (t.dbHost || '').trim(),
+            dbPort: Number.isFinite(port) ? port : 0,
+            dbName: (t.dbName || '').trim(),
+            dbUser: (t.dbUser || '').trim(),
+            dbPassword: t.dbPassword || ''
+          }
+        })
+      }
+    },
+    buildTargetPayload(t) {
+      const port = parseInt(t.dbPort, 10)
+      return {
+        dbType: Number(this.taskForm.dbType) || 1,
+        dbHost: (t.dbHost || '').trim(),
+        dbPort: Number.isFinite(port) ? port : 0,
+        dbName: (t.dbName || '').trim(),
+        dbUser: (t.dbUser || '').trim(),
+        dbPassword: t.dbPassword || ''
+      }
+    },
+    async testAllConnections() {
+      const targets = this.taskForm.targets || []
+      const libIds = this.taskForm.libraryTargetIds || []
+      if (!targets.length && !libIds.length) {
+        this.$message({ message: '请至少添加一个目标', type: 'warning' })
+        return
+      }
+      this.testConnLoading = true
+      let ok = 0
+      let fail = 0
+      try {
+        if (libIds.length) {
+          const res = await security.batchTestDatasecTargetConn({ ids: libIds })
+          if (res.code === 200 && res.data) {
+            ok += res.data.ok || 0
+            fail += res.data.fail || 0
+          } else {
+            fail += libIds.length
+          }
+        }
+        for (let i = 0; i < targets.length; i++) {
+          const t = targets[i]
+          if (!t.dbHost || !t.dbUser) {
+            fail++
+            continue
+          }
+          const res = await security.testDataSecDBConn(this.buildTargetPayload(t))
+          if (res.code === 200 && res.data && res.data.ok) ok++
+          else fail++
+        }
+        const msg = fail === 0
+          ? `全部 ${ok} 个目标连接成功`
+          : `成功 ${ok} 个，失败 ${fail} 个（请检查地址与凭据）`
+        this.$message({ message: msg, type: fail === 0 ? 'success' : 'warning', duration: 5000 })
+      } catch (e) {
+        this.$message({ message: '全部连接测试失败: ' + (e.message || ''), type: 'error' })
+      } finally {
+        this.testConnLoading = false
       }
     },
     async submitForm() {
       this.$refs.taskForm.validate(async (valid) => {
-        if (valid) {
-          const res = await security.runDBCheck(this.taskForm)
+        if (!valid) return
+        const targets = this.taskForm.targets || []
+        const libCount = (this.taskForm.libraryTargetIds || []).length
+        if (!targets.length && !libCount) {
+          this.$message({ message: '请至少添加一个目标', type: 'warning' })
+          return
+        }
+        for (let i = 0; i < targets.length; i++) {
+          const t = targets[i]
+          if (!(t.dbHost || '').trim() || !(t.dbUser || '').trim() || !t.dbPassword) {
+            this.$message({ message: `请完善第 ${i + 1} 个目标的地址、用户名和密码`, type: 'warning' })
+            return
+          }
+        }
+        const res = await security.runDBCheck(this.buildDbPayload())
           if (res.code == 200) {
             this.$message({ message: '任务创建成功', type: 'success' })
             this.dialogVisible = false
@@ -229,8 +322,67 @@ export default {
           } else {
             this.$message({ message: res.msg, type: 'error' })
           }
-        }
       })
+    },
+    async handleRerun(row) {
+      const id = row.id || row.ID
+      if (!id) return
+      try {
+        const res = await security.rerunDataSecTask({ id, kind: 'db', name: `${row.name || '任务'}-再次检测` })
+        if (res.code === 200) {
+          this.$message({ message: '已创建再次检测任务', type: 'success' })
+          this.getData()
+        } else {
+          this.$message({ message: res.msg || '操作失败', type: 'error' })
+        }
+      } catch (e) {
+        this.$message({ message: '操作失败: ' + (e.message || ''), type: 'error' })
+      }
+    },
+    async handleCopyTargets(row) {
+      const id = row.id || row.ID
+      if (!id) return
+      try {
+        const res = await security.cloneDataSecTaskTargets({ id, kind: 'db' })
+        if (res.code === 200 && res.data) {
+          this.dialogVisible = true
+          this.taskForm = {
+            name: `${row.name || '任务'}-复制`,
+            dbType: res.data.dbType || row.dbType || 1,
+            targets: res.data.targets || [],
+            libraryTargetIds: [],
+            libraryPicks: [],
+            scanSensitive: res.data.scanSensitive !== false,
+            scanAllDb: !!res.data.scanAllDb
+          }
+          this.$message({ message: '已复制历史任务目标', type: 'success' })
+        } else {
+          this.$message({ message: res.msg || '复制失败', type: 'error' })
+        }
+      } catch (e) {
+        this.$message({ message: '复制失败: ' + (e.message || ''), type: 'error' })
+      }
+    },
+    async saveTargetsToLibrary() {
+      const targets = this.taskForm.targets || []
+      if (!targets.length) {
+        this.$message({ message: '请先手动添加目标（目标库条目无需重复保存）', type: 'warning' })
+        return
+      }
+      try {
+        const res = await security.saveDatasecTargetsFromTask({
+          dbType: this.taskForm.dbType,
+          groupName: '',
+          targets: targets.map((t) => this.buildTargetPayload(t))
+        })
+        if (res.code === 200) {
+          this.$message({ message: `已保存 ${(res.data && res.data.saved) || 0} 个目标到目标库`, type: 'success' })
+        } else {
+          this.$message({ message: res.msg || '保存失败', type: 'error' })
+        }
+      } catch (e) {
+        this.$message({ message: '保存失败: ' + (e.message || ''), type: 'error' })
+      }
     },
     async handleDel(row) {
       this.$confirm('确认删除该任务？', '提示', {
@@ -242,20 +394,16 @@ export default {
         this.getData()
       }).catch(() => {})
     },
-    async handleDetail(row) {
+    handleDetail(row) {
       const id = row.id || row.ID
       if (!id) {
-        this.detailData = row
-        this.detailVisible = true
+        this.$message({ message: '无效的任务', type: 'warning' })
         return
       }
-      const res = await security.getDBCheckDetail({ id })
-      if (res.code == 200) {
-        this.detailData = res.data
-        this.detailVisible = true
-      } else {
-        this.$message({ message: res.msg, type: 'error' })
-      }
+      this.$router.push({
+        path: '/datasec/task/detail',
+        query: { id, kind: 'db', from: 'db' }
+      })
     },
     handlesearch() {
       this.formData.page = 1
@@ -353,54 +501,6 @@ export default {
 .status-running { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
 .status-complete { background: rgba(16, 185, 129, 0.2); color: #10b981; }
 
-.detail-header {
-  margin-bottom: 20px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #2d3748;
-}
+.text-muted { color: #64748b; }
 
-.detail-header h3 {
-  color: #00d4aa;
-  margin-bottom: 5px;
-}
-
-.detail-header p {
-  color: #94a3b8;
-}
-
-.detail-stats {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 20px;
-}
-
-.stat-item {
-  flex: 1;
-  padding: 15px;
-  border-radius: 8px;
-  text-align: center;
-}
-
-.stat-item.critical { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); }
-.stat-item.high { background: rgba(249, 115, 22, 0.1); border: 1px solid rgba(249, 115, 22, 0.3); }
-.stat-item.medium { background: rgba(234, 179, 8, 0.1); border: 1px solid rgba(234, 179, 8, 0.3); }
-.stat-item.low { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); }
-
-.stat-label {
-  display: block;
-  font-size: 12px;
-  color: #94a3b8;
-  margin-bottom: 5px;
-}
-
-.stat-value {
-  display: block;
-  font-size: 24px;
-  font-weight: bold;
-}
-
-.stat-item.critical .stat-value { color: #ef4444; }
-.stat-item.high .stat-value { color: #f97316; }
-.stat-item.medium .stat-value { color: #eab308; }
-.stat-item.low .stat-value { color: #10b981; }
 </style>

@@ -31,47 +31,213 @@ type datasecExtendMeta struct {
 }
 
 type datasecTaskConfig struct {
-	DBType     int    `json:"dbType"`
-	DBHost     string `json:"dbHost"`
-	DBPort     int    `json:"dbPort"`
-	DBName     string `json:"dbName"`
-	DBUser     string `json:"dbUser"`
-	DBPassword string `json:"dbPassword"`
-	DataTypes  []int  `json:"dataTypes,omitempty"`
-	ScanAllDB  bool   `json:"scanAllDb,omitempty"`
+	DBType        int    `json:"dbType"`
+	DBHost        string `json:"dbHost"`
+	DBPort        int    `json:"dbPort"`
+	DBName        string `json:"dbName"`
+	DBUser        string `json:"dbUser"`
+	DBPassword    string `json:"dbPassword"`
+	ScanSensitive bool   `json:"scanSensitive,omitempty"`
+	DataTypes     []int  `json:"dataTypes,omitempty"`
+	ScanAllDB     bool   `json:"scanAllDb,omitempty"`
 }
 
 func (a *DataSecScan) RunDBCheck(ctx context.Context, uid int, req *typespec.DataSecDBRunReq) (*typespec.DataSecScanRunResp, error) {
-	return a.runDataSecTask(ctx, uid, enums.TaskTypeDataSecDB, dataSecScanKindDB, req.Name, datasecTaskConfig{
-		DBType: req.DBType, DBHost: strings.TrimSpace(req.DBHost), DBPort: req.DBPort,
-		DBName: strings.TrimSpace(req.DBName), DBUser: strings.TrimSpace(req.DBUser), DBPassword: req.DBPassword,
-	})
+	configs, err := a.buildDBRunConfigs(ctx, uid, req)
+	if err != nil {
+		return nil, err
+	}
+	return a.runDataSecTask(ctx, uid, enums.TaskTypeDataSecDB, dataSecScanKindDB, req.Name, configs)
 }
 
 func (a *DataSecScan) RunSensitiveScan(ctx context.Context, uid int, req *typespec.DataSecSensitiveRunReq) (*typespec.DataSecScanRunResp, error) {
-	return a.runDataSecTask(ctx, uid, enums.TaskTypeDataSecSensitive, dataSecScanKindSensitive, req.Name, datasecTaskConfig{
-		DBType: req.DBType, DBHost: strings.TrimSpace(req.DBHost), DBPort: req.DBPort,
-		DBName: strings.TrimSpace(req.DBName), DBUser: strings.TrimSpace(req.DBUser), DBPassword: req.DBPassword,
-		DataTypes: req.DataTypes, ScanAllDB: req.ScanAllDB,
-	})
+	configs, err := a.buildSensitiveRunConfigs(ctx, uid, req)
+	if err != nil {
+		return nil, err
+	}
+	return a.runDataSecTask(ctx, uid, enums.TaskTypeDataSecSensitive, dataSecScanKindSensitive, req.Name, configs)
 }
 
-func (a *DataSecScan) runDataSecTask(ctx context.Context, uid, taskType int, scanKind, taskName string, cfg datasecTaskConfig) (*typespec.DataSecScanRunResp, error) {
+func (a *DataSecScan) buildDBRunConfigs(ctx context.Context, uid int, req *typespec.DataSecDBRunReq) ([]datasecTaskConfig, error) {
+	configs, err := a.mergeRunTargetConfigs(ctx, uid, req.DBType.Int(), req.Targets, req.LibraryTargetIDs,
+		legacyDataSecTargetInputs(req.DBHost, req.DBPort, req.DBName, req.DBUser, req.DBPassword), req.DataTypes, req.ScanAllDB)
+	if err != nil {
+		return nil, err
+	}
+	if req.ScanSensitive {
+		for i := range configs {
+			configs[i].ScanSensitive = true
+			if len(req.DataTypes) > 0 {
+				configs[i].DataTypes = req.DataTypes
+			}
+			configs[i].ScanAllDB = req.ScanAllDB
+		}
+	}
+	return configs, nil
+}
+
+func (a *DataSecScan) buildSensitiveRunConfigs(ctx context.Context, uid int, req *typespec.DataSecSensitiveRunReq) ([]datasecTaskConfig, error) {
+	return a.mergeRunTargetConfigs(ctx, uid, req.DBType.Int(), req.Targets, req.LibraryTargetIDs,
+		legacyDataSecTargetInputs(req.DBHost, req.DBPort, req.DBName, req.DBUser, req.DBPassword), req.DataTypes, req.ScanAllDB)
+}
+
+func (a *DataSecScan) mergeRunTargetConfigs(ctx context.Context, uid, dbType int, targets []typespec.DataSecDBTargetInput, libraryIDs []int, legacy []typespec.DataSecDBTargetInput, dataTypes []int, scanAllDB bool) ([]datasecTaskConfig, error) {
+	items := targets
+	if len(items) == 0 {
+		items = legacy
+	}
+	configs, err := normalizeDataSecTargetConfigs(dbType, items, nil, dataTypes, scanAllDB)
+	if err != nil && len(libraryIDs) == 0 {
+		return nil, err
+	}
+	if configs == nil {
+		configs = []datasecTaskConfig{}
+	}
+	if len(libraryIDs) > 0 {
+		libConfigs, libErr := NewDatasecDBTargetApp().ResolveTargets(ctx, uid, dbType, libraryIDs)
+		if libErr != nil {
+			return nil, libErr
+		}
+		configs = append(configs, libConfigs...)
+	}
+	if len(configs) == 0 {
+		return nil, fmt.Errorf("请至少添加一个数据库目标")
+	}
+	// re-dedupe merged configs
+	seen := make(map[string]struct{})
+	out := make([]datasecTaskConfig, 0, len(configs))
+	for _, cfg := range configs {
+		key := fmt.Sprintf("%s:%d/%s", cfg.DBHost, cfg.DBPort, cfg.DBName)
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		cfg.DBType = dbType
+		if dbType > 0 {
+			cfg.DBType = dbType
+		}
+		cfg.DataTypes = dataTypes
+		cfg.ScanAllDB = scanAllDB
+		out = append(out, cfg)
+	}
+	return out, nil
+}
+
+func legacyDataSecTargetInputs(host string, port typespec.FlexInt, dbName, user, password string) []typespec.DataSecDBTargetInput {
+	if strings.TrimSpace(host) == "" {
+		return nil
+	}
+	return []typespec.DataSecDBTargetInput{{
+		DBHost: host, DBPort: port, DBName: dbName, DBUser: user, DBPassword: password,
+	}}
+}
+
+func normalizeDataSecTargetConfigs(dbType int, targets, legacy []typespec.DataSecDBTargetInput, dataTypes []int, scanAllDB bool) ([]datasecTaskConfig, error) {
+	items := targets
+	if len(items) == 0 {
+		items = legacy
+	}
+	if len(items) == 0 {
+		return nil, fmt.Errorf("请至少添加一个数据库目标")
+	}
+	if dbType < 1 {
+		return nil, fmt.Errorf("请选择数据库类型")
+	}
+	out := make([]datasecTaskConfig, 0, len(items))
+	seen := make(map[string]struct{})
+	for i, item := range items {
+		host := strings.TrimSpace(item.DBHost)
+		user := strings.TrimSpace(item.DBUser)
+		if host == "" {
+			return nil, fmt.Errorf("第 %d 个目标：数据库地址不能为空", i+1)
+		}
+		if user == "" {
+			return nil, fmt.Errorf("第 %d 个目标：用户名不能为空", i+1)
+		}
+		port := item.DBPort.Int()
+		if port <= 0 {
+			port = defaultDataSecDBPort(dbType)
+		}
+		key := fmt.Sprintf("%s:%d/%s", host, port, strings.TrimSpace(item.DBName))
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		out = append(out, datasecTaskConfig{
+			DBType:     dbType,
+			DBHost:     host,
+			DBPort:     port,
+			DBName:     strings.TrimSpace(item.DBName),
+			DBUser:     user,
+			DBPassword: item.DBPassword,
+			DataTypes:  dataTypes,
+			ScanAllDB:  scanAllDB,
+		})
+	}
+	if len(out) == 0 {
+		return nil, fmt.Errorf("请至少添加一个有效数据库目标")
+	}
+	return out, nil
+}
+
+func dataSecConnFromDBRunReq(req *typespec.DataSecDBRunReq) datasecTaskConfig {
+	items := req.Targets
+	if len(items) == 0 && strings.TrimSpace(req.DBHost) != "" {
+		items = legacyDataSecTargetInputs(req.DBHost, req.DBPort, req.DBName, req.DBUser, req.DBPassword)
+	}
+	if len(items) > 0 {
+		configs, _ := normalizeDataSecTargetConfigs(req.DBType.Int(), items, nil, nil, false)
+		if len(configs) > 0 {
+			return configs[0]
+		}
+	}
+	return datasecTaskConfig{}
+}
+
+func dataSecConnFromTestReq(req *typespec.DataSecDBTestConnReq) datasecTaskConfig {
+	return datasecTaskConfig{
+		DBType: req.DBType.Int(), DBHost: strings.TrimSpace(req.DBHost), DBPort: req.DBPort.Int(),
+		DBName: strings.TrimSpace(req.DBName), DBUser: strings.TrimSpace(req.DBUser), DBPassword: req.DBPassword,
+	}
+}
+
+// TestDBConnection 测试数据库连接是否可用
+func (a *DataSecScan) TestDBConnection(ctx context.Context, req *typespec.DataSecDBTestConnReq) (*typespec.DataSecDBTestConnResp, error) {
+	cfg := dataSecConnFromTestReq(req)
 	if cfg.DBHost == "" {
-		return nil, fmt.Errorf("数据库地址不能为空")
+		return &typespec.DataSecDBTestConnResp{OK: false, Message: "请填写数据库地址"}, nil
 	}
 	if cfg.DBUser == "" {
-		return nil, fmt.Errorf("用户名不能为空")
+		return &typespec.DataSecDBTestConnResp{OK: false, Message: "请填写用户名"}, nil
 	}
 	if cfg.DBType < 1 {
-		return nil, fmt.Errorf("请选择数据库类型")
+		return &typespec.DataSecDBTestConnResp{OK: false, Message: "请选择数据库类型"}, nil
 	}
 	if cfg.DBPort <= 0 {
 		cfg.DBPort = defaultDataSecDBPort(cfg.DBType)
 	}
+	config := &services.DBConnConfig{
+		DBType: cfg.DBType, Host: cfg.DBHost, Port: cfg.DBPort,
+		Username: cfg.DBUser, Password: cfg.DBPassword, DBName: cfg.DBName,
+		Timeout: 10 * time.Second,
+	}
+	_, err := services.GetDBConnManager().GetConnection(ctx, config)
+	if err != nil {
+		return &typespec.DataSecDBTestConnResp{OK: false, Message: err.Error()}, nil
+	}
+	dbName := enums.BaselineEnum.GetDBTypeName(cfg.DBType)
+	return &typespec.DataSecDBTestConnResp{
+		OK:      true,
+		Message: fmt.Sprintf("连接成功：%s %s:%d/%s", dbName, cfg.DBHost, cfg.DBPort, cfg.DBName),
+	}, nil
+}
 
-	targetURL := formatDataSecTargetURL(cfg.DBHost, cfg.DBPort, cfg.DBName)
-	taskID, targets, err := a.createDataSecTask(ctx, uid, taskType, scanKind, taskName, []string{targetURL}, cfg)
+func (a *DataSecScan) runDataSecTask(ctx context.Context, uid, taskType int, scanKind, taskName string, configs []datasecTaskConfig) (*typespec.DataSecScanRunResp, error) {
+	if len(configs) == 0 {
+		return nil, fmt.Errorf("请至少添加一个数据库目标")
+	}
+
+	taskID, targets, err := a.createDataSecTask(ctx, uid, taskType, scanKind, taskName, configs)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +255,12 @@ func (a *DataSecScan) runDataSecTask(ctx context.Context, uid, taskType int, sca
 	return &typespec.DataSecScanRunResp{ID: strconv.Itoa(taskID)}, nil
 }
 
-func (a *DataSecScan) createDataSecTask(ctx context.Context, uid, taskType int, scanKind, taskName string, targetList []string, cfg datasecTaskConfig) (int, []mysqls.TaskTarget, error) {
+func (a *DataSecScan) createDataSecTask(ctx context.Context, uid, taskType int, scanKind, taskName string, configs []datasecTaskConfig) (int, []mysqls.TaskTarget, error) {
+	targetList := make([]string, 0, len(configs))
+	for _, cfg := range configs {
+		targetList = append(targetList, formatDataSecTargetURL(cfg.DBHost, cfg.DBPort, cfg.DBName))
+	}
+
 	var taskSrv services.TaskTask
 	taskID, err := taskSrv.Save(ctx, uid, 0, firstNonEmpty(taskName, "未命名任务"), targetList, enums.TaskExecTypeImmediate, "{}", enums.ConfigJson{}, time.Unix(0, 0), 0, 0)
 	if err != nil {
@@ -98,7 +269,6 @@ func (a *DataSecScan) createDataSecTask(ctx context.Context, uid, taskType int, 
 
 	ext := datasecExtendMeta{DataSecScanKind: scanKind}
 	extBytes, _ := json.Marshal(ext)
-	cfgJSON := mustJSON(cfg)
 
 	var taskModel mysqls.TaskTask
 	_ = taskModel.UpdateTaskTaskByIds(ctx, []int{taskID}, map[string]interface{}{
@@ -118,9 +288,19 @@ func (a *DataSecScan) createDataSecTask(ctx context.Context, uid, taskType int, 
 	if len(targets) == 0 {
 		return 0, nil, fmt.Errorf("创建扫描目标失败")
 	}
+	cfgByURL := make(map[string]datasecTaskConfig, len(configs))
+	for _, cfg := range configs {
+		cfgByURL[formatDataSecTargetURL(cfg.DBHost, cfg.DBPort, cfg.DBName)] = cfg
+	}
 	for i := range targets {
+		cfg := configs[0]
+		if c, ok := cfgByURL[targets[i].TargetURL]; ok {
+			cfg = c
+		} else if i < len(configs) {
+			cfg = configs[i]
+		}
 		targets[i].ExtendField = string(extBytes)
-		targets[i].TaskTemplateJSON = cfgJSON
+		targets[i].TaskTemplateJSON = mustJSON(cfg)
 		_ = targets[i].UpdateTaskTarget(ctx)
 	}
 	return taskID, targets, nil
@@ -129,10 +309,10 @@ func (a *DataSecScan) createDataSecTask(ctx context.Context, uid, taskType int, 
 func (a *DataSecScan) startDataSecTargetScan(ctx context.Context, target mysqls.TaskTarget, scanKind string) {
 	cfg := parseDatasecConfig(target.TaskTemplateJSON)
 	var targetSrv services.TaskTarget
-	_, err := targetSrv.UpdateTargetAndSaveTargetLog(ctx, target.TaskID, target.ID, enums.TargetStatusRunning, enums.TargetIsAliveY, target.TargetURL)
+	logId, err := targetSrv.UpdateTargetAndSaveTargetLog(ctx, target.TaskID, target.ID, enums.TargetStatusRunning, enums.TargetIsAliveY, target.TargetURL)
 	if err != nil {
 		log.Errorf("datasec start target log: %v", err)
-		a.finishDataSecTarget(ctx, target, scanKind, enums.TaskRiskSafe, err.Error())
+		a.finishDataSecTarget(ctx, target, scanKind, enums.TaskRiskSafe, err.Error(), 0)
 		return
 	}
 
@@ -140,9 +320,20 @@ func (a *DataSecScan) startDataSecTargetScan(ctx context.Context, target mysqls.
 	var targetRisk int
 	switch scanKind {
 	case dataSecScanKindDB:
-		targetRisk, scanErr = a.runDBBaselineForTarget(ctx, target, cfg)
+		targetRisk, scanErr = a.runDBBaselineForTarget(ctx, target, cfg, logId)
+		if cfg.ScanSensitive {
+			sensRisk, sensErr := a.runSensitiveForTarget(ctx, target, cfg, logId)
+			targetRisk = worstCombinedTaskRisk(targetRisk, sensRisk)
+			if sensErr != nil {
+				if scanErr != nil {
+					scanErr = fmt.Errorf("基线: %v; 敏感数据: %v", scanErr, sensErr)
+				} else {
+					scanErr = sensErr
+				}
+			}
+		}
 	case dataSecScanKindSensitive:
-		targetRisk, scanErr = a.runSensitiveForTarget(ctx, target, cfg)
+		targetRisk, scanErr = a.runSensitiveForTarget(ctx, target, cfg, logId)
 	default:
 		scanErr = fmt.Errorf("未知扫描类型")
 	}
@@ -151,15 +342,30 @@ func (a *DataSecScan) startDataSecTargetScan(ctx context.Context, target mysqls.
 	if scanErr != nil {
 		errMsg = scanErr.Error()
 		log.Errorf("datasec scan task=%d target=%d: %v", target.TaskID, target.ID, scanErr)
+		a.appendDataSecScanLog(ctx, target, logId, "datasec", "扫描失败: "+errMsg)
 	}
-	a.finishDataSecTarget(ctx, target, scanKind, targetRisk, errMsg)
+	a.finishDataSecTarget(ctx, target, scanKind, targetRisk, errMsg, logId)
 }
 
-func (a *DataSecScan) runDBBaselineForTarget(ctx context.Context, target mysqls.TaskTarget, cfg datasecTaskConfig) (int, error) {
+func (a *DataSecScan) appendDataSecScanLog(ctx context.Context, target mysqls.TaskTarget, logId int, poc, msg string) {
+	if logId <= 0 {
+		return
+	}
+	cfg := parseDatasecConfig(target.TaskTemplateJSON)
+	host := cfg.DBHost
+	if host == "" {
+		host = target.TargetURL
+	}
+	var logInfo services.TaskLogInfo
+	_ = logInfo.AddTaskLogInfo(ctx, target.TaskID, target.ID, logId, host, poc, msg)
+}
+
+func (a *DataSecScan) runDBBaselineForTarget(ctx context.Context, target mysqls.TaskTarget, cfg datasecTaskConfig, logId int) (int, error) {
 	checker := services.GetDBBaselineChecker()
 	task := &services.DBCheckTask{
 		TaskID:   target.TaskID,
 		TargetID: target.ID,
+		LogID:    logId,
 		Host:     cfg.DBHost,
 		Port:     cfg.DBPort,
 		DBType:   cfg.DBType,
@@ -174,7 +380,8 @@ func (a *DataSecScan) runDBBaselineForTarget(ctx context.Context, target mysqls.
 	return worstDBCheckTaskRisk(report.Results), nil
 }
 
-func (a *DataSecScan) runSensitiveForTarget(ctx context.Context, target mysqls.TaskTarget, cfg datasecTaskConfig) (int, error) {
+func (a *DataSecScan) runSensitiveForTarget(ctx context.Context, target mysqls.TaskTarget, cfg datasecTaskConfig, logId int) (int, error) {
+	a.appendDataSecScanLog(ctx, target, logId, "datasec", fmt.Sprintf("开始敏感数据扫描：%s:%d/%s", cfg.DBHost, cfg.DBPort, cfg.DBName))
 	finder := services.GetSensitiveDataFinder()
 	task := &services.SensitiveDataTask{
 		TaskID:    target.TaskID,
@@ -189,8 +396,10 @@ func (a *DataSecScan) runSensitiveForTarget(ctx context.Context, target mysqls.T
 	}
 	report, err := finder.RunScan(ctx, task)
 	if err != nil {
+		a.appendDataSecScanLog(ctx, target, logId, "datasec", "敏感数据扫描失败: "+err.Error())
 		return enums.TaskRiskSafe, err
 	}
+	a.appendDataSecScanLog(ctx, target, logId, "datasec", fmt.Sprintf("敏感数据扫描完成，发现 %d 条", len(report.Results)))
 	if report.HighCount > 0 {
 		return enums.TaskRiskHigh, nil
 	}
@@ -203,20 +412,24 @@ func (a *DataSecScan) runSensitiveForTarget(ctx context.Context, target mysqls.T
 	return enums.TaskRiskSafe, nil
 }
 
-func (a *DataSecScan) finishDataSecTarget(ctx context.Context, target mysqls.TaskTarget, scanKind string, targetRisk int, errMsg string) {
+func (a *DataSecScan) finishDataSecTarget(ctx context.Context, target mysqls.TaskTarget, scanKind string, targetRisk int, errMsg string, logId int) {
 	ext := parseDatasecExtend(target.ExtendField)
 	ext.DataSecScanKind = scanKind
 	ext.ErrorMessage = errMsg
 	extBytes, _ := json.Marshal(ext)
 
 	params := map[string]interface{}{
-		"status":      enums.TargetStatusFinish,
-		"risk_level":  mapTaskRiskToTargetRisk(targetRisk),
+		"status":       enums.TargetStatusFinish,
+		"risk_level":   mapTaskRiskToTargetRisk(targetRisk),
 		"extend_field": string(extBytes),
-		"update_time": time.Now(),
+		"update_time":  time.Now(),
 	}
 	var t mysqls.TaskTarget
 	_ = t.UpdateTargetById(ctx, target.ID, params)
+	if logId > 0 {
+		var taskLogSrv services.TaskLog
+		_ = taskLogSrv.FinishTaskLog(ctx, logId)
+	}
 	a.maybeFinishDataSecTask(ctx, target.TaskID)
 }
 
@@ -250,6 +463,106 @@ func (a *DataSecScan) maybeFinishDataSecTask(ctx context.Context, taskID int) {
 		"status":      enums.TaskStatusFinish,
 		"update_time": time.Now(),
 	})
+}
+
+// CloneTaskTargets 从历史任务复制扫描目标（含凭据，仅任务所属用户可用）
+func (a *DataSecScan) CloneTaskTargets(ctx context.Context, uid int, id, kind string) (*typespec.DatasecTaskCloneTargetsResp, error) {
+	taskID, _, err := a.resolveDataSecTask(ctx, uid, id, kind)
+	if err != nil {
+		return nil, err
+	}
+	targets := (&mysqls.TaskTarget{}).GetTargetsByTaskId(ctx, taskID)
+	if len(targets) == 0 {
+		return nil, fmt.Errorf("任务无扫描目标")
+	}
+	dbType := 0
+	out := make([]typespec.DataSecDBTargetInput, 0, len(targets))
+	var dataTypes []int
+	scanAllDB := false
+	scanSensitive := false
+	for _, t := range targets {
+		cfg := parseDatasecConfig(t.TaskTemplateJSON)
+		if dbType == 0 {
+			dbType = cfg.DBType
+		}
+		if cfg.ScanSensitive {
+			scanSensitive = true
+		}
+		if len(cfg.DataTypes) > 0 {
+			dataTypes = cfg.DataTypes
+		}
+		if cfg.ScanAllDB {
+			scanAllDB = true
+		}
+		out = append(out, typespec.DataSecDBTargetInput{
+			DBHost:     cfg.DBHost,
+			DBPort:     typespec.FlexInt(cfg.DBPort),
+			DBName:     cfg.DBName,
+			DBUser:     cfg.DBUser,
+			DBPassword: cfg.DBPassword,
+		})
+	}
+	return &typespec.DatasecTaskCloneTargetsResp{
+		DBType:        dbType,
+		Targets:       out,
+		ScanSensitive: scanSensitive,
+		DataTypes:     dataTypes,
+		ScanAllDb:     scanAllDB,
+	}, nil
+}
+
+// RerunTask 使用历史任务同一批目标再次执行扫描
+func (a *DataSecScan) RerunTask(ctx context.Context, uid int, req *typespec.DatasecTaskRerunReq) (*typespec.DataSecScanRunResp, error) {
+	clone, err := a.CloneTaskTargets(ctx, uid, req.ID, req.Kind)
+	if err != nil {
+		return nil, err
+	}
+	name := strings.TrimSpace(req.Name)
+	if name == "" {
+		name = fmt.Sprintf("再次检测-%s", time.Now().Format("20060102-150405"))
+	}
+	if req.Kind == dataSecScanKindSensitive || req.Kind == "sensitive" {
+		runReq := &typespec.DataSecSensitiveRunReq{
+			Name:      name,
+			DBType:    typespec.FlexInt(clone.DBType),
+			Targets:   clone.Targets,
+			DataTypes: clone.DataTypes,
+			ScanAllDB: clone.ScanAllDb,
+		}
+		return a.RunSensitiveScan(ctx, uid, runReq)
+	}
+	runReq := &typespec.DataSecDBRunReq{
+		Name:          name,
+		DBType:        typespec.FlexInt(clone.DBType),
+		Targets:       clone.Targets,
+		ScanSensitive: clone.ScanSensitive,
+		DataTypes:     clone.DataTypes,
+		ScanAllDB:     clone.ScanAllDb,
+	}
+	return a.RunDBCheck(ctx, uid, runReq)
+}
+
+func (a *DataSecScan) resolveDataSecTask(ctx context.Context, uid int, id, kind string) (int, int, error) {
+	taskID, err := strconv.Atoi(strings.TrimSpace(id))
+	if err != nil || taskID <= 0 {
+		return 0, 0, fmt.Errorf("任务不存在")
+	}
+	var taskModel mysqls.TaskTask
+	task, err := taskModel.GetTaskCheckTask(ctx, taskID)
+	if err != nil || task.ID == 0 {
+		return 0, 0, fmt.Errorf("任务不存在")
+	}
+	wantType := enums.TaskTypeDataSecDB
+	if kind == dataSecScanKindSensitive || kind == "sensitive" {
+		wantType = enums.TaskTypeDataSecSensitive
+	}
+	if task.TaskType != wantType {
+		return 0, 0, fmt.Errorf("任务类型不匹配")
+	}
+	if uid > 0 && task.UserID != uid {
+		return 0, 0, fmt.Errorf("无权操作该任务")
+	}
+	return taskID, task.TaskType, nil
 }
 
 func (a *DataSecScan) ListDBChecks(ctx context.Context, uid int, req *typespec.DataSecScanListReq) (*typespec.DataSecDBListResp, error) {
@@ -300,8 +613,11 @@ func (a *DataSecScan) buildDBListItem(ctx context.Context, task mysqls.TaskTask,
 	if len(targets) > 0 {
 		cfg = parseDatasecConfig(targets[0].TaskTemplateJSON)
 	}
+	summary, _ := formatTargetSummary(targets)
 
 	critical, high, mid, low := countDBCheckRisksByTask(ctx, task.ID)
+	sHigh, sMid, sLow, sTotal := countSensitiveByTask(ctx, task.ID)
+	baselineTotal, baselineFail, cveMatch := summarizeDBBaselineByTask(ctx, task.ID)
 	item := typespec.DataSecDBListItem{
 		ID:              strconv.Itoa(task.ID),
 		Name:            task.TaskName,
@@ -309,6 +625,8 @@ func (a *DataSecScan) buildDBListItem(ctx context.Context, task mysqls.TaskTask,
 		DBHost:          cfg.DBHost,
 		DBPort:          cfg.DBPort,
 		DBName:          cfg.DBName,
+		TargetSummary:   summary,
+		TargetCount:     len(targets),
 		RiskLevel:       aggregateFrontendRisk(critical, high, mid, low, task.RiskLevel),
 		Status:          resolveAppSecTaskStatus(task, targets),
 		CreateTime:      formatAppSecTime(task.CreateTime),
@@ -317,9 +635,26 @@ func (a *DataSecScan) buildDBListItem(ctx context.Context, task mysqls.TaskTask,
 		HighRiskCount:   high,
 		MiddleRiskCount: mid,
 		LowRiskCount:    low,
+		BaselineTotal:   baselineTotal,
+		BaselineFail:    baselineFail,
+		CveMatchCount:   cveMatch,
+		ScanSensitive:   cfg.ScanSensitive || sTotal > 0,
+		TotalCount:      sTotal,
+		HighCount:       sHigh,
+		MediumCount:     sMid,
+		LowCount:        sLow,
+	}
+	if len(targets) > 1 {
+		item.DBHost = summary
 	}
 	if withDetails {
-		item.Items = loadDBCheckDetailItems(ctx, task.ID)
+		item.Targets = buildDataSecDBTargetItems(ctx, targets)
+		item.Items = loadDBCheckDetailItems(ctx, task.ID, 0)
+		if item.ScanSensitive || sTotal > 0 {
+			results, _ := (&mysqls.SensitiveDataResult{}).GetByTaskID(ctx, task.ID)
+			item.TypeStats = buildSensitiveTypeStats(results)
+			item.SensitiveItems = buildSensitiveDetailItems(results)
+		}
 	}
 	return item, nil
 }
@@ -368,23 +703,30 @@ func (a *DataSecScan) buildSensitiveListItem(ctx context.Context, task mysqls.Ta
 	if len(targets) > 0 {
 		cfg = parseDatasecConfig(targets[0].TaskTemplateJSON)
 	}
+	summary, _ := formatTargetSummary(targets)
 	high, mid, low, total := countSensitiveByTask(ctx, task.ID)
 	item := typespec.DataSecSensitiveListItem{
-		ID:          strconv.Itoa(task.ID),
-		Name:        task.TaskName,
-		DBType:      cfg.DBType,
-		DBHost:      cfg.DBHost,
-		DBPort:      cfg.DBPort,
-		DBName:      cfg.DBName,
-		TotalCount:  total,
-		HighCount:   high,
-		MediumCount: mid,
-		LowCount:    low,
-		Status:      resolveAppSecTaskStatus(task, targets),
-		CreateTime:  formatAppSecTime(task.CreateTime),
-		ScanTime:    formatAppSecTime(task.UpdateTime),
+		ID:            strconv.Itoa(task.ID),
+		Name:          task.TaskName,
+		DBType:        cfg.DBType,
+		DBHost:        cfg.DBHost,
+		DBPort:        cfg.DBPort,
+		DBName:        cfg.DBName,
+		TargetSummary: summary,
+		TargetCount:   len(targets),
+		TotalCount:    total,
+		HighCount:     high,
+		MediumCount:   mid,
+		LowCount:      low,
+		Status:        resolveAppSecTaskStatus(task, targets),
+		CreateTime:    formatAppSecTime(task.CreateTime),
+		ScanTime:      formatAppSecTime(task.UpdateTime),
+	}
+	if len(targets) > 1 {
+		item.DBHost = summary
 	}
 	if withDetails {
+		item.Targets = buildDataSecSensitiveTargetItems(ctx, targets)
 		results, _ := (&mysqls.SensitiveDataResult{}).GetByTaskID(ctx, task.ID)
 		item.TypeStats = buildSensitiveTypeStats(results)
 		item.Items = buildSensitiveDetailItems(results)
@@ -392,26 +734,147 @@ func (a *DataSecScan) buildSensitiveListItem(ctx context.Context, task mysqls.Ta
 	return item, nil
 }
 
-func loadDBCheckDetailItems(ctx context.Context, taskID int) []typespec.DataSecDBDetailItem {
+func buildDataSecDBTargetItems(ctx context.Context, targets []mysqls.TaskTarget) []typespec.DataSecTargetItem {
+	out := make([]typespec.DataSecTargetItem, 0, len(targets))
+	for _, t := range targets {
+		cfg := parseDatasecConfig(t.TaskTemplateJSON)
+		ext := parseDatasecExtend(t.ExtendField)
+		c, h, m, l := countDBCheckRisksByTarget(ctx, t.ID)
+		sh, sm, sl, stotal := countSensitiveByTarget(ctx, t.ID)
+		checkRows, _ := (&mysqls.DBCheckResult{}).GetByTargetID(ctx, t.ID)
+		meta := services.SummarizeDBCheckResults(checkRows)
+		out = append(out, typespec.DataSecTargetItem{
+			ID:              t.ID,
+			TargetURL:       t.TargetURL,
+			DBType:          cfg.DBType,
+			DBHost:          cfg.DBHost,
+			DBPort:          cfg.DBPort,
+			DBName:          cfg.DBName,
+			Status:          mapTargetStatusToAppSecOrDefault(t.Status),
+			RiskLevel:       aggregateFrontendRisk(c, h, m, l, mapTargetRiskToTaskRisk(t.RiskLevel)),
+			DbVersion:       meta.DbVersion,
+			BaselineTotal:   meta.BaselineTotal,
+			BaselinePass:    meta.BaselinePass,
+			BaselineFail:    meta.BaselineFail,
+			BaselineError:   meta.BaselineError,
+			CveMatchCount:   meta.CveMatchCount,
+			CriticalCount:   c,
+			HighRiskCount:   h,
+			MiddleRiskCount: m,
+			LowRiskCount:    l,
+			TotalCount:      stotal,
+			HighCount:       sh,
+			MediumCount:     sm,
+			LowCount:        sl,
+			ErrorMessage:    ext.ErrorMessage,
+		})
+	}
+	return out
+}
+
+func buildDataSecSensitiveTargetItems(ctx context.Context, targets []mysqls.TaskTarget) []typespec.DataSecTargetItem {
+	out := make([]typespec.DataSecTargetItem, 0, len(targets))
+	for _, t := range targets {
+		cfg := parseDatasecConfig(t.TaskTemplateJSON)
+		ext := parseDatasecExtend(t.ExtendField)
+		high, mid, low, total := countSensitiveByTarget(ctx, t.ID)
+		out = append(out, typespec.DataSecTargetItem{
+			ID:          t.ID,
+			TargetURL:   t.TargetURL,
+			DBType:      cfg.DBType,
+			DBHost:      cfg.DBHost,
+			DBPort:      cfg.DBPort,
+			DBName:      cfg.DBName,
+			Status:      mapTargetStatusToAppSecOrDefault(t.Status),
+			TotalCount:  total,
+			HighCount:   high,
+			MediumCount: mid,
+			LowCount:    low,
+			ErrorMessage: ext.ErrorMessage,
+		})
+	}
+	return out
+}
+
+func loadDBCheckDetailItems(ctx context.Context, taskID int, targetID int) []typespec.DataSecDBDetailItem {
 	list, err := (&mysqls.DBCheckResult{}).GetByTaskID(ctx, taskID)
 	if err != nil {
 		return nil
 	}
 	out := make([]typespec.DataSecDBDetailItem, 0, len(list))
 	for _, r := range list {
+		if targetID > 0 && r.TargetID != targetID {
+			continue
+		}
 		risk := r.RiskLevel
 		if r.CheckResult == enums.BaselineCheckResultPass {
 			risk = enums.BaselineRiskInfo
 		}
 		out = append(out, typespec.DataSecDBDetailItem{
+			TargetID:    r.TargetID,
 			Category:    r.CheckCategory,
 			RiskLevel:   risk,
 			Result:      enums.BaselineEnum.GetCheckResultName(r.CheckResult),
 			Description: firstNonEmpty(r.RiskDescription, r.RuleName),
 			Suggestion:  r.FixSuggestion,
+			RuleName:      r.RuleName,
+			ActualValue:   r.ActualValue,
+			ExpectedValue: r.ExpectedValue,
+			IsCve:         services.IsCveDBCheckResult(r),
 		})
 	}
 	return out
+}
+
+func summarizeDBBaselineByTask(ctx context.Context, taskID int) (baselineTotal, baselineFail, cveMatch int) {
+	list, err := (&mysqls.DBCheckResult{}).GetByTaskID(ctx, taskID)
+	if err != nil {
+		return
+	}
+	meta := services.SummarizeDBCheckResults(list)
+	return meta.BaselineTotal, meta.BaselineFail, meta.CveMatchCount
+}
+
+func countDBCheckRisksByTarget(ctx context.Context, targetID int) (critical, high, mid, low int) {
+	list, err := (&mysqls.DBCheckResult{}).GetByTargetID(ctx, targetID)
+	if err != nil {
+		return
+	}
+	for _, r := range list {
+		if r.CheckResult != enums.BaselineCheckResultFail {
+			continue
+		}
+		switch r.RiskLevel {
+		case enums.BaselineRiskCritical:
+			critical++
+		case enums.BaselineRiskHigh:
+			high++
+		case enums.BaselineRiskMiddle:
+			mid++
+		case enums.BaselineRiskLow:
+			low++
+		}
+	}
+	return
+}
+
+func countSensitiveByTarget(ctx context.Context, targetID int) (high, mid, low, total int) {
+	list, err := (&mysqls.SensitiveDataResult{}).GetByTargetID(ctx, targetID)
+	if err != nil {
+		return
+	}
+	total = len(list)
+	for _, r := range list {
+		switch r.DataLevel {
+		case enums.SensitiveDataLevelHigh:
+			high++
+		case enums.SensitiveDataLevelMiddle:
+			mid++
+		default:
+			low++
+		}
+	}
+	return
 }
 
 func countDBCheckRisksByTask(ctx context.Context, taskID int) (critical, high, mid, low int) {
@@ -435,6 +898,19 @@ func countDBCheckRisksByTask(ctx context.Context, taskID int) (critical, high, m
 		}
 	}
 	return
+}
+
+func worstCombinedTaskRisk(a, b int) int {
+	if a == 0 {
+		a = enums.TaskRiskSafe
+	}
+	if b == 0 {
+		b = enums.TaskRiskSafe
+	}
+	if a < b {
+		return a
+	}
+	return b
 }
 
 func worstDBCheckTaskRisk(results []mysqls.DBCheckResult) int {
@@ -529,6 +1005,7 @@ func buildSensitiveDetailItems(results []mysqls.SensitiveDataResult) []typespec.
 			cnt = int(r.TotalRows)
 		}
 		out = append(out, typespec.DataSecSensitiveDetailItem{
+			TargetID:         r.TargetID,
 			TableName:        r.TableNameStr,
 			ColumnName:       r.ColumnName,
 			DataType:         r.DataType,

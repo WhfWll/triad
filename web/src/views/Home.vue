@@ -54,6 +54,7 @@
                 <span>数据安全</span>
               </template>
               <el-menu-item index="/datasec/tasks">任务管理</el-menu-item>
+              <el-menu-item index="/datasec/targets">数据库目标库</el-menu-item>
               <el-menu-item index="/datasec/rules">检测规则</el-menu-item>
             </el-submenu>
 
@@ -213,6 +214,8 @@ export default {
         '/appsec/rules': '应用安全 · 检测规则',
         '/appsec/vul-db': '应用安全 · 漏洞库',
         '/datasec/tasks': '数据安全 · 任务管理',
+        '/datasec/targets': '数据安全 · 数据库目标库',
+        '/datasec/task/detail': '数据安全 · 任务详情',
         '/datasec/rules': '数据安全 · 检测规则',
         '/hostsecurityhub': '主机安全 · 任务管理',
         '/baseline': '安全配置核查',

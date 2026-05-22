@@ -1,52 +1,23 @@
 <template>
   <div class="security-container mod-hub">
     <div class="main-title">数据安全检查 · 任务管理</div>
-    <p class="page-intro">数据库安全检查与敏感数据发现；与历史「数据库安全」「敏感数据发现」菜单路由兼容。</p>
-    <el-tabs v-model="subTab" class="hub-inner-tabs" @tab-click="onTabClick">
-      <el-tab-pane label="数据库安全检查" name="db" />
-      <el-tab-pane label="敏感数据发现" name="sensitive" />
-    </el-tabs>
+    <p class="page-intro">新建任务时默认同时执行基线检查与敏感数据发现；详情页可查看配置风险、CVE 与敏感字段结果。</p>
     <div class="tab-panel">
-      <keep-alive>
-        <component :is="activeComp" :embedded="true" />
-      </keep-alive>
+      <d-b-security :embedded="true" />
     </div>
   </div>
 </template>
 
 <script>
 import DBSecurity from './DBSecurity.vue'
-import SensitiveData from './SensitiveData.vue'
 
 export default {
   name: 'DataSecTaskHub',
-  components: { DBSecurity, SensitiveData },
-  data() {
-    return {
-      subTab: 'db'
-    }
-  },
-  computed: {
-    activeComp() {
-      return this.subTab === 'db' ? 'DBSecurity' : 'SensitiveData'
-    }
-  },
+  components: { DBSecurity },
   mounted() {
     this.$store.state.activefirstMenu = '/datasec/tasks'
-    const t = this.$route.query.tab
-    if (t === 'sensitive' || t === 'db') {
-      this.subTab = t
-    }
-  },
-  watch: {
-    '$route.query.tab'(t) {
-      if (t === 'sensitive' || t === 'db') this.subTab = t
-    }
-  },
-  methods: {
-    onTabClick(tab) {
-      const name = tab && tab.name ? tab.name : this.subTab
-      this.$router.replace({ path: '/datasec/tasks', query: { tab: name } }).catch(() => {})
+    if (this.$route.query.tab === 'sensitive') {
+      this.$router.replace({ path: '/datasec/tasks' }).catch(() => {})
     }
   }
 }
@@ -60,10 +31,6 @@ export default {
   font-size: 13px;
   margin: 0 0 12px;
   max-width: 900px;
-}
-
-.hub-inner-tabs {
-  margin-bottom: 8px;
 }
 
 .tab-panel {

@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS `sensitive_data_result` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `task_id` int(11) NOT NULL DEFAULT '0' COMMENT '所属任务id',
+  `target_id` int(11) NOT NULL DEFAULT '0' COMMENT '目标id',
+  `target_ip` varchar(50) NOT NULL DEFAULT '' COMMENT '目标IP',
+  `db_type` int(11) NOT NULL DEFAULT '0' COMMENT '数据库类型',
+  `db_name` varchar(128) NOT NULL DEFAULT '' COMMENT '数据库名',
+  `table_name` varchar(128) NOT NULL DEFAULT '' COMMENT '表名',
+  `column_name` varchar(128) NOT NULL DEFAULT '' COMMENT '字段名',
+  `data_type` int(11) NOT NULL DEFAULT '0' COMMENT '数据类型',
+  `data_level` int(11) NOT NULL DEFAULT '0' COMMENT '数据等级',
+  `sample_data` varchar(512) NOT NULL DEFAULT '' COMMENT '样本数据',
+  `match_rule` varchar(512) NOT NULL DEFAULT '' COMMENT '匹配规则',
+  `match_type` int(11) NOT NULL DEFAULT '0' COMMENT '匹配类型',
+  `total_rows` bigint(20) NOT NULL DEFAULT '0' COMMENT '总行数',
+  `create_time` datetime NOT NULL DEFAULT '1970-01-01 08:00:01' COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_task_id` (`task_id`),
+  KEY `idx_target_id` (`target_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='敏感数据发现结果';

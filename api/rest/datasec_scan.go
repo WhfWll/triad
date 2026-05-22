@@ -11,6 +11,22 @@ import (
 	"gitlabee.4dogs.cn/common/server"
 )
 
+func DataSecDBTestConn(c *gin.Context) {
+	var req typespec.DataSecDBTestConnReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		server.RespFail(c, 4000, "参数错误: "+err.Error())
+		return
+	}
+	ctx := server.NewContext(context.Background(), c)
+	var app application.DataSecScan
+	resp, err := app.TestDBConnection(ctx, &req)
+	if err != nil {
+		server.RespFail(c, 4000, err.Error())
+		return
+	}
+	server.RespSuccess(c, resp)
+}
+
 func DataSecDBCheckRun(c *gin.Context) {
 	var req typespec.DataSecDBRunReq
 	if err := c.ShouldBindJSON(&req); err != nil {

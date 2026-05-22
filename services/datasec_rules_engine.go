@@ -118,7 +118,15 @@ func getDBBaselineRules(dbType int) []dbRuleDef {
 	defer datasecRulesMu.RUnlock()
 	if datasecRulesLoaded {
 		if rules, ok := datasecRulesByDB[dbType]; ok && len(rules) > 0 {
-			return rules
+			exec := 0
+			for _, r := range rules {
+				if !r.KnowledgeOnly {
+					exec++
+				}
+			}
+			if exec > 0 {
+				return rules
+			}
 		}
 	}
 	return getBuiltinDBBaselineRules(dbType)
