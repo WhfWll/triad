@@ -1,6 +1,5 @@
 <template>
   <div class="security-container">
-    <div class="main-title">主机安全检查 · 检测规则</div>
     <p class="page-intro">
       规则来源：<strong>数据库 host_baseline_rule 表</strong>。支持新增、编辑、删除规则，导入的规则也会写入该表。
       <router-link class="link-to-tasks" to="/hostsec/tasks">前往任务管理</router-link>

@@ -1,14 +1,18 @@
 <template>
-  <div class="security-container">
-    <div class="main-title">
+  <div class="security-container task-detail-page">
+    <div class="detail-topbar list_box">
       <el-link :underline="false" class="link-back" @click="$router.push('/hostsec/tasks')">
         <i class="el-icon-arrow-left"></i> 返回
       </el-link>
-      任务详情 · {{ kindLabel }}
-      <span class="title-sub">#{{ taskId }}</span>
+      <div class="topbar-main">
+        <h1 class="task-title">
+          任务详情 · {{ kindLabel }}
+          <span class="title-sub">#{{ taskId }}</span>
+        </h1>
+      </div>
     </div>
 
-    <el-tabs v-model="activeTab" class="detail-tabs">
+    <el-tabs v-model="activeTab" class="detail-tabs list_box">
       <el-tab-pane label="概况" name="overview">
         <div v-loading="statLoading" class="stat-cards">
           <div class="stat-card">
@@ -56,15 +60,15 @@
         <div class="targets-toolbar">
           <span class="targets-count">共 {{ targets.length }} 个目标</span>
         </div>
-        <el-table v-loading="targetsLoading" :data="targets" style="width: 100%" class="myTable">
+        <el-table v-loading="targetsLoading" :data="targets" style="width: 100%" class="myTable targets-table">
           <el-table-column type="index" label="序号" width="60" />
-          <el-table-column prop="targetIp" label="目标主机" width="160" />
+          <el-table-column prop="targetIp" label="目标主机" min-width="180" :show-overflow-tooltip="true" />
           <el-table-column prop="osTypeName" label="操作系统" width="120" />
           <el-table-column prop="totalRules" label="检查项数" width="100" />
           <el-table-column prop="passCount" label="通过" width="72" />
           <el-table-column prop="failCount" label="不通过" width="82" />
           <el-table-column prop="errorCount" label="异常" width="72" />
-          <el-table-column label="操作" width="90">
+          <el-table-column label="操作" width="100" align="right">
             <template slot-scope="scope">
               <el-link :underline="false" class="link_primary" @click="filterByTarget(scope.row)">查看结果</el-link>
             </template>
@@ -84,7 +88,7 @@
           <span class="items-count">共 {{ filteredItems.length }} 项</span>
         </div>
         <el-table v-loading="itemsLoading" :data="filteredItems" style="width: 100%" class="myTable" max-height="560">
-          <el-table-column prop="targetIp" label="目标主机" width="130" />
+          <el-table-column prop="targetIp" label="目标主机" min-width="130" />
           <el-table-column prop="categoryName" label="分类" width="120" />
           <el-table-column prop="ruleName" label="检查项" min-width="160" :show-overflow-tooltip="true" />
           <el-table-column prop="resultName" label="结果" width="80" />
@@ -213,34 +217,27 @@ export default {
 </script>
 
 <style lang="less" scoped>
-.main-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #e2e8f0;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.link-back {
-  color: #94a3b8;
-  font-size: 14px;
-  &:hover { color: #00d4aa; }
-}
-.title-sub {
-  font-size: 14px;
-  color: #64748b;
-  font-weight: 400;
-}
+@import '../bas/css/bas-list-page.less';
+@import './css/appsec-task-detail.less';
 
-.detail-tabs {
-  ::v-deep .el-tabs__item {
-    color: #94a3b8;
+.task-detail-page {
+  .title-sub {
     font-size: 14px;
-    &.is-active { color: #00d4aa; }
+    color: #64748b;
+    font-weight: 400;
+    margin-left: 6px;
   }
-  ::v-deep .el-tabs__active-bar { background-color: #00d4aa; }
-  ::v-deep .el-tabs__nav-wrap::after { background-color: rgba(255,255,255,0.06); }
+
+  .detail-tabs {
+    ::v-deep .el-table {
+      width: 100% !important;
+    }
+
+    ::v-deep .el-table__header-wrapper table,
+    ::v-deep .el-table__body-wrapper table {
+      width: 100% !important;
+    }
+  }
 }
 
 .stat-cards {

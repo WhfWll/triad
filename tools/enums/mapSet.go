@@ -77,6 +77,8 @@ const (
 	BusinessUserTypeAuthMapSetContent     = "业务模块和用户类型对应关系"
 	CurTasksInfoMapSetObjKey              = "curTasksInfo"
 	CurTasksInfoMapSetContent             = "任务并发配置"
+	SecurityScanConcurrencyMapSetObjKey   = "securityScanConcurrency"
+	SecurityScanConcurrencyMapSetContent  = "安全检查并发配置"
 	MonitorWarnMapSetObjKey               = "monitorWarn"
 	MonitorWarnMapSetContent              = "系统监控告警"
 	UseScoreSwitchMapSetObjKey            = "useScoreSwitch"

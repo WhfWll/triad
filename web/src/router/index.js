@@ -23,7 +23,6 @@ var xray = () => import('@/pages/othner/x-ray')
 var burpsuite = () => import('@/pages/othner/burpsuite')
 var detectionTask = () => import('@/pages/othner/detectionTask')
 //系统管理
-var systemsetting = () => import('@/pages/system/Systemsettingnew')
 var systemtip = () => import('@/pages/system/systemtip')
 var node = () => import('@/pages/system/Node.vue')
 

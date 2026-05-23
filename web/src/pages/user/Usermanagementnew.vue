@@ -1,12 +1,6 @@
 <template>
-    <div>
-        <div class="main-title  ">
-            
-            <i class="nav_icon"></i>
-            <i style="margin: 0 8px; vertical-align: text-top; color: #BCC4D3;">|</i> 
-            <label >用户管理</label>
-        </div>
-        <div class="userbox context_box_bg">
+    <div class="security-container user-page">
+        <div class="list_box">
             <div class="search-box">
                 <div class="operationbutton">
                     <xz-button type="primary" @click="AddUser" size="small">新建</xz-button>
@@ -26,7 +20,7 @@
                     </div>
                 </div>
             </div>
-            <el-table :data="tableData" style="width: 100%" v-loading="Loading"  height="calc(100% - 102px)"
+            <el-table :data="tableData" style="width: 100%" v-loading="Loading" class="myTable" height="calc(100% - 102px)"
                 @selection-change="handleSelectionChange" @cell-mouse-enter="mouseenter" @cell-mouse-leave="mouseleave">
                 <el-table-column type="selection" :selectable='checkboxT' width="55">
                 </el-table-column>
@@ -336,6 +330,19 @@
     </div>
 </template>
 <style scoped lang="less">
+@import '../bas/css/bas-list-page.less';
+
+.user-page {
+  height: 100%;
+  box-sizing: border-box;
+
+  .list_box {
+    height: 100%;
+    min-height: calc(100vh - 116px);
+    display: flex;
+    flex-direction: column;
+  }
+}
 
 .u-txt{
     display: inline;
@@ -358,18 +365,13 @@
 
 }
 
-.learnMore {
-    min-width: 100px !important;
-    padding: 16px 0 !important;
+/deep/ .link_info {
+  color: #64748b;
+  &:hover {
+    color: #94a3b8;
+  }
 }
 
-.userbox{
-	padding: 24px; 
-    background: #fff;
-    height: calc(100% - 39px);
-    box-sizing: border-box;
-    box-shadow:0px 2px 4px 0px rgba(76,122,227,0.12);
-}	
 .txtareacontent /deep/ textarea{
 	resize: none !important;
 }
@@ -396,9 +398,38 @@
 /deep/ .el-popconfirm{
     .el-popconfirm__main{ 
             margin-bottom: 16px;
-            color: rgba(72, 72, 102, .64);
+            color: #94a3b8;
    
     }
+}
+</style>
+
+<style lang="less">
+@import '../security/css/appsec-tokens.less';
+
+.learnMore.el-popover {
+  min-width: 100px !important;
+  padding: 8px 0 !important;
+  background: @appsec-bg-surface !important;
+  border-color: @appsec-border-default !important;
+
+  .operationbox {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+
+    li {
+      padding: 8px 16px;
+      color: @appsec-text-body;
+      font-size: 13px;
+      cursor: pointer;
+
+      &:hover {
+        background: @appsec-accent-soft;
+        color: @appsec-accent;
+      }
+    }
+  }
 }
 </style>
 <script>   
@@ -648,12 +679,14 @@ export default ({
         async getGroupList() {
             const data = await user.getupgroup();
             if (data.code === 200) {
-                this.groupOptions = this.cleanChildren(data.data.list);
+                const list = data.data && data.data.list;
+                this.groupOptions = this.cleanChildren(Array.isArray(list) ? list : []);
             }
         },
         cleanChildren(list) {
+            if (!Array.isArray(list)) return [];
             list.forEach(item => {
-                if (item.children === null || item.children.length === 0) {
+                if (item.children == null || item.children.length === 0) {
                     delete item.children;
                 } else {
                     this.cleanChildren(item.children);

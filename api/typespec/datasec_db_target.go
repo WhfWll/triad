@@ -96,6 +96,11 @@ type DatasecTaskRerunReq struct {
 	Kind string `json:"kind"`
 }
 
+type DatasecTaskDeleteReq struct {
+	ID   string `form:"id" binding:"required"`
+	Kind string `form:"kind"`
+}
+
 type DatasecDBTargetTestReq struct {
 	ID         int     `json:"id"`
 	DBType     FlexInt `json:"dbType"`

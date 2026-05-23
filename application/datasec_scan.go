@@ -19,7 +19,6 @@ import (
 const (
 	dataSecScanKindDB        = "db"
 	dataSecScanKindSensitive = "sensitive"
-	dataSecMaxConcurrentDB   = 5
 )
 
 // DataSecScan 数据安全（数据库基线 / 敏感数据发现）
@@ -243,7 +242,7 @@ func (a *DataSecScan) runDataSecTask(ctx context.Context, uid, taskType int, sca
 	}
 
 	scanCtx := context.Background()
-	sem := make(chan struct{}, dataSecMaxConcurrentDB)
+	sem := make(chan struct{}, services.GetDataScanConcurrent(ctx))
 	for _, row := range targets {
 		t := row
 		go func() {
@@ -542,6 +541,57 @@ func (a *DataSecScan) RerunTask(ctx context.Context, uid int, req *typespec.Data
 	return a.RunDBCheck(ctx, uid, runReq)
 }
 
+// DeleteTask 删除数据安全扫描任务及其结果
+func (a *DataSecScan) DeleteTask(ctx context.Context, uid int, id, kind string) error {
+	if strings.TrimSpace(kind) == "" {
+		kind = dataSecScanKindDB
+	}
+	taskID, _, err := a.resolveDataSecTask(ctx, uid, id, kind)
+	if err != nil {
+		return err
+	}
+	var taskModel mysqls.TaskTask
+	task, err := taskModel.GetTaskCheckTask(ctx, taskID)
+	if err != nil || task.ID == 0 {
+		return fmt.Errorf("任务不存在")
+	}
+	if task.Status == enums.TaskStatusRunning {
+		return fmt.Errorf("任务运行中，无法删除")
+	}
+
+	targets := (&mysqls.TaskTarget{}).GetTargetsByTaskId(ctx, taskID)
+	targetIDs := make([]int, 0, len(targets))
+	for _, t := range targets {
+		if t.Status == enums.TargetStatusRunning {
+			return fmt.Errorf("任务运行中，无法删除")
+		}
+		targetIDs = append(targetIDs, t.ID)
+	}
+
+	_ = (&mysqls.DBCheckResult{}).DeleteByTaskID(ctx, taskID)
+	_ = (&mysqls.SensitiveDataResult{}).DeleteByTaskID(ctx, taskID)
+
+	if len(targetIDs) > 0 {
+		var targetSrv services.TaskTarget
+		if err := targetSrv.DelTargetByIds(ctx, targetIDs); err != nil {
+			return err
+		}
+	} else {
+		_ = (&mysqls.TaskTarget{}).DeleteByTaskIds(ctx, []int{taskID})
+	}
+
+	taskIDs := []int{taskID}
+	var taskLogSrv services.TaskLog
+	_ = taskLogSrv.DelTaskInfoByTaskId(ctx, taskIDs)
+	var taskLogInfoSrv services.TaskLogInfo
+	_ = taskLogInfoSrv.DelTaskInfoByTaskId(ctx, taskIDs)
+	var taskTaskResultSrv services.TaskTaskResult
+	_ = taskTaskResultSrv.DelTaskInfoByTaskId(ctx, taskIDs)
+	var taskTaskSrv services.TaskTask
+	_ = taskTaskSrv.DelTaskInfoByTaskId(ctx, taskIDs)
+	return taskTaskSrv.DelTaskByIds(ctx, taskIDs)
+}
+
 func (a *DataSecScan) resolveDataSecTask(ctx context.Context, uid int, id, kind string) (int, int, error) {
 	taskID, err := strconv.Atoi(strings.TrimSpace(id))
 	if err != nil || taskID <= 0 {
@@ -797,10 +847,7 @@ func buildDataSecSensitiveTargetItems(ctx context.Context, targets []mysqls.Task
 }
 
 func loadDBCheckDetailItems(ctx context.Context, taskID int, targetID int) []typespec.DataSecDBDetailItem {
-	list, err := (&mysqls.DBCheckResult{}).GetByTaskID(ctx, taskID)
-	if err != nil {
-		return nil
-	}
+	list := loadDBCheckResultsByTask(ctx, taskID)
 	out := make([]typespec.DataSecDBDetailItem, 0, len(list))
 	for _, r := range list {
 		if targetID > 0 && r.TargetID != targetID {
@@ -827,12 +874,28 @@ func loadDBCheckDetailItems(ctx context.Context, taskID int, targetID int) []typ
 }
 
 func summarizeDBBaselineByTask(ctx context.Context, taskID int) (baselineTotal, baselineFail, cveMatch int) {
-	list, err := (&mysqls.DBCheckResult{}).GetByTaskID(ctx, taskID)
-	if err != nil {
-		return
-	}
+	list := loadDBCheckResultsByTask(ctx, taskID)
 	meta := services.SummarizeDBCheckResults(list)
 	return meta.BaselineTotal, meta.BaselineFail, meta.CveMatchCount
+}
+
+func loadDBCheckResultsByTask(ctx context.Context, taskID int) []mysqls.DBCheckResult {
+	targets := (&mysqls.TaskTarget{}).GetTargetsByTaskId(ctx, taskID)
+	if len(targets) > 0 {
+		out := make([]mysqls.DBCheckResult, 0)
+		for _, t := range targets {
+			rows, err := (&mysqls.DBCheckResult{}).GetByTargetID(ctx, t.ID)
+			if err != nil {
+				continue
+			}
+			out = append(out, rows...)
+		}
+		if len(out) > 0 {
+			return out
+		}
+	}
+	list, _ := (&mysqls.DBCheckResult{}).GetByTaskID(ctx, taskID)
+	return list
 }
 
 func countDBCheckRisksByTarget(ctx context.Context, targetID int) (critical, high, mid, low int) {
@@ -878,10 +941,7 @@ func countSensitiveByTarget(ctx context.Context, targetID int) (high, mid, low, 
 }
 
 func countDBCheckRisksByTask(ctx context.Context, taskID int) (critical, high, mid, low int) {
-	list, err := (&mysqls.DBCheckResult{}).GetByTaskID(ctx, taskID)
-	if err != nil {
-		return
-	}
+	list := loadDBCheckResultsByTask(ctx, taskID)
 	for _, r := range list {
 		if r.CheckResult != enums.BaselineCheckResultFail {
 			continue

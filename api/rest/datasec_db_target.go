@@ -127,6 +127,21 @@ func DataSecTaskRerun(c *gin.Context) {
 	server.RespSuccess(c, resp)
 }
 
+func DataSecTaskDelete(c *gin.Context) {
+	var req typespec.DatasecTaskDeleteReq
+	if err := c.ShouldBind(&req); err != nil {
+		server.RespFail(c, 4000, "参数错误")
+		return
+	}
+	ctx := server.NewContext(context.Background(), c)
+	var app application.DataSecScan
+	if err := app.DeleteTask(ctx, appSecUID(c), req.ID, req.Kind); err != nil {
+		server.RespFail(c, 4000, err.Error())
+		return
+	}
+	server.RespSuccess(c, nil)
+}
+
 func DataSecSaveTargetsToLibrary(c *gin.Context) {
 	var req struct {
 		DBType    int                             `json:"dbType"`

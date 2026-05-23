@@ -1,6 +1,5 @@
 <template>
   <div class="security-container mod-hub">
-    <div class="main-title">应用安全检查 · 任务管理</div>
     <p class="page-intro">覆盖需求中的运行时安全测试能力入口：动态扫描、专项应用检测（与历史路由兼容，见下方页签）。</p>
     <el-tabs v-model="subTab" class="hub-inner-tabs" @tab-click="onTabClick">
       <el-tab-pane label="动态扫描" name="dyn" />

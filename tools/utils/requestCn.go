@@ -57,6 +57,8 @@ func (r requestCn) AllCnName() map[string]string {
 	requestCnMap["/smart/system/dnsblindtestinfo"] = "业务设置-dns盲测平台-信息"
 	requestCnMap["/smart/system/curtasksinfo"] = "业务设置-任务并发配置-信息"
 	requestCnMap["/smart/system/curtaskssave"] = "业务设置-任务并发配置-保存"
+	requestCnMap["/smart/system/securityscanconcurrencyinfo"] = "系统设置-安全检查并发配置-信息"
+	requestCnMap["/smart/system/securityscanconcurrencysave"] = "系统设置-安全检查并发配置-保存"
 	requestCnMap["/smart/system/usescoreinfo"] = "业务设置-可以利用评分-信息"
 	requestCnMap["/smart/system/usescoresave"] = "业务设置-可以利用评分-保存"
 	requestCnMap["/smart/system/cpuinfo"] = "系统监控-cpu"

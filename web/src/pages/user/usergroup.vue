@@ -1,11 +1,5 @@
 <template>
     <div>
-        <div class="main-title  ">
-            
-            <i class="nav_icon"></i>
-            <i style="margin: 0 8px; vertical-align: text-top; color: #BCC4D3;">|</i> 
-            <label >用户组管理</label>
-        </div>
         <div class="userbox context_box_bg">
             <div class="search-box">
                 <div class="operationbutton">

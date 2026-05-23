@@ -2,7 +2,6 @@
   <div class="security-container strategy-page">
     <header class="page-header">
       <div class="page-header-text">
-        <h1 class="page-title">应用安全 · 扫描策略</h1>
         <p class="page-intro">
           管理扫描策略，定义漏洞脚本、爬虫与端口扫描等配置，供新建任务时一键复用。
         </p>

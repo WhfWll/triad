@@ -291,44 +291,13 @@ const proxy = {
     }
 }
 
-//业务工具
-const businessset = {
-    getTCP(){
-        return axios.get('/smart/system/tcpblindtestinfo',)
+// 安全检查配置
+const securityCheckConfig = {
+    get() {
+        return axios.get('/smart/system/securityscanconcurrencyinfo')
     },
-    saveTCP(params){
-        return axios.post('/smart/system/tcpblindtestsave', params)
-    },
-    getHTTP() {
-        return axios.get('/smart/system/httpblindtestinfo',)
-    },
-    saveHTTP(params) {
-        return axios.post('/smart/system/httpblindtestsave', params)
-    },
-    getDNS() {
-        return axios.get('/smart/system/dnsblindtestinfo',)     
-    },
-    saveDNS(params) {
-        return axios.post('/smart/system/dnsblindtestsave', params)
-    },
-    getconcurrency(){
-        return axios.get('/smart/system/curtasksinfo',)
-    },
-    //并发
-    saveconcurrency(params){
-        return axios.get('/smart/system/curtaskssave', params)
-    },
-    getreverse(){
-        return axios.get('/smart/system/getreverseiphost',)
-    },
-    savereverse(params){
-        return axios.post('/smart/system/reverseiphostsave', params)
-    },
-    getTargetIp(){
-        return axios.get('/smart/system/targetiplist',)
-    },
-    saveTargetIp(params){
-        return axios.postJson('/smart/system/targetipsave', params)
+    save(params) {
+        return axios.postJson('/smart/system/securityscanconcurrencysave', params)
     },
 }
 const config = {
@@ -367,7 +336,7 @@ export {
     node,
     proxy,
     otherset,
-    businessset,
+    securityCheckConfig,
     config
 } ;
 

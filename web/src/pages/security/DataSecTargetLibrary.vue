@@ -1,6 +1,5 @@
 <template>
   <div class="security-container">
-    <div class="main-title">数据库目标库</div>
     <p class="page-intro">保存常用数据库连接，创建扫描任务时可直接选用，无需重复填写账号密码。</p>
 
     <div class="list_box">

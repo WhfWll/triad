@@ -117,9 +117,9 @@ type DataSecDBListItem struct {
 	HighRiskCount   int                   `json:"highRiskCount,omitempty"`
 	MiddleRiskCount int                   `json:"middleRiskCount,omitempty"`
 	LowRiskCount    int                   `json:"lowRiskCount,omitempty"`
-	BaselineTotal   int                   `json:"baselineTotal,omitempty"`
-	BaselineFail    int                   `json:"baselineFail,omitempty"`
-	CveMatchCount   int                   `json:"cveMatchCount,omitempty"`
+	BaselineTotal   int                   `json:"baselineTotal"`
+	BaselineFail    int                   `json:"baselineFail"`
+	CveMatchCount   int                   `json:"cveMatchCount"`
 	ScanSensitive   bool                  `json:"scanSensitive,omitempty"`
 	TotalCount      int                   `json:"totalCount,omitempty"`
 	HighCount       int                   `json:"highCount,omitempty"`

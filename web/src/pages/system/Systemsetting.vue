@@ -3,14 +3,8 @@
  */
 <template>
     <div>
-        <div class="main-title  ">
-            
-             <i class="nav_icon"></i>
-            <i style="margin: 0 8px; vertical-align: text-top; color: #BCC4D3;">|</i> 
-            <label >系统配置</label>
-        </div>
         <div class="systembox context_box_bg">
-            <el-tabs v-model="activeName" @tab-click="handleClick">
+            <el-tabs v-model="activeName">
                 <!-- <el-tab-pane label="基础参数" name="tab1"> 
                     <div class="tabsbox  systeminfolist">
                         <div>
@@ -81,380 +75,11 @@
                         </el-form>
                     </div> 
                 </el-tab-pane>  -->
-                <el-tab-pane label="产品授权 " name="tab6">
-                    <div class="tabsbox productinfo systeminfolist">
-                        <div style="border-top: 1px solid #E8E8F5;">
-                            <label>产品名称</label>
-                            <span>{{productinfo.name}}</span>
-                        </div>
-                        <div>
-                            <label>产品序列号</label>
-                            <span>{{productinfo.software_version}}
-                            </span>
-                        </div>
-                        <!-- <div>
-                            <label>漏洞版本</label>
-                            <span>{{productinfo.engine_version}} 
-                            </span>
-                        </div> -->
-                        <!-- <div>
-                            <label>软件类型</label>
-                            <span>{{productinfo.version_type}}</span>
-                        </div> -->
-                        <!-- <div>
-                            <label>使用期限</label>
-                            <span>{{productinfo.time}}</span>
-                        </div> -->
-                        <!-- <div>
-                            <label>登录地址</label>
-                            <span>{{productinfo.login_url}}</span>
-                        </div> -->
-                        <div>
-                            <label>使用期限</label>
-                            <div class="system">
-                                <div class="system_data">
-                                     授权日期：<span style="margin:0 10px">{{productinfo.authTime}}</span>
-                                   授权时长： <span style="margin:0 10px">{{productinfo.authDays}}</span>
-                                   剩余时长： <span style="margin:0 10px">{{productinfo.leftDays}}</span>
-                                </div>
-                                <div style="float:right">
-                                    <el-button type="primary" size="small" style="display:none">在线授权</el-button>
-                                    <!-- <el-button type="primary" size="small" @click="fileDialog = !fileDialog">文件授权</el-button> -->
-                                    <xzbutton type="primary" @click="fileDialog = !fileDialog" size="small">系统授权
-                                    </xzbutton>
-                                    <!-- <el-button type="primary" size="small" @click="handleGetData">收集授权信息</el-button> -->
-                                    <xzbutton v-if="false" type="primary" @click="handleGetData" size="small" style="margin-left: 8px;">收集授权信息</xzbutton>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </el-tab-pane>
-                <!-- <el-tab-pane label="关机/重启" name="tab7">
-                    <div class="tabsbox productinfo systeminfolist">
-                        <div>
-                            <label>系统关机</label>
-                            <span>关机后需要手动打开设备电源才能启动设备
-                                <div style="float:right"> 
-                                    <el-checkbox v-model="shutdown" @change="chkshutdown"  style="color:#4C7AE3">立即关机</el-checkbox>
-                                </div>
-                            </span>
-                        </div>
-                        <div>
-                            <label>快速重启</label>
-                            <span>快速重启需要1~3分钟
-                                <div style="float:right"> 
-                                    <el-checkbox v-model="fastrestart" @change="chkfastrestart"  style="color:#4C7AE3">立即重启</el-checkbox>
-                                </div>
-                            </span>
-                        </div>
-                        <div>
-                            <label>系统重启</label>
-                            <span>系统重启需要5~10分钟
-                                <div style="float:right"> 
-                                    <el-checkbox v-model="systemrestart" @change="chksystemrestart"  style="color:#4C7AE3">立即重启</el-checkbox>
-                                </div>
-                            </span>
-                        </div> 
-                    </div>
-                    <p style="font-size:12px;margin-top:20px; color:rgba(72, 72, 102, 0.32)"><i class="iconfont icontishi" style="margin-right:10px;vertical-align: middle;"></i>快速重启是小智服务重启，系统重启是整机重启</p>
-                    <el-button type="primary"
-                        class="btnloading" style="opacity:0"
-                        v-loading.fullscreen.lock="fullscreenLoading"> 
-                    </el-button>
-                </el-tab-pane> -->
-                <!-- <el-tab-pane label="告警设置" name="tab8" class="nopaddingbox">
-                    <div class="tabsbox ">
-                        <el-form ref="warningform" :model="warningform" label-width="114px" class="sysform"
-                            :rules="setUp">
-                            <el-form-item label="CPU告警阈值：" class="syswarnvalue" prop="cpu_threshold">
-                                <el-input v-model="warningform.cpu_threshold" style="width:200px"></el-input> %
-                                <el-tooltip placement="right">
-                                    <div slot="content">告警范围1%~100%</div>
-                                    <i class="iconfont icontishi icontsstyle" style="vertical-align: middle; "></i>
-                                </el-tooltip>
-                            </el-form-item>
-                            <el-form-item label="内存告警阈值：" class="syswarnvalue" prop="memory_threshold">
-                                <el-input v-model="warningform.memory_threshold" style="width:200px"></el-input> %
-                                <el-tooltip placement="right">
-                                    <div slot="content">告警范围1%~100%</div>
-                                    <i class="iconfont icontishi icontsstyle" style="vertical-align: middle; "></i>
-                                </el-tooltip>
-                            </el-form-item>
-                            <el-form-item label="硬盘告警阈值：" class="syswarnvalue" prop="disk_threshold">
-                                <el-input v-model="warningform.disk_threshold" style="width:200px"></el-input> %
-                                <el-tooltip placement="right">
-                                    <div slot="content">告警范围1%~100%</div>
-                                    <i class="iconfont icontishi icontsstyle" style="vertical-align: middle; "></i>
-                                </el-tooltip>
-                            </el-form-item>
-                            <el-form-item label="流量告警阈值：" class="syswarnvalue" prop="flow_threshold">
-                                <el-input v-model="warningform.flow_threshold" style="width:200px"></el-input> Mbps
-                                <el-tooltip placement="right">
-                                    <div slot="content">告警范围1~1000M</div>
-                                    <i class="iconfont icontishi icontsstyle" style="vertical-align: middle; "></i>
-                                </el-tooltip>
-                            </el-form-item>
-                            <el-form-item class="savebox">
-                                <xzbutton type="primary" @click="btnSaveWarning" size="small">保存</xzbutton>
-                            </el-form-item>
-                        </el-form>
-                    </div>
-                </el-tab-pane> -->
-                <el-tab-pane label="安全设置" name="tab9">
-                    <div class="tabsbox">
-               
-                        <el-form ref="securityform" :model="securityform" label-width="150px" class="securityform"
-                            :rules="safety">
-                            
-                                <el-form-item label="密码强度" style="margin-left:10px">
-                                    <el-select v-model="securityform.password_rank" style="width:200px;margin-right:10px">
-                                            <el-option label="低" value="1"></el-option>
-                                            <el-option label="中" value="2"></el-option>
-                                            <el-option label="高" value="3"></el-option>
-                                    </el-select>
-                                         <!-- <el-select v-model="securityform.password_rank" placeholder="请选择提醒阈值" class="iptw">
-                                            <el-option label="检测到高危进行提醒" value="1"></el-option>
-                                            <el-option label="检测到中危及以上进行提醒" value="2"></el-option>
-                                            <el-option label="检测到低危及以上进行提醒" value="3"></el-option>
-                                        </el-select> -->
-                                    <el-tooltip placement="bottom">
-                                        <!-- 长度不低于8位，包含字母、符号、数字中的三类 -->
-                                        <div slot="content">密码等级(1=低：长度不低于8位，可为全字母或数字)(2=中：长度不低于位，包含字母、符号、数字中的两类)(3=高：位长至少8位，包括数字、小写字母、大写字母、特殊符号中至少3类，不得包含用户名的完整字符串、大小写变位或形似变换的字符串，应更换系统或设备出厂的默认口令，口令设置应避免键盘排序密码，支持定制密码修改频率，不得使用最近N次的密码。)</div>
-                                        <i class="iconfont icontishi icontsstyle" style="vertical-align: middle; "></i>
-                                    </el-tooltip>
-                                </el-form-item>
-
-                                <el-form-item label="禁止登录超时" style="margin-left:10px">
-                                    <el-input v-model="securityform.login_timeout" style="width:200px;margin-right:10px">
-                                    </el-input>分钟
-                                    <el-tooltip placement="bottom">
-                                        <div slot="content">系统在限定时间内禁止登录</div>
-                                        <i class="iconfont icontishi icontsstyle" style="vertical-align: middle; "></i>
-                                    </el-tooltip>
-                                </el-form-item>
-                                <el-form-item label="长期未使用锁定" style="margin-left:10px">
-                                    <el-input @input="inputChange" v-model="securityform.expire_unused" style="width:200px;margin-right:10px">
-                                    </el-input>天
-                                        <!-- <el-switch
-                                            :active-value="actNum"
-                                            :inactive-value="inActNum"
-                                            class="switchbtn"
-                                            active-color="#4c7ae3"
-                                            v-model="securityform.expire_unused "
-                                            inactive-color="#E8E8F5"
-                                            @change="fnReptileSwitch">
-                                        </el-switch> -->
-                                    <el-tooltip placement="bottom">
-                                        <div slot="content">账号在限定时间内未登录会自动锁定</div>
-                                        <i class="iconfont icontishi icontsstyle" style="vertical-align: middle; "></i>
-                                    </el-tooltip>
-                                </el-form-item>
-                                <el-form-item label="密码有效期时长" style="margin-left:10px">
-                                    <el-input @input="inputChange2"  v-model="securityform.password_valid " style="width:200px;margin-right:10px">
-                                    </el-input>月
-                                    <el-tooltip placement="bottom">
-                                        <div slot="content">系统在限定时间需要更改密码，否则将不能登陆</div>
-                                        <i class="iconfont icontishi icontsstyle" style="vertical-align: middle; "></i>
-                                    </el-tooltip>
-                                </el-form-item>
-
-                            <el-form-item label="普通用户登录限制：" prop="user_limit">
-                                <el-input v-model="securityform.user_limit"
-                                    style="width:200px;margin-right:10px;margin-left:18px"></el-input>次
-                                <el-tooltip placement="bottom">
-                                    <div slot="content">普通用户一天内连续登录错误超过限制次数时，<br />系统在限定时间内禁止普通用户登录</div>
-                                    <i class="iconfont icontishi icontsstyle" style="vertical-align: middle; "></i>
-                                </el-tooltip>
-                            </el-form-item>
-                            <div class="clearfix">
-                                <el-form-item label="管理/审计员登录限制：" label-width="170px" prop="admin_limit"
-                                    style="float:left;width:450px">
-                                    <el-input v-model="securityform.admin_limit" style="width:200px;margin-right:10px">
-                                    </el-input>次
-                                    <el-tooltip placement="bottom">
-                                        <div slot="content">管理员/审计员一天内连续登录错误超过限制次数时，<br />系统在限定时间内禁止管理员/审计员登录</div>
-                                        <i class="iconfont icontishi icontsstyle" style="vertical-align: middle; "></i>
-                                    </el-tooltip>
-                                </el-form-item>
-                                <el-form-item label="禁止登录：" style="float:left;width:500px">
-                                    <el-input @input="inputChange3" v-model="securityform.ban_time" style="width:200px;margin-right:10px">
-                                    </el-input>分钟
-                                    <el-tooltip placement="bottom">
-                                        <div slot="content">系统在限定时间内禁止管理员/审计员登录</div>
-                                        <i class="iconfont icontishi icontsstyle" style="vertical-align: middle; "></i>
-                                    </el-tooltip>
-                                </el-form-item>
-                            </div>
-                            <el-form-item class="savebox">
-                                <!-- <el-button type="primary" size="small"  @click="benSavesecurity">保存</el-button> -->
-                                <xzbutton type="primary" @click="benSavesecurity" size="small">保存</xzbutton>
-                            </el-form-item>
-                        </el-form>
-                    </div>
-                </el-tab-pane>
-                <el-tab-pane label="系统升级" name="tab10">
-                    <div class="tabsbox productinfo sysupgradebox systeminfolist">
-                        <div class="firstline">
-                            <label>当前系统版本</label>
-                            <span class="blueword"  >{{systemupdate.currentVersion}}</span>
-                            <!-- <span class="blueword">{{systemupdate.current_sys_version}}</span> -->
-                            <span class="updatetime">更新时间 <span class="timeword">{{systemupdate.updateTime}}</span>
-                            </span>
-
-                        </div>
-                        <div class="firstline">
-                            <label>上次系统版本</label>
-                            <span class="blueword">{{ systemupdate.lastSystemVersion || '暂无' }}</span>
-                            <el-button v-if="systemupdate.lastSystemVersion" size="mini" type="primary" class="restore-btn" @click="restoreSystem">回滚</el-button>
-                        </div>
-                        <div class="firstline">
-                            <label>当前工具库版本</label>
-                            <span class="blueword"  >{{systemupdate.vulVersion}}</span>
-                            <span class="updatetime">更新时间 <span class="timeword">{{systemupdate.vulUpdateTime}}</span>
-                            </span>
-                        </div>
-                        <div class="firstline">
-                            <label>上次工具库版本</label>
-                            <span class="blueword">{{ systemupdate.lastVulVersion || '暂无' }}</span>
-                            <el-button v-if="systemupdate.lastVulVersion" size="mini" type="primary" class="restore-btn" @click="restoreVul">回滚</el-button>
-                        </div>
-
-                        <div style="border-bottom:none">
-                            <div style="margin-top:24px">
-                                <xzbutton type="primary" @click="btnoffupdate" size="small">离线更新</xzbutton>
-                                <input type="file" class="btnUploadID2" ref="upload" @change="changeuploaID2($event)"
-                                    style="display:none" id="input-file-ID2" accept=".zip" />
-                            </div>
-                            <p class="systemtip">
-                                提示：1.系统更新期间服务将暂停。快速更新约1分钟，全量更新约10-15分钟。2.请确保上传有效的官方升级包(.zip)。
-                            </p>
-                        </div>
-                        <!-- 2022年三月初新设计 -->
-
-                    </div>
-                    <!-- <div class=" tabsbox productinfo sysupgradebox systeminfolist"> -->
-
-                       
-                    <!-- </div> -->
-                    <!-- <div class="tabsbox productinfo sysupgradebox systeminfolist"> -->
-                    <!-- <div>
-                            <label>在线自动更新</label>
-                             <div class="planTime">
-                                <el-select 
-                                    v-model="onlineUpdate.plan_time1"
-                                    size="small"
-                                    placeholder="请选择" 
-                                    style="width:126px;margin-right:16px;margin-left:20px" >
-                                    <el-option value="1" label="周"></el-option>
-                                    <el-option value="2" label="月"></el-option>
-                                </el-select>
-                             <el-select 
-                                    v-model="onlineUpdate.plan_time2"
-                                    size="small"
-                                    placeholder="请选择"
-                                    style="width:126px;margin-right:16px"  v-if="onlineUpdate.plan_time1 === '2'">
-                                    <el-option   
-                                        v-for="i in 31" 
-                                        :key="i" 
-                                        :label="i+'号'"
-                                        :value="i"> </el-option> 
-                                </el-select>
-                            <el-select 
-                                    
-                                    v-model="onlineUpdate.plan_time3"
-                                    size="small"
-                                    placeholder="请选择"
-                                    style="width:126px;margin-right:16px" v-if="onlineUpdate.plan_time1 === '1'">
-                                    <el-option value="1" label="周一"></el-option>
-                                    <el-option value="2" label="周二"></el-option>
-                                    <el-option value="3" label="周三"></el-option>
-                                    <el-option value="4" label="周四"></el-option>
-                                    <el-option value="5" label="周五"></el-option>
-                                    <el-option value="6" label="周六"></el-option>
-                                    <el-option value="7" label="周日"></el-option>
-                                </el-select>
-                                <el-time-picker v-model="onlineUpdate.plan_time4" placeholder="选择时间" value-format="HH:mm:ss">
-                                </el-time-picker>
-                                <el-switch
-                                    class="switchbtn"
-                                    active-color="#4c7ae3"
-                                    v-model="onlineUpdate.isopen"
-                                    inactive-color="#E8E8F5"
-                                    @change="fnReptileSwitch">
-                                </el-switch>
-                           </div>
-                        </div> -->
-
-
-                    <!-- </div> -->
-
-
-                </el-tab-pane>
-
-                <el-tab-pane label="配置备份" name="tab13">
-                    <sysconfigcopy v-if="activeName === 'tab13'"/>
-                </el-tab-pane>
-                <el-tab-pane label="API秘钥" name="tab11">
-                    <!-- <el-button type="primary"  @click="generateKey" size="small" style="margin-bottom:24px;">生成秘钥</el-button> -->
-                    <div>
-                        <div>
-                            <xzbutton type="primary" @click="generateKey" size="small">生成秘钥</xzbutton>
-                            <el-tooltip placement="right" style="margin-bottom:24px;display:inline-block;">
-                                <div slot="content">通过API接口可以调用系统功能模块，API密钥是通过API接口登录的凭证，每个用户允许生成唯一密钥</div>
-                                <i class="iconfont icontishi icontsstyle" style="vertical-align: initial; "></i>
-                            </el-tooltip>
-                        </div>
-                        <div class="totalbox" style="height:100%">
-                            <el-table class="apitable tablePadding" :data="keyTableData" style="width: 100%;"  height="calc(100% - 102px)">
-                                <el-table-column prop="username" label="用户名">
-                                </el-table-column>
-                                <el-table-column prop="token" label="API认证秘钥">
-                                </el-table-column>
-                                <el-table-column prop="createTime" width="300" label="生成日期">
-                                </el-table-column>
-                                <el-table-column prop=""  label="操作">
-                                    <template slot-scope="scope">
-                                        <el-popover
-                                            placement="bottom"
-                                            width="170"
-                                            :visible-arrow="false"
-                                            :ref="`popover_id-${scope.row.token}`"
-                                            popper-class="delButton_popper" >
-                                            <p class="delText"><i class="el-icon-warning"></i>确定删除吗？</p>
-                                            <div style="text-align: right; margin: 0">
-                                                <el-button size="mini" class="delCancel"  @click="scope._self.$refs[`popover_id-${scope.row.token}`].doClose()">取消</el-button>
-                                                <el-button size="mini" type="primary" @click="btnDel(scope)">确定</el-button>
-                                            </div>
-                                            <el-button type="warning" class="operatebtn"  size="small"  slot="reference" style="margin-left: 8px;">删除</el-button>
-                                        </el-popover>
-                                    </template>
-                                </el-table-column>
-                            </el-table>
-                            <el-pagination
-                                :page-size="pageSize" 
-                                background
-                                layout=" total,  prev, pager, next,sizes, jumper"
-                                :total="totalpage"
-                                :current-page="currentpage"
-                                @current-change = "currentchange"
-                                @size-change="handleSizeChange" >
-                            </el-pagination>
-                        </div>
-                    </div>
-
-                   
+                <el-tab-pane label="安全检查配置" name="tabSec">
+                    <security-check-config v-if="activeName === 'tabSec'" />
                 </el-tab-pane>
                 <el-tab-pane label="系统监控" name="tab12">
                     <sysmonitoring v-if="activeName === 'tab12'"/>
-                </el-tab-pane>
-                <el-tab-pane label="系统设置" name="tab4">
-                    <othersysset v-if="activeName === 'tab4'" />
-                </el-tab-pane>
-                <el-tab-pane label="业务设置" name="tab2">
-                    <businessset v-if="activeName === 'tab2'" />
-                </el-tab-pane>
-                <el-tab-pane label="大模型设置" name="tab14"> 
-                    <system_aiset ref="system_aisetRef"></system_aiset>
                 </el-tab-pane>
             </el-tabs>
 
@@ -676,6 +301,8 @@
     </div>
 </template>
 <style scoped lang="less">
+@import '../security/css/appsec-tokens.less';
+
     .tabsbox{
         background: #fff;
         padding: 20px;
@@ -799,16 +426,24 @@
         height: 48px;
         line-height: 48px;
         padding: 0 24px;
+        color: @appsec-text-body;
+        transition: color 0.2s;
+        &:hover {
+            color: @appsec-text-strong;
+        }
     }
     /deep/ .el-tabs__item.is-active{
-        color: #4C7AE3;
-        font-weight: 500;
+        color: @appsec-accent;
+        font-weight: 600;
+    }
+    /deep/ .el-tabs__active-bar {
+        background-color: @appsec-accent;
     }
     /deep/ .el-tabs__nav-wrap{
         padding: 0 24px; 
     }
     /deep/ .el-tabs__nav-wrap::after{
-        background: #E8E8F5;
+        background: @appsec-border-subtle;
         height: 1px;
     }
     /deep/ .el-tabs__header{
@@ -846,10 +481,10 @@
 }
 /deep/ .el-tabs__header {
     margin: 0 0 15px;
-    background: #fff;
-    border-radius: 4px;
-    box-shadow: 0px 2px 4px 0px rgb(76 122 227 / 12%);
-    border: none;
+    background: @appsec-bg-surface;
+    border-radius: @appsec-radius-md;
+    box-shadow: @appsec-shadow-card;
+    border: 1px solid @appsec-border-default;
 }
 .systembox{
     //
@@ -876,10 +511,10 @@
     }
     /deep/ .el-tabs__header{
         margin: 0 0 15px;
-        background: #fff;
-        border-radius: 4px;
-        box-shadow: 0px 2px 4px 0px rgba(76, 122, 227, 0.12);
-        border: none;
+        background: @appsec-bg-surface;
+        border-radius: @appsec-radius-md;
+        box-shadow: @appsec-shadow-card;
+        border: 1px solid @appsec-border-default;
     }
 
 } 
@@ -1050,21 +685,15 @@ import xzbutton from "../../components/XzButton.vue";
 import {encryptCBC,decryptCBC} from '@/commonFunction/des.js' 
 import { updateFile} from '@/lib'
 import { system } from '@/api/system.js'
-import othersysset from '@/pages/system/othersysset'//其他设置
-import businessset from '@/pages/system/businessset'//其他设置
 import sysmonitoring from '@/pages/system/sysmonitoring'//系统监控
-import sysconfigcopy from '@/pages/system/sysconfigcopy'//配置备份
-import system_aiset from "./system_aiset.vue";
+import SecurityCheckConfig from '@/pages/system/SecurityCheckConfig.vue';
 import $ from 'jquery'
 export default {
     name:'systemsetting',
     components: {
     	xzbutton,
-        othersysset,//其他设置
-        businessset,
         sysmonitoring,//系统监控
-        sysconfigcopy,//配置备份
-        system_aiset,
+        SecurityCheckConfig,
   	},
     data(){ 
 
@@ -1127,7 +756,7 @@ export default {
             system_uid:'',
             dialogSysVisible:false,
             role:0,  
-    		activeName:'tab6', 
+    		activeName:'tabSec', 
             formBasics:{
                 ip:'',
                 port:'',
@@ -1338,8 +967,6 @@ export default {
         this.role = decryptCBC(localStorage.getItem('role'),this.myKey);
     },
     mounted () {
-        this.get_product_info();
-        // this.get_email_config();
     },
     beforeDestroy(){
     //    clearTimeout(this.timer2) 
@@ -1354,54 +981,6 @@ export default {
            inputChange3(val) {
             this.securityform.ban_time = this.securityform.ban_time.replace(/[^0-9.]/g, '')
             },
-        handleClick(tab, event){
-            // console.log(tab.name);
-            if(tab.name == 'tab1'){ //基本
-                this.get_basic_info()
-            }
-            else if(tab.name == 'tab2'){  //业务设置
-                
-            }
-            // else if(tab.name == 'tab3'){ //检测
-            //     this.get_check_config();
-            // }
-            // else if(tab.name == 'tab4'){ //提醒消息
-            //     this.get_notify_settings();
-            // }
-            else if(tab.name == 'tab5'){
-                this.get_user_list();
-            }
-            else if(tab.name == 'tab6'){
-                this.get_product_info();            
-                 
-            }
-            else if(tab.name == 'tab7'){ //关机重启
-                
-            }
-            else if(tab.name == 'tab8'){ //告警设置
-                // this.getwarninginfo();
-            }
-            else if(tab.name == 'tab9'){  //安全设置
-                this.getsecurityinfo();
-            }
-            else if(tab.name == 'tab10'){  //系统备份与还原 
-                this.getVersion2();
-            }
-            else if(tab.name == 'tab11'){  //API秘钥
-                this.fnShowTable();
-            }
-            else if(tab.name == 'tab14'){  //AI配置
-                this.$refs.system_aisetRef.init();
-
-                // this.loadAiModels();
-                // this.loadScenarioConfig(); // 加载场景配置
-            }
-            // else if(tab.name == 'tab12'){  //系统 监控
-            //     this.getvul_database_trend();
-            //     this.echartline2();
-            // }
-            
-        },
         // 回滚到上次系统版本
         restoreSystem() {
             this.$confirm('确认回滚到上次系统版本？回滚过程中系统将暂时不可用。', '提示', {

@@ -1,6 +1,5 @@
 <template>
   <div class="security-container">
-    <div class="main-title">数据安全检查 · 检测规则</div>
     <p class="page-intro">
       规则存储于 <strong>datasec_rule</strong> 表。库中有启用规则时，数据库安全检查任务将优先使用库规则；否则使用内置规则（约 {{ builtinHint }} 条）。
       需求指标 <strong>3800+</strong> 条：可从本地 <strong>data/default-cve.db</strong> 导入数据库相关 CVE（约 {{ cvePreview.availableInDb || '—' }} 条可用）。

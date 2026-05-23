@@ -242,6 +242,21 @@ type CurTasksSaveReq struct {
 type CurTasksSaveResp struct {
 }
 
+// SecurityScanConcurrencyInfoRes 安全检查并发配置
+type SecurityScanConcurrencyInfoRes struct {
+	HostConcurrent int `json:"hostConcurrent"`
+	AppConcurrent  int `json:"appConcurrent"`
+	DataConcurrent int `json:"dataConcurrent"`
+}
+
+type SecurityScanConcurrencySaveReq struct {
+	HostConcurrent int `json:"hostConcurrent" binding:"required"`
+	AppConcurrent  int `json:"appConcurrent" binding:"required"`
+	DataConcurrent int `json:"dataConcurrent" binding:"required"`
+}
+
+type SecurityScanConcurrencySaveRes struct{}
+
 type CpuInfoRes struct {
 	List interface{} `json:"list"`
 }

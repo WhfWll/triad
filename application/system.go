@@ -862,6 +862,24 @@ func (sm *SystemManage) CurTasksSave(ctx context.Context, req *typespec.CurTasks
 	return mapSetService.Create(ctx, enums.CurTasksInfoMapSetObjKey, string(objValueByte), enums.CurTasksInfoMapSetContent)
 }
 
+// SecurityScanConcurrencyInfo 系统设置 - 安全检查并发配置 - 信息
+func (sm *SystemManage) SecurityScanConcurrencyInfo(ctx context.Context, res *typespec.SecurityScanConcurrencyInfoRes) error {
+	cfg := services.GetSecurityScanConcurrency(ctx)
+	res.HostConcurrent = cfg.HostConcurrent
+	res.AppConcurrent = cfg.AppConcurrent
+	res.DataConcurrent = cfg.DataConcurrent
+	return nil
+}
+
+// SecurityScanConcurrencySave 系统设置 - 安全检查并发配置 - 保存
+func (sm *SystemManage) SecurityScanConcurrencySave(ctx context.Context, req *typespec.SecurityScanConcurrencySaveReq) error {
+	return services.SaveSecurityScanConcurrency(ctx, services.SecurityScanConcurrencyConfig{
+		HostConcurrent: req.HostConcurrent,
+		AppConcurrent:  req.AppConcurrent,
+		DataConcurrent: req.DataConcurrent,
+	})
+}
+
 // UseScoreInfo 业务设置 - 可以利用评分 - 信息
 func (sm *SystemManage) UseScoreInfo(ctx context.Context, res *typespec.UseScoreInfoRes) error {
 	var mapSetService services.MapSet

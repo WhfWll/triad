@@ -173,7 +173,7 @@ func (a *BaselineApp) RunBaselineBatchCheckAsync(ctx context.Context, req *types
 }
 
 func (a *BaselineApp) runBatchChecks(ctx context.Context, batchTaskID int, targets []typespec.BaselineCheckReq) {
-	maxConcurrency := 10
+	maxConcurrency := services.GetHostScanConcurrent(ctx)
 	sem := make(chan struct{}, maxConcurrency)
 	var wg sync.WaitGroup
 

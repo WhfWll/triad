@@ -783,6 +783,37 @@ func CurTasksSave(c *gin.Context) {
 	server.RespSuccess(c, resp)
 }
 
+// SecurityScanConcurrencyInfo 系统设置 - 安全检查并发配置 - 信息
+func SecurityScanConcurrencyInfo(c *gin.Context) {
+	var res typespec.SecurityScanConcurrencyInfoRes
+	ctx := server.NewContext(context.Background(), c)
+	var app application.SystemManage
+	if err := app.SecurityScanConcurrencyInfo(ctx, &res); err != nil {
+		log.Error("SecurityScanConcurrencyInfo error: " + err.Error())
+		server.RespFail(c, 4000, err.Error())
+		return
+	}
+	server.RespSuccess(c, res)
+}
+
+// SecurityScanConcurrencySave 系统设置 - 安全检查并发配置 - 保存
+func SecurityScanConcurrencySave(c *gin.Context) {
+	var req typespec.SecurityScanConcurrencySaveReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Error("SecurityScanConcurrencySave param error: " + err.Error())
+		server.RespFail(c, 4000, "参数错误: "+err.Error())
+		return
+	}
+	ctx := server.NewContext(context.Background(), c)
+	var app application.SystemManage
+	if err := app.SecurityScanConcurrencySave(ctx, &req); err != nil {
+		log.Error("SecurityScanConcurrencySave error: " + err.Error())
+		server.RespFail(c, 4000, err.Error())
+		return
+	}
+	server.RespSuccess(c, typespec.SecurityScanConcurrencySaveRes{})
+}
+
 // UseScoreInfo 业务设置 - 可以利用评分 - 信息
 func UseScoreInfo(c *gin.Context) {
 	var res typespec.UseScoreInfoRes

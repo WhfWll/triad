@@ -22,8 +22,6 @@ const (
 	appSecStatusWaiting = 1
 	appSecStatusRunning = 2
 	appSecStatusDone    = 3
-	// appSecMaxConcurrentTargets 单任务内同时扫描的目标数上限（对齐需求并发 5）
-	appSecMaxConcurrentTargets = 5
 )
 
 // AppSecScan 应用安全 Web 扫描（task_task / task_target / task_vul）
@@ -80,7 +78,7 @@ func (a *AppSecScan) runScan(ctx context.Context, uid int, scanType string, task
 	}
 
 	scanCtx := context.Background()
-	sem := make(chan struct{}, appSecMaxConcurrentTargets)
+	sem := make(chan struct{}, services.GetAppScanConcurrent(ctx))
 	for _, row := range targets {
 		t := row
 		go func() {

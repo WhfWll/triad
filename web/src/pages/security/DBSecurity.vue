@@ -6,7 +6,6 @@
       <div class="search-box">
         <div class="operationbutton">
           <el-button type="primary" size="small" @click="btnCreate">新建检查任务</el-button>
-          <router-link to="/datasec/targets"><el-button size="small">目标库管理</el-button></router-link>
         </div>
         <div class="serach-condition">
           <div class="search-text">
@@ -22,38 +21,31 @@
       <el-table :data="tableData" style="width: 100%" class="myTable" @selection-change="handleSelectionChange">
         <el-table-column width="55" type="selection">
         </el-table-column>
-        <el-table-column prop="name" label="任务名称" :show-overflow-tooltip="true">
+        <el-table-column prop="name" label="任务名称" min-width="120" width="140" :show-overflow-tooltip="true">
         </el-table-column>
-        <el-table-column prop="dbType" label="数据库类型">
+        <el-table-column prop="dbType" label="库类型" width="88">
           <template slot-scope="scope">
             <span :class="getDBTypeClass(scope.row.dbType)">{{ getDBTypeName(scope.row.dbType) }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="dbHost" label="扫描目标" :show-overflow-tooltip="true">
+        <el-table-column prop="dbHost" label="扫描目标" min-width="200" width="220" :show-overflow-tooltip="true">
           <template slot-scope="scope">
             <span>{{ scope.row.targetSummary || scope.row.dbHost }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="riskLevel" label="风险等级" width="88">
+        <el-table-column prop="riskLevel" label="风险" width="72" align="left">
           <template slot-scope="scope">
-            <span :class="getRiskClass(scope.row.riskLevel)">{{ getRiskName(scope.row.riskLevel) }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="基线" width="96">
-          <template slot-scope="scope">
-            <span v-if="scope.row.baselineTotal">{{ scope.row.baselineFail || 0 }}/{{ scope.row.baselineTotal }}</span>
+            <span v-if="scope.row.status === 3" :class="getRiskClass(scope.row.riskLevel)">{{ getRiskName(scope.row.riskLevel) }}</span>
             <span v-else class="text-muted">-</span>
           </template>
         </el-table-column>
-        <el-table-column prop="cveMatchCount" label="CVE" width="64">
+        <el-table-column label="扫描结果" width="210" :show-overflow-tooltip="true" align="left">
           <template slot-scope="scope">
-            <span v-if="scope.row.cveMatchCount">{{ scope.row.cveMatchCount }}</span>
-            <span v-else class="text-muted">-</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="totalCount" label="敏感" width="64">
-          <template slot-scope="scope">
-            <span v-if="scope.row.totalCount">{{ scope.row.totalCount }}</span>
+            <span v-if="scope.row.status === 3" class="result-summary">
+              基线 {{ scope.row.baselineFail || 0 }}/{{ scope.row.baselineTotal || 0 }}
+              · CVE {{ scope.row.cveMatchCount || 0 }}
+              <template v-if="scope.row.totalCount"> · 敏 {{ scope.row.totalCount }}</template>
+            </span>
             <span v-else class="text-muted">-</span>
           </template>
         </el-table-column>
@@ -62,15 +54,15 @@
             <span :class="getStatusClass(scope.row.status)">{{ getStatusName(scope.row.status) }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="160">
+        <el-table-column prop="checkTime" label="扫描时间" width="150" :show-overflow-tooltip="true">
         </el-table-column>
-        <el-table-column prop="checkTime" label="检查时间" width="160">
-        </el-table-column>
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" width="200" fixed="right">
           <template slot-scope="scope">
-            <el-link :underline="false" class="link_primary" @click="handleDetail(scope.row)">详情</el-link>
-            <el-link :underline="false" class="link_primary" @click="handleRerun(scope.row)">再次检测</el-link>
-            <el-link :underline="false" class="link_primary" @click="handleCopyTargets(scope.row)">复制目标</el-link>
+            <div class="row-actions">
+              <el-link :underline="false" class="link_primary" @click="handleDetail(scope.row)">详情</el-link>
+              <el-link :underline="false" class="link_primary" @click="handleRerun(scope.row)">再次检测</el-link>
+              <el-link :underline="false" class="link_danger" @click="handleDel(scope.row)">删除</el-link>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -339,30 +331,6 @@ export default {
         this.$message({ message: '操作失败: ' + (e.message || ''), type: 'error' })
       }
     },
-    async handleCopyTargets(row) {
-      const id = row.id || row.ID
-      if (!id) return
-      try {
-        const res = await security.cloneDataSecTaskTargets({ id, kind: 'db' })
-        if (res.code === 200 && res.data) {
-          this.dialogVisible = true
-          this.taskForm = {
-            name: `${row.name || '任务'}-复制`,
-            dbType: res.data.dbType || row.dbType || 1,
-            targets: res.data.targets || [],
-            libraryTargetIds: [],
-            libraryPicks: [],
-            scanSensitive: res.data.scanSensitive !== false,
-            scanAllDb: !!res.data.scanAllDb
-          }
-          this.$message({ message: '已复制历史任务目标', type: 'success' })
-        } else {
-          this.$message({ message: res.msg || '复制失败', type: 'error' })
-        }
-      } catch (e) {
-        this.$message({ message: '复制失败: ' + (e.message || ''), type: 'error' })
-      }
-    },
     async saveTargetsToLibrary() {
       const targets = this.taskForm.targets || []
       if (!targets.length) {
@@ -385,14 +353,26 @@ export default {
       }
     },
     async handleDel(row) {
-      this.$confirm('确认删除该任务？', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(() => {
-        this.$message({ message: '删除成功', type: 'success' })
-        this.getData()
-      }).catch(() => {})
+      const id = row.id || row.ID
+      if (!id) return
+      try {
+        await this.$confirm(`确认删除任务「${row.name || id}」？删除后不可恢复。`, '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        })
+        const res = await security.deleteDataSecTask({ id, kind: 'db' })
+        if (res.code === 200) {
+          this.$message({ message: '删除成功', type: 'success' })
+          this.getData()
+        } else {
+          this.$message({ message: res.msg || '删除失败', type: 'error' })
+        }
+      } catch (e) {
+        if (e !== 'cancel') {
+          this.$message({ message: '删除失败: ' + (e.message || ''), type: 'error' })
+        }
+      }
     },
     handleDetail(row) {
       const id = row.id || row.ID
@@ -501,6 +481,22 @@ export default {
 .status-running { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
 .status-complete { background: rgba(16, 185, 129, 0.2); color: #10b981; }
 
+.link_danger { color: #f87171; }
+
+.row-actions {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 12px;
+  white-space: nowrap;
+}
+
 .text-muted { color: #64748b; }
+
+.result-summary {
+  color: #cbd5e1;
+  font-size: 13px;
+  white-space: nowrap;
+}
 
 </style>

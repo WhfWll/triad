@@ -130,7 +130,7 @@ func (a *VulnScanCveApp) runBatchCveScan(taskID int, req *typespec.VulnScanCveBa
 		return
 	}
 
-	sem := make(chan struct{}, 10)
+	sem := make(chan struct{}, services.GetHostScanConcurrent(context.Background()))
 	var wg sync.WaitGroup
 
 	for i, target := range req.Targets {

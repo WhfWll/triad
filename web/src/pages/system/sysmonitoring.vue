@@ -24,23 +24,26 @@
     </div>
 </template>
 <style scoped lang="less">
+@import '../security/css/appsec-tokens.less';
+
      #line1, #line2, #pie1{
         height: 100%;
     }
     .block_box_title{
         position: relative;
-        font-size: 14px;
+        font-size: @appsec-font-size-base;
         padding-left: 10px;
-        font-weight: 800;
-        color: rgba(72,72,102,.87) ;
-        border-left:3px solid #4c7ae3;
+        font-weight: @appsec-font-weight-semibold;
+        color: @appsec-text-primary;
+        border-left: 3px solid @appsec-accent;
     }
     .div_block{
         width: 100%;
         height: 298px;
-        background-color: #fff;
-        box-shadow: 0px 2px 4px 1px rgba(76, 122, 227, 0.11);
-        border-radius: 4px;
+        background: @appsec-bg-surface;
+        box-shadow: @appsec-shadow-card;
+        border: 1px solid @appsec-border-default;
+        border-radius: @appsec-radius-md;
         margin-bottom: 24px;
         padding: 24px;
         box-sizing: border-box;
@@ -66,7 +69,14 @@ export default({
         //系统监控
 
     	return{
-          color:['#65C680 ','#4C7AE3'],  
+          color: ['#34d399', '#00d4aa'],
+          chartColors: {
+            axisLabel: '#64748b',
+            axisLine: 'rgba(255, 255, 255, 0.12)',
+            splitLine: 'rgba(255, 255, 255, 0.08)',
+            line: '#00d4aa',
+            legend: '#94a3b8',
+          },
           timer1: null,
           Loading:false,
           timermillisec:0,
@@ -94,6 +104,42 @@ export default({
         this.commonjs.timeer = null;
     },
     methods:{
+        chartTooltip(extra) {
+            return Object.assign({
+                backgroundColor: 'rgba(26, 26, 46, 0.95)',
+                borderColor: 'rgba(0, 212, 170, 0.2)',
+                textStyle: { color: '#e2e8f0' },
+            }, extra || {})
+        },
+        chartXAxis(xdt) {
+            const c = this.chartColors
+            return {
+                type: 'category',
+                boundaryGap: false,
+                data: xdt,
+                axisLine: { lineStyle: { color: c.axisLine } },
+                axisLabel: { color: c.axisLabel },
+                axisTick: { show: false },
+            }
+        },
+        chartYAxis() {
+            const c = this.chartColors
+            return {
+                type: 'value',
+                max: 100,
+                min: 0,
+                interval: 20,
+                axisLine: { show: false, lineStyle: { color: c.axisLine } },
+                axisLabel: {
+                    color: c.axisLabel,
+                    formatter: function (val) {
+                        return val + '%'
+                    },
+                },
+                axisTick: { show: false },
+                splitLine: { lineStyle: { type: 'dashed', color: c.splitLine } },
+            }
+        },
         //系统监控 折线图1  获取接口
           async getvul_database_trend1(){ 
             const dt = await system.getDatabasetrend();
@@ -157,19 +203,14 @@ export default({
             }  
         },
         echartline:function(id, xdt,ydt){
-            // 基于准备好的dom，初始化echarts实例
-            var myChart = echarts.init(document.getElementById(id)); 
-            // 绘制图表
-            myChart.setOption({ 
-                tooltip: {
-                    // trigger: 'axis',
-					trigger: 'axis', //item数据项图形触发，主要在散点图，饼图等无类目轴的图表中使用。
-					axisPointer: {
-						// 坐标轴指示器，坐标轴触发有效
-						type: 'line' // 默认为直线，可选为：'line' | 'shadow'
-					},
-					formatter: 'CPU使用率 : {c}%  <br/>{b}<br/>' //{a}（系列名称），{b}（数据项名称），{c}（数值）, {d}（百分比）
-                },
+            var myChart = echarts.init(document.getElementById(id));
+            var lineColor = this.chartColors.line
+            myChart.setOption({
+                tooltip: this.chartTooltip({
+                    trigger: 'axis',
+                    axisPointer: { type: 'line' },
+                    formatter: 'CPU使用率 : {c}%  <br/>{b}<br/>',
+                }),
                 grid:{
                     left:'20',
                     top:'10%',
@@ -177,80 +218,29 @@ export default({
                     right:'5%',
                     containLabel: true
                 },
-                xAxis: {
-                    type: 'category',
-                    boundaryGap: false,
-                    axisLine:{
-                        lineStyle:{
-                            color:'#d9e1e4'
-                        },
-                    },
-                    axisLabel:{
-                        color:'#4e5b5f'
-                    },
-                    axisTick:{
-                        show:false,
-                    },
-                    data:xdt
-                },
-                yAxis: {
-                    type: 'value',
-                    max: 100,
-                    min: 0,
-                    interval:20,
-                    axisLine:{
-                        show: false,
-                        lineStyle:{
-                            color:'#d9e1e4'
-                        },
-                    },
-                    axisLabel:{
-                        color:'#4e5b5f',
-                        formatter: function (val) {//百分比显示
-                            return val + '%';
-                        }
-                    },
-                    axisTick:{
-                        show:false,
-                    },
-                    splitLine:{
-                        lineStyle:{
-                            type:'dashed'
-                        }
-                    }
-
-                },
+                xAxis: this.chartXAxis(xdt),
+                yAxis: this.chartYAxis(),
                 series: [{
                     data: ydt,
                     type: 'line',
                     smooth: true,
-                    // areaStyle: {
-                    //     color: 'rgba(103,194,58,.3)',
-                    // },
-                    lineStyle:{
-                        color:'#4C7AE3'
-                    },
+                    lineStyle:{ color: lineColor },
                     itemStyle: {
                         borderWidth:1,
-                        color:'#4C7AE3'
+                        color: lineColor
                     }
                 }]
             });
         },
         echartline2:function(id, xdt,ydt){
-            // 基于准备好的dom，初始化echarts实例
-            var myChart = echarts.init(document.getElementById(id)); 
-            // 绘制图表
-            myChart.setOption({ 
-                tooltip: {
-                    // trigger: 'axis',
-					trigger: 'axis', //item数据项图形触发，主要在散点图，饼图等无类目轴的图表中使用。
-					axisPointer: {
-						// 坐标轴指示器，坐标轴触发有效
-						type: 'line' // 默认为直线，可选为：'line' | 'shadow'
-					},
-					formatter: '内存使用率 : {c}%  <br/>{b}<br/>' //{a}（系列名称），{b}（数据项名称），{c}（数值）, {d}（百分比）
-                },
+            var myChart = echarts.init(document.getElementById(id));
+            var lineColor = this.chartColors.line
+            myChart.setOption({
+                tooltip: this.chartTooltip({
+                    trigger: 'axis',
+                    axisPointer: { type: 'line' },
+                    formatter: '内存使用率 : {c}%  <br/>{b}<br/>',
+                }),
                 grid:{
                     left:'20',
                     top:'10%',
@@ -258,93 +248,43 @@ export default({
                     right:'5%',
                     containLabel: true
                 },
-                xAxis: {
-                    type: 'category',
-                    boundaryGap: false,
-                    axisLine:{
-                        lineStyle:{
-                            color:'#d9e1e4'
-                        },
-                    },
-                    axisLabel:{
-                        color:'#4e5b5f'
-                    },
-                    axisTick:{
-                        show:false,
-                    },
-                    data:xdt
-                },
-                yAxis: {
-                    type: 'value',
-                    max: 100,
-                    min: 0,
-                    interval:20,
-                    axisLine:{
-                        show: false,
-                        lineStyle:{
-                            color:'#d9e1e4'
-                        },
-                    },
-                    axisLabel:{
-                        color:'#4e5b5f',
-                        formatter: function (val) {//百分比显示
-                            return val + '%';
-                        }
-                    },
-                    axisTick:{
-                        show:false,
-                    },
-                    splitLine:{
-                        lineStyle:{
-                            type:'dashed'
-                        }
-                    }
-
-                },
+                xAxis: this.chartXAxis(xdt),
+                yAxis: this.chartYAxis(),
                 series: [{
                     data: ydt,
                     type: 'line',
                     smooth: true,
-                    // areaStyle: {
-                    //     color: 'rgba(103,194,58,.3)',
-                    // },
-                    lineStyle:{
-                        color:'#4C7AE3'
-                    },
+                    lineStyle:{ color: lineColor },
                     itemStyle: {
                         borderWidth:1,
-                        color:'#4C7AE3'
+                        color: lineColor
                     }
                 }]
             });
         },
         //饼图 获取接口
          getpie_database(id, data){ 
-            // 基于准备好的dom，初始化echarts实例
-            var myChart = echarts.init(document.getElementById(id)); 
-            // 绘制图表
+            var myChart = echarts.init(document.getElementById(id));
             myChart.setOption({ 
-                tooltip: {
-                    trigger: 'item', //item数据项图形触发，主要在散点图，饼图等无类目轴的图表中使用。
-					axisPointer: {
-						// 坐标轴指示器，坐标轴触发有效
-						type: 'shadow' // 默认为直线，可选为：'line' | 'shadow'
-					},
-                    //formatter: "{a} <br/>{b} : {c} ({d}%)",
+                tooltip: this.chartTooltip({
+                    trigger: 'item',
+                    axisPointer: { type: 'shadow' },
                     formatter:function(data2){
-                        // console.log(data)
                         return  data2.name+ " : " + " "+data2.percent.toFixed()+"%";
                         }
-                },
+                }),
                 legend: {
                     orient: 'vertical',
-                    // left: 'right',
-                    x:'50%',//水平安放位置，默认为'left'，可选为：'center' | 'left' | 'right' | {number}（x坐标，单位px）
-                    y: 'center',//垂直安放位置，默认为top，可选为：'top' | 'bottom' | 'center' | {number}（y坐标，单位px）
-                    icon: "circle",   //  这个字段控制形状  类型包括 circle 圆形，triangle 三角形，diamond 四边形，arrow 变异三角形，none 无
-                    itemWidth: 10,  // 设置宽度
-                    itemHeight: 10, // 设置高度
-                    itemGap: 35 ,// 设置间距，
+                    x:'50%',
+                    y: 'center',
+                    icon: "circle",
+                    itemWidth: 10,
+                    itemHeight: 10,
+                    itemGap: 35,
+                    textStyle: {
+                        color: this.chartColors.legend,
+                        fontSize: 12,
+                    },
                     formatter: function (name) {
                         // console.log(data, 'data')
                         let total = 0

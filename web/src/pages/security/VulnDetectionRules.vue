@@ -1,6 +1,5 @@
 <template>
   <div class="security-container">
-    <div class="main-title">主机安全检查 · 漏洞扫描规则</div>
     <p class="page-intro">
       CVE 漏洞库管理。当前使用 <strong>default-cve.db</strong>（SQLite），包含 <strong>{{ dbInfo.totalRecords || '—' }}</strong> 条 CVE 记录。
       <router-link class="link-to-tasks" to="/hostsec/tasks">前往任务管理</router-link>

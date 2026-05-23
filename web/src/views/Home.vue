@@ -58,23 +58,15 @@
               <el-menu-item index="/datasec/rules">检测规则</el-menu-item>
             </el-submenu>
 
-            <el-submenu index="/usermanagement" v-if="role == 2 || role == 4">
-              <template slot="title">
-                <i class="el-icon-user"></i>
-                <span>用户管理</span>
-              </template>
-              <el-menu-item index="/usermanagement">用户管理</el-menu-item>
-              <el-menu-item index="/usergroup">用户组管理</el-menu-item>
-            </el-submenu>
+            <el-menu-item index="/usermanagement" v-if="role == 2 || role == 4">
+              <i class="el-icon-user"></i>
+              <span slot="title">用户管理</span>
+            </el-menu-item>
 
-            <el-submenu index="/system" v-if="role !== 1 && role !== 2 && role !== 3">
-              <template slot="title">
-                <i class="el-icon-s-tools"></i>
-                <span>系统管理</span>
-              </template>
-              <el-menu-item index="/systemsetting">系统配置</el-menu-item>
-              <el-menu-item index="/node">节点管理</el-menu-item>
-            </el-submenu>
+            <el-menu-item index="/systemsetting" v-if="role !== 1 && role !== 2 && role !== 3">
+              <i class="el-icon-s-tools"></i>
+              <span slot="title">系统配置</span>
+            </el-menu-item>
           </el-menu>
         </el-scrollbar>
       </div>
@@ -237,9 +229,7 @@ export default {
         '/x-ray': 'Xray',
         '/burpsuite': 'Burpsuite',
         '/usermanagement': '用户管理',
-        '/usergroup': '用户组管理',
         '/systemsetting': '系统配置',
-        '/node': '节点管理',
         '/log': '日志审计',
         '/logconfig': '日志配置',
       };

@@ -28,6 +28,9 @@ const security = {
   rerunDataSecTask: (data) => {
     return axios.postJson('/smart/datasec/task/rerun', data)
   },
+  deleteDataSecTask: (params) => {
+    return axios.get('/smart/datasec/task/delete', params)
+  },
   cloneDataSecTaskTargets: (params) => {
     return axios.get('/smart/datasec/task/clone-targets', params)
   },

@@ -1,6 +1,5 @@
 <template>
   <div class="security-container mod-hub">
-    <div class="main-title">数据安全检查 · 任务管理</div>
     <p class="page-intro">新建任务时默认同时执行基线检查与敏感数据发现；详情页可查看配置风险、CVE 与敏感字段结果。</p>
     <div class="tab-panel">
       <d-b-security :embedded="true" />

@@ -1,6 +1,5 @@
 <template>
   <div class="security-container">
-    <div class="main-title">主机安全检查 · 任务管理</div>
     <p class="page-intro">
       同一套远程连接（SSH / WinRM）能力，新建任务时区分：<strong>安全配置核查</strong>、<strong>主机漏洞检测</strong>（CVE 版本匹配）、<strong>恶意代码检测</strong>（YARA 规则引擎）。
     </p>

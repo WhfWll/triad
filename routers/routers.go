@@ -81,6 +81,8 @@ func RegisterRoute() *gin.Engine {
 	smartRouterGroup.GET("/system/icmpblindtestinfo", rest.BusinessSettingIcmpBlindTestInfo)   // 业务设置 - icmp盲测平台 - 信息
 	smartRouterGroup.GET("/system/curtasksinfo", rest.CurTasksInfo)                            // 业务设置 - 任务并发配置 - 信息
 	smartRouterGroup.GET("/system/curtaskssave", rest.CurTasksSave)                            // 业务设置 - 任务并发配置 - 保存
+	smartRouterGroup.GET("/system/securityscanconcurrencyinfo", rest.SecurityScanConcurrencyInfo)   // 安全检查并发配置 - 信息
+	smartRouterGroup.POST("/system/securityscanconcurrencysave", rest.SecurityScanConcurrencySave) // 安全检查并发配置 - 保存
 	smartRouterGroup.GET("/system/usescoreinfo", rest.UseScoreInfo)                            // 业务设置 - 可以利用评分 - 信息
 	smartRouterGroup.POST("/system/usescoresave", rest.UseScoreSave)                           // 业务设置 - 可以利用评分 - 保存
 	smartRouterGroup.GET("/system/testscopeinfo", rest.TestScopeInfo)                          // 业务设置 - 测试范围校验开关 - 信息
@@ -499,6 +501,7 @@ func RegisterRoute() *gin.Engine {
 	smartRouterGroup.GET("/datasec/sensitive/detail", rest.DataSecSensitiveScanDetail) // 数据安全 - 敏感数据任务详情
 	smartRouterGroup.GET("/datasec/task/clone-targets", rest.DataSecTaskCloneTargets)   // 数据安全 - 复制历史任务目标
 	smartRouterGroup.POST("/datasec/task/rerun", rest.DataSecTaskRerun)                 // 数据安全 - 再次检测
+	smartRouterGroup.GET("/datasec/task/delete", rest.DataSecTaskDelete)                 // 数据安全 - 删除任务
 	smartRouterGroup.GET("/datasec/target/list", rest.DataSecDBTargetList)              // 数据安全 - 目标库列表
 	smartRouterGroup.POST("/datasec/target/save", rest.DataSecDBTargetSave)             // 数据安全 - 目标库保存
 	smartRouterGroup.GET("/datasec/target/delete", rest.DataSecDBTargetDelete)          // 数据安全 - 目标库删除
