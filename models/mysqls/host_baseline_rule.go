@@ -2,6 +2,7 @@ package mysqls
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"gitlabee.4dogs.cn/common/mysql"
@@ -63,6 +64,57 @@ func (m *HostBaselineRule) ListSummary(ctx context.Context) ([]HostBaselineRuleS
 	err := mysql.FromContext(ctx).Model(m).
 		Select("id, name, description, category, risk, os_type, expected_value, match_type, enabled").
 		Order("id desc").
+		Find(&list).Error
+	return list, err
+}
+
+func (m *HostBaselineRule) CountSummary(ctx context.Context, osType, category int, keyword string) (int64, error) {
+	db := mysql.FromContext(ctx).Model(m)
+	if osType > 0 {
+		db = db.Where("os_type = ?", osType)
+	}
+	if category > 0 {
+		db = db.Where("category = ?", category)
+	}
+	if strings.TrimSpace(keyword) != "" {
+		kw := "%" + strings.TrimSpace(keyword) + "%"
+		db = db.Where("name LIKE ? OR description LIKE ?", kw, kw)
+	}
+	var count int64
+	err := db.Count(&count).Error
+	return count, err
+}
+
+func (m *HostBaselineRule) ListSummaryPaged(ctx context.Context, page, size, osType, category int, keyword string) ([]HostBaselineRuleSummary, error) {
+	if page < 1 {
+		page = 1
+	}
+	if size < 1 {
+		size = 50
+	}
+	if size > 200 {
+		size = 200
+	}
+	offset := (page - 1) * size
+
+	db := mysql.FromContext(ctx).Model(m)
+	if osType > 0 {
+		db = db.Where("os_type = ?", osType)
+	}
+	if category > 0 {
+		db = db.Where("category = ?", category)
+	}
+	if strings.TrimSpace(keyword) != "" {
+		kw := "%" + strings.TrimSpace(keyword) + "%"
+		db = db.Where("name LIKE ? OR description LIKE ?", kw, kw)
+	}
+
+	var list []HostBaselineRuleSummary
+	err := db.
+		Select("id, name, description, category, risk, os_type, expected_value, match_type, enabled").
+		Order("id desc").
+		Offset(offset).
+		Limit(size).
 		Find(&list).Error
 	return list, err
 }

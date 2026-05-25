@@ -141,8 +141,8 @@ const security = {
   getBaselineRules: () => {
     return axios.get('/smart/baseline/rules')
   },
-  getBaselineRulesFromDB: () => {
-    return axios.get('/smart/baseline/rules/db')
+  getBaselineRulesFromDB: (params) => {
+    return axios.get('/smart/baseline/rules/db', params)
   },
   getBaselineRulesStats: () => {
     return axios.get('/smart/baseline/rules/stats')

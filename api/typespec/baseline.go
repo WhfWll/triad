@@ -163,6 +163,14 @@ type BaselineRulesStatsResp struct {
 	ByCategory []BaselineRulesCountByCategory `json:"byCategory"`
 }
 
+type BaselineRulesListReq struct {
+	Page     int    `json:"page" form:"page"`
+	Size     int    `json:"size" form:"size"`
+	OSType   int    `json:"osType" form:"osType"`
+	Category int    `json:"category" form:"category"`
+	Keyword  string `json:"keyword" form:"keyword"`
+}
+
 // BaselineRulesListResp 规则库：总条数、按操作系统/核查分类汇总、明细（供界面展示与验收对照）
 type BaselineRulesListResp struct {
 	Total      int                            `json:"total"`

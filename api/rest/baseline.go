@@ -190,9 +190,14 @@ func BaselineRulesImport(c *gin.Context) {
 
 // BaselineRulesListFromDB 从数据库获取规则列表
 func BaselineRulesListFromDB(c *gin.Context) {
+	var req typespec.BaselineRulesListReq
+	if err := c.ShouldBind(&req); err != nil {
+		server.RespFail(c, 4000, "参数错误")
+		return
+	}
 	ctx := server.NewContext(context.Background(), c)
 	var app application.BaselineApp
-	resp := app.GetBaselineRulesFromDB(ctx)
+	resp := app.GetBaselineRulesFromDB(ctx, &req)
 	server.RespSuccess(c, resp)
 }
 

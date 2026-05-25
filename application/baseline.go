@@ -461,20 +461,27 @@ func (a *BaselineApp) GetBaselineRulesStats(ctx context.Context) *typespec.Basel
 }
 
 // GetBaselineRulesFromDB 从数据库获取规则列表（摘要字段，详情见 GetBaselineRuleDetail）
-func (a *BaselineApp) GetBaselineRulesFromDB(ctx context.Context) *typespec.BaselineRulesListResp {
+func (a *BaselineApp) GetBaselineRulesFromDB(ctx context.Context, req *typespec.BaselineRulesListReq) *typespec.BaselineRulesListResp {
 	stats := a.GetBaselineRulesStats(ctx)
 	var model mysqls.HostBaselineRule
-	summaries, err := model.ListSummary(ctx)
+	if req == nil {
+		req = &typespec.BaselineRulesListReq{}
+	}
+	total, err := model.CountSummary(ctx, req.OSType, req.Category, req.Keyword)
+	if err != nil {
+		total = int64(stats.Total)
+	}
+	summaries, err := model.ListSummaryPaged(ctx, req.Page, req.Size, req.OSType, req.Category, req.Keyword)
 	if err != nil {
 		return &typespec.BaselineRulesListResp{
-			Total:      stats.Total,
+			Total:      int(total),
 			ByOsType:   stats.ByOsType,
 			ByCategory: stats.ByCategory,
 		}
 	}
 
 	resp := &typespec.BaselineRulesListResp{
-		Total:      stats.Total,
+		Total:      int(total),
 		ByOsType:   stats.ByOsType,
 		ByCategory: stats.ByCategory,
 		Rules:      make([]typespec.BaselineRuleListItem, 0, len(summaries)),

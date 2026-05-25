@@ -67,7 +67,7 @@
           <el-pagination
             background
             layout="total, sizes, prev, pager, next"
-            :total="filteredRules.length"
+            :total="rulesPayload.total || 0"
             :page-size="pageSize"
             :page-sizes="[20, 50, 100, 200]"
             :current-page.sync="currentPage"
@@ -243,6 +243,7 @@ export default {
       importFileName: '',
       importPreview: null,
       importRawData: null,
+      searchTimer: null,
       currentPage: 1,
       pageSize: 50,
       formDialogVisible: false,
@@ -274,26 +275,25 @@ export default {
     },
     filteredRules() {
       const rows = (this.rulesPayload && this.rulesPayload.rules) || []
-      const os = this.ruleFilterOs
-      const cat = this.ruleFilterCat
-      const kw = (this.ruleKeyword || '').trim().toLowerCase()
-      return rows.filter((r) => {
-        if (os !== null && os !== undefined && os !== '' && r.osType !== os) return false
-        if (cat !== null && cat !== undefined && cat !== '' && r.category !== cat) return false
-        if (!kw) return true
-        const blob = [r.name, r.description].filter(Boolean).join(' ').toLowerCase()
-        return blob.includes(kw)
-      })
+      return rows
     },
     pagedRules() {
-      const start = (this.currentPage - 1) * this.pageSize
-      return this.filteredRules.slice(start, start + this.pageSize)
+      return this.filteredRules
     }
   },
   watch: {
-    ruleFilterOs() { this.currentPage = 1 },
-    ruleFilterCat() { this.currentPage = 1 },
-    ruleKeyword() { this.currentPage = 1 }
+    ruleFilterOs() {
+      this.currentPage = 1
+      this.loadRules()
+    },
+    ruleFilterCat() {
+      this.currentPage = 1
+      this.loadRules()
+    },
+    ruleKeyword() {
+      this.currentPage = 1
+      this.debouncedLoadRules()
+    }
   },
   mounted() {
     this.$store.state.activefirstMenu = '/hostsec/rules'
@@ -304,7 +304,21 @@ export default {
       this.rulesLoading = true
       this.rulesPayload = null
       try {
-        const res = await security.getBaselineRulesFromDB()
+        const params = {
+          page: this.currentPage,
+          size: this.pageSize
+        }
+        if (this.ruleFilterOs !== null && this.ruleFilterOs !== undefined && this.ruleFilterOs !== '') {
+          params.osType = this.ruleFilterOs
+        }
+        if (this.ruleFilterCat !== null && this.ruleFilterCat !== undefined && this.ruleFilterCat !== '') {
+          params.category = this.ruleFilterCat
+        }
+        const kw = (this.ruleKeyword || '').trim()
+        if (kw) {
+          params.keyword = kw
+        }
+        const res = await security.getBaselineRulesFromDB(params)
         if (res.code === 200 && res.data) {
           this.rulesPayload = res.data
         } else {
@@ -313,6 +327,14 @@ export default {
       } finally {
         this.rulesLoading = false
       }
+    },
+    debouncedLoadRules() {
+      if (this.searchTimer) {
+        clearTimeout(this.searchTimer)
+      }
+      this.searchTimer = setTimeout(() => {
+        this.loadRules()
+      }, 300)
     },
     async openDetail(row) {
       try {
@@ -480,9 +502,11 @@ export default {
     onPageSizeChange(size) {
       this.pageSize = size
       this.currentPage = 1
+      this.loadRules()
     },
     onPageChange(page) {
       this.currentPage = page
+      this.loadRules()
     },
     resetImport() {
       this.importFileName = ''
