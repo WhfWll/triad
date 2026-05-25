@@ -48,11 +48,7 @@ func (e *BaselineEngine) reloadFromDB(ctx context.Context) error {
 		return err
 	}
 	if len(rows) == 0 {
-		e.mu.Lock()
-		defer e.mu.Unlock()
-		e.rules = nil
-		e.rulesMap = make(map[int][]BaselineRule)
-		log.Info("host baseline rules cleared: no enabled rows in DB")
+		log.Info("host baseline rules: no enabled rows in DB, keep built-in defaults")
 		return nil
 	}
 
@@ -83,13 +79,15 @@ func (e *BaselineEngine) reloadFromDB(ctx context.Context) error {
 		})
 	}
 
+	merged := mergeRulesWithBuiltin(rules)
+
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	e.rules = rules
+	e.rules = merged
 	e.rulesMap = make(map[int][]BaselineRule)
-	for _, rule := range rules {
+	for _, rule := range merged {
 		e.rulesMap[rule.OSType] = append(e.rulesMap[rule.OSType], rule)
 	}
-	log.Infof("host baseline rules loaded from DB: %d enabled rows", len(rules))
+	log.Infof("host baseline rules loaded from DB: %d enabled rows, %d total after merge", len(rules), len(merged))
 	return nil
 }

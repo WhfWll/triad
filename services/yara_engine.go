@@ -15,6 +15,7 @@ type YaraRule struct {
 	Meta       map[string]string
 	StringDefs []YaraStringDef
 	Condition  YaraCondition
+	OSType     int // 0=通用，与 malware_rule.os_type 一致
 }
 
 type YaraStringDef struct {
@@ -114,12 +115,44 @@ func (e *YaraEngine) LoadRulesFromFiles(files []string) error {
 	return nil
 }
 
+// LoadRulesFromContents 从 YARA 规则文本片段加载（如 malware_rule.rule_content）。
+func (e *YaraEngine) LoadRulesFromContents(contents []string, osTypes []int) error {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	e.rules = nil
+	var allRules []*YaraRule
+
+	for i, text := range contents {
+		rules := parseYaraContent(text)
+		osType := 0
+		if i < len(osTypes) {
+			osType = osTypes[i]
+		}
+		for _, rule := range rules {
+			rule.OSType = osType
+			allRules = append(allRules, rule)
+		}
+	}
+
+	e.rules = allRules
+	return nil
+}
+
 func (e *YaraEngine) Match(data []byte) []YaraMatch {
+	return e.MatchForOS(data, 0)
+}
+
+// MatchForOS 仅匹配通用规则（OSType=0）或与 osType 一致的规则。
+func (e *YaraEngine) MatchForOS(data []byte, osType int) []YaraMatch {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
 
 	var matches []YaraMatch
 	for _, rule := range e.rules {
+		if osType > 0 && rule.OSType > 0 && rule.OSType != osType {
+			continue
+		}
 		result := evaluateRule(rule, data)
 		if result != nil {
 			matches = append(matches, result...)
@@ -139,9 +172,11 @@ func parseYaraFile(path string) ([]*YaraRule, error) {
 	if err != nil {
 		return nil, err
 	}
+	return parseYaraContent(string(content)), nil
+}
 
-	text := string(content)
-	text = stripComments(text)
+func parseYaraContent(raw string) []*YaraRule {
+	text := stripComments(raw)
 
 	var rules []*YaraRule
 	for {
@@ -175,7 +210,7 @@ func parseYaraFile(path string) ([]*YaraRule, error) {
 		text = remaining
 	}
 
-	return rules, nil
+	return rules
 }
 
 func stripComments(text string) string {
@@ -340,10 +375,6 @@ func parseStringDef(line string) *YaraStringDef {
 	if strings.HasPrefix(rest, "/") && strings.HasSuffix(rest, "/") {
 		sd.IsRegex = true
 		sd.Value = rest[1 : len(rest)-1]
-		re, err := regexp.Compile(sd.Value)
-		if err == nil {
-			sd.Regex = re
-		}
 		return sd
 	}
 
@@ -502,10 +533,10 @@ func parseSimpleCondition(expr string) *YaraCondition {
 func evaluateRule(rule *YaraRule, data []byte) []YaraMatch {
 	stringMatches := make(map[string][]YaraStringMatch)
 
-	for _, sd := range rule.StringDefs {
-		matches := matchStringDef(&sd, data)
+	for i := range rule.StringDefs {
+		matches := matchStringDef(&rule.StringDefs[i], data)
 		if len(matches) > 0 {
-			stringMatches[sd.ID] = matches
+			stringMatches[rule.StringDefs[i].ID] = matches
 		}
 	}
 
@@ -555,7 +586,14 @@ type YaraStringMatch struct {
 }
 
 func matchStringDef(sd *YaraStringDef, data []byte) []YaraStringMatch {
-	if sd.IsRegex && sd.Regex != nil {
+	if sd.IsRegex {
+		if sd.Regex == nil {
+			re, err := regexp.Compile(sd.Value)
+			if err != nil {
+				return nil
+			}
+			sd.Regex = re
+		}
 		locs := sd.Regex.FindAllIndex(data, -1)
 		var matches []YaraStringMatch
 		for _, loc := range locs {
@@ -565,6 +603,10 @@ func matchStringDef(sd *YaraStringDef, data []byte) []YaraStringMatch {
 			})
 		}
 		return matches
+	}
+
+	if sd.IsRegex {
+		return nil
 	}
 
 	if sd.IsHex && len(sd.HexValue) > 0 {

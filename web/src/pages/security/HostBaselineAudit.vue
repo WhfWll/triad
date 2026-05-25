@@ -196,8 +196,11 @@
           <p class="progress-text">{{ progressText }}</p>
         </div>
         <div v-for="(t, idx) in progressTargets" :key="idx" class="progress-target-row">
-          <span class="progress-target-host">{{ t.host }}</span>
-          <el-tag :type="progressTagType(t.status)" size="mini">{{ progressTagLabel(t.status) }}</el-tag>
+          <div class="progress-target-main">
+            <span class="progress-target-host">{{ t.host }}</span>
+            <el-tag :type="progressTagType(t.status)" size="mini">{{ progressTagLabel(t.status) }}</el-tag>
+          </div>
+          <p v-if="t.message" class="progress-target-msg">{{ t.message }}</p>
         </div>
       </div>
       <span slot="footer">
@@ -499,7 +502,7 @@ export default {
     },
     progressTagLabel(status) {
       if (status === 'completed') return '已完成'
-      if (status === 'failed') return '失败'
+      if (status === 'failed') return '执行失败'
       if (status === 'running') return '执行中'
       return '等待中'
     },
@@ -665,11 +668,21 @@ export default {
 }
 
 .progress-target-row {
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.progress-target-main {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.progress-target-msg {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.5;
 }
 
 .progress-target-row:last-child {

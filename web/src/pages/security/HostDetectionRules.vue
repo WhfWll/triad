@@ -281,7 +281,7 @@ export default {
         if (os !== null && os !== undefined && os !== '' && r.osType !== os) return false
         if (cat !== null && cat !== undefined && cat !== '' && r.category !== cat) return false
         if (!kw) return true
-        const blob = [r.name, r.description, r.fixSuggestion, r.riskDescription].filter(Boolean).join(' ').toLowerCase()
+        const blob = [r.name, r.description].filter(Boolean).join(' ').toLowerCase()
         return blob.includes(kw)
       })
     },
@@ -314,9 +314,18 @@ export default {
         this.rulesLoading = false
       }
     },
-    openDetail(row) {
-      this.detailRule = row
-      this.detailVisible = true
+    async openDetail(row) {
+      try {
+        const res = await security.getBaselineRuleDetail({ id: row.id })
+        if (res.code === 200 && res.data) {
+          this.detailRule = res.data
+          this.detailVisible = true
+        } else {
+          this.$message({ message: res.msg || '加载详情失败', type: 'error' })
+        }
+      } catch (err) {
+        this.$message({ message: '加载详情失败: ' + (err.message || ''), type: 'error' })
+      }
     },
     openCreate() {
       this.formMode = 'create'
@@ -335,22 +344,32 @@ export default {
       }
       this.formDialogVisible = true
     },
-    openEdit(row) {
-      this.formMode = 'edit'
-      this.ruleForm = {
-        id: row.id,
-        name: row.name || '',
-        description: row.description || '',
-        category: row.category || 1,
-        risk: row.risk || 1,
-        osType: row.osType || 1,
-        commandsText: (row.commands || []).join('\n'),
-        expectedValue: row.expectedValue || '',
-        matchType: row.matchType || 'contains',
-        fixSuggestion: row.fixSuggestion || '',
-        riskDescription: row.riskDescription || ''
+    async openEdit(row) {
+      try {
+        const res = await security.getBaselineRuleDetail({ id: row.id })
+        if (res.code !== 200 || !res.data) {
+          this.$message({ message: res.msg || '加载规则失败', type: 'error' })
+          return
+        }
+        const detail = res.data
+        this.formMode = 'edit'
+        this.ruleForm = {
+          id: detail.id,
+          name: detail.name || '',
+          description: detail.description || '',
+          category: detail.category || 1,
+          risk: detail.risk || 1,
+          osType: detail.osType || 1,
+          commandsText: (detail.commands || []).join('\n'),
+          expectedValue: detail.expectedValue || '',
+          matchType: detail.matchType || 'contains',
+          fixSuggestion: detail.fixSuggestion || '',
+          riskDescription: detail.riskDescription || ''
+        }
+        this.formDialogVisible = true
+      } catch (err) {
+        this.$message({ message: '加载规则失败: ' + (err.message || ''), type: 'error' })
       }
-      this.formDialogVisible = true
     },
     confirmDelete(row) {
       this.$confirm(`确定删除规则「${row.name}」？删除后不可恢复。`, '确认删除', {

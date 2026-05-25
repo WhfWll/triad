@@ -16,6 +16,8 @@ import (
 	"gitlabee.4dogs.cn/common/logger"
 	"gitlabee.4dogs.cn/common/mysql"
 	"gitlabee.4dogs.cn/common/redis"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -59,8 +61,17 @@ func main() {
 	mysql.Setup()
 
 	services.InitCveDB()
+	services.EnsureHostVulnSchema(context.Background())
+	services.EnsureHostMalwareSchema(context.Background())
+	// YARA 规则库较大，后台加载避免阻塞 HTTP 服务启动
+	go func() {
+		ctx := mysql.NewContext(context.Background(), mysql.GetDB())
+		log.Info("malware YARA rules: loading from DB in background...")
+		services.InitMalwareRulesFromDB(ctx)
+	}()
 	// 从数据库加载基线规则（不再从 JSON 文件加载）
 	services.InitBaselineRulesFromDB(context.Background())
+	services.EnsureBaselineCheckResultSchema(context.Background())
 	services.EnsureDatasecRuleTable(context.Background())
 	services.InitDatasecRulesFromDB(context.Background())
 	redis.Setup()

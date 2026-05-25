@@ -22,40 +22,31 @@ func (a *DataSecRuleApp) ReloadFromDB(ctx context.Context) error {
 	return services.ReloadDatasecRulesFromDB(ctx)
 }
 
-func (a *DataSecRuleApp) GetRulesFromDB(ctx context.Context) *typespec.DatasecRulesListResp {
+func (a *DataSecRuleApp) GetRulesStatsFromDB(ctx context.Context) *typespec.DatasecRulesStatsResp {
 	var model mysqls.DatasecRule
-	all, err := model.ListAll(ctx)
+	total, err := model.CountAll(ctx)
 	if err != nil {
-		return &typespec.DatasecRulesListResp{
+		return &typespec.DatasecRulesStatsResp{
 			BuiltinTotal: services.BuiltinDatasecRuleCount(),
 			TargetTotal:  3800,
 		}
 	}
-
-	dbHits := map[int]int{}
-	catHits := map[int]int{}
-	for _, r := range all {
-		if r.Enabled != 1 {
-			continue
-		}
-		dt := r.DBType
-		if dt == 0 {
-			for _, t := range []int{1, 2, 3, 4, 5} {
-				dbHits[t]++
-			}
-		} else {
-			dbHits[dt]++
-		}
-		catHits[r.Category]++
+	enabledTotal, _ := model.CountEnabled(ctx)
+	dbHits, _ := model.CountByDBTypeEnabled(ctx)
+	catHits, _ := model.CountByCategoryEnabled(ctx)
+	if dbHits == nil {
+		dbHits = map[int]int{}
+	}
+	if catHits == nil {
+		catHits = map[int]int{}
 	}
 
-	resp := &typespec.DatasecRulesListResp{
-		Total:        len(all),
+	resp := &typespec.DatasecRulesStatsResp{
+		Total:        int(total),
+		EnabledTotal: int(enabledTotal),
 		BuiltinTotal: services.BuiltinDatasecRuleCount(),
 		TargetTotal:  3800,
-		Rules:        make([]typespec.DatasecRuleListItem, 0, len(all)),
 	}
-
 	dbOrder := []int{0, enums.DBSupportTypeMySQL, enums.DBSupportTypePostgreSQL, enums.DBSupportTypeMongoDB, enums.DBSupportTypeRedis, enums.DBSupportTypeCouchDB}
 	for _, dt := range dbOrder {
 		if c, ok := dbHits[dt]; ok && c > 0 {
@@ -78,33 +69,52 @@ func (a *DataSecRuleApp) GetRulesFromDB(ctx context.Context) *typespec.DatasecRu
 			Category: cat, CategoryName: enums.BaselineEnum.GetDBCheckCategoryName(cat), Count: catHits[cat],
 		})
 	}
+	return resp
+}
 
-	for _, r := range all {
-		var queries []string
-		if r.QueriesJSON != "" {
-			_ = json.Unmarshal([]byte(r.QueriesJSON), &queries)
+func (a *DataSecRuleApp) GetRulesFromDB(ctx context.Context) *typespec.DatasecRulesListResp {
+	stats := a.GetRulesStatsFromDB(ctx)
+	var model mysqls.DatasecRule
+	summaries, err := model.ListSummary(ctx)
+	if err != nil {
+		return &typespec.DatasecRulesListResp{
+			Total:        stats.Total,
+			EnabledTotal: stats.EnabledTotal,
+			BuiltinTotal: stats.BuiltinTotal,
+			TargetTotal:  stats.TargetTotal,
+			ByDBType:     stats.ByDBType,
+			ByCategory:   stats.ByCategory,
 		}
+	}
+
+	resp := &typespec.DatasecRulesListResp{
+		Total:        stats.Total,
+		EnabledTotal: stats.EnabledTotal,
+		BuiltinTotal: stats.BuiltinTotal,
+		TargetTotal:  stats.TargetTotal,
+		ByDBType:     stats.ByDBType,
+		ByCategory:   stats.ByCategory,
+		Rules:        make([]typespec.DatasecRuleListItem, 0, len(summaries)),
+	}
+	for _, r := range summaries {
 		dbName := enums.BaselineEnum.GetDBTypeName(r.DBType)
 		if r.DBType == 0 {
 			dbName = "全部"
 		}
 		resp.Rules = append(resp.Rules, typespec.DatasecRuleListItem{
-			ID:              r.ID,
-			RuleCode:        r.RuleCode,
-			Name:            r.Name,
-			Description:     r.Description,
-			Category:        r.Category,
-			CategoryName:    enums.BaselineEnum.GetDBCheckCategoryName(r.Category),
-			Risk:            r.Risk,
-			RiskName:        enums.BaselineEnum.GetBaselineRiskName(r.Risk),
-			DBType:          r.DBType,
-			DBTypeName:      dbName,
-			ExpectedValue:   r.ExpectedValue,
-			MatchType:       r.MatchType,
-			FixSuggestion:   r.FixSuggestion,
-			RiskDescription: r.RiskDescription,
-			Queries:         queries,
-			Enabled:         r.Enabled,
+			ID:            r.ID,
+			RuleCode:      r.RuleCode,
+			Name:          r.Name,
+			Description:   r.Description,
+			Category:      r.Category,
+			CategoryName:  enums.BaselineEnum.GetDBCheckCategoryName(r.Category),
+			Risk:          r.Risk,
+			RiskName:      enums.BaselineEnum.GetBaselineRiskName(r.Risk),
+			DBType:        r.DBType,
+			DBTypeName:    dbName,
+			ExpectedValue: r.ExpectedValue,
+			MatchType:     r.MatchType,
+			Enabled:       r.Enabled,
 		})
 	}
 	return resp

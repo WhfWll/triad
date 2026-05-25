@@ -10,6 +10,15 @@ import (
 	"time"
 )
 
+const maxBaselineActualValueLen = 16000
+
+func truncateBaselineField(s string) string {
+	if len(s) <= maxBaselineActualValueLen {
+		return s
+	}
+	return s[:maxBaselineActualValueLen-20] + "\n...(truncated)"
+}
+
 type HostBaselineChecker struct {
 	connManager *HostConnManager
 	ruleEngine  *BaselineEngine
@@ -93,6 +102,11 @@ func (c *HostBaselineChecker) RunBaselineCheck(ctx context.Context, task *Baseli
 		return nil, fmt.Errorf("connect to host %s failed: %v", task.Host, err)
 	}
 
+	var cleanModel mysqls.BaselineCheckResult
+	if err := cleanModel.DeleteByTaskIDAndTargetIP(ctx, task.TaskID, task.Host); err != nil {
+		return nil, fmt.Errorf("clean old results failed: %v", err)
+	}
+
 	rules := c.ruleEngine.GetRulesByOSType(task.OSType)
 	if len(rules) == 0 {
 		rules = c.ruleEngine.GetAllRules()
@@ -136,33 +150,47 @@ func (c *HostBaselineChecker) RunBaselineCheck(ctx context.Context, task *Baseli
 		ruleWeight := getRiskWeight(rule.Risk)
 		totalWeight += ruleWeight
 
-		allOutput := ""
-		checkErr := false
-		for _, cmd := range rule.Commands {
-			output, err := c.connManager.ExecuteCommand(ctx, conn, cmd)
-			if err != nil {
-				result.ActualValue = fmt.Sprintf("ERROR: %v", err)
-				result.CheckResult = enums.BaselineCheckResultError
-				checkErr = true
-				break
-			}
-			allOutput += output + "\n"
+		if ruleHasPlaceholder(rule) {
+			result.ActualValue = "规则含未替换占位符，当前环境不适配"
+			result.CheckResult = enums.BaselineCheckResultSkip
+			result.CreateTime = time.Now()
+			report.Results = append(report.Results, result)
+			continue
 		}
 
-		if !checkErr {
-			result.ActualValue = strings.TrimSpace(allOutput)
-			if c.ruleEngine.CheckCommandOutput(result.ActualValue, rule.ExpectedValue, rule.MatchType) {
-				result.CheckResult = enums.BaselineCheckResultPass
-				report.PassCount++
-			} else {
-				result.CheckResult = enums.BaselineCheckResultFail
-				report.FailCount++
-				deduction += ruleWeight
-				c.updateRiskCount(report, rule.Risk)
+		allOutput := ""
+		execFailed := false
+		for _, cmd := range rule.Commands {
+			cmdToRun := normalizeBaselineCommand(cmd)
+			if cmdToRun == "" {
+				continue
 			}
-		} else {
+			rawOutput, err := c.connManager.ExecuteCommand(ctx, conn, cmdToRun)
+			output := strings.TrimSpace(rawOutput)
+			if err != nil && output == "" {
+				allOutput += "\n"
+				continue
+			}
+			allOutput += output + "\n"
+			if isBaselineExecutionError(output) {
+				execFailed = true
+				break
+			}
+		}
+
+		result.ActualValue = truncateBaselineField(strings.TrimSpace(allOutput))
+		if execFailed || isBaselineExecutionError(result.ActualValue) {
+			result.CheckResult = enums.BaselineCheckResultError
 			report.ErrorCount++
 			deduction += ruleWeight * 0.5
+		} else if c.ruleEngine.CheckCommandOutput(result.ActualValue, rule.ExpectedValue, rule.MatchType) {
+			result.CheckResult = enums.BaselineCheckResultPass
+			report.PassCount++
+		} else {
+			result.CheckResult = enums.BaselineCheckResultFail
+			report.FailCount++
+			deduction += ruleWeight
+			c.updateRiskCount(report, rule.Risk)
 		}
 
 		result.CreateTime = time.Now()
@@ -177,16 +205,23 @@ func (c *HostBaselineChecker) RunBaselineCheck(ctx context.Context, task *Baseli
 
 	report.EndTime = time.Now()
 
-	var model mysqls.BaselineCheckResult
-	if err := model.DeleteByTaskID(ctx, task.TaskID); err != nil {
-		return report, fmt.Errorf("clean old results failed: %v", err)
-	}
-
-	if err := model.BatchAdd(ctx, report.Results); err != nil {
+	if err := cleanModel.BatchAdd(ctx, report.Results); err != nil {
 		return report, fmt.Errorf("save results failed: %v", err)
 	}
 
 	return report, nil
+}
+
+func ruleHasPlaceholder(rule BaselineRule) bool {
+	if hasUnresolvedPlaceholder(rule.ExpectedValue) {
+		return true
+	}
+	for _, cmd := range rule.Commands {
+		if hasUnresolvedPlaceholder(cmd) {
+			return true
+		}
+	}
+	return false
 }
 
 func getRiskWeight(risk int) float64 {

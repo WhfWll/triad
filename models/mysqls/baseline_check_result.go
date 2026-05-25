@@ -59,6 +59,18 @@ func (b *BaselineCheckResult) DeleteByTaskID(ctx context.Context, taskID int) er
 	return mysql.FromContext(ctx).Model(b).Where("task_id = ?", taskID).Delete(nil).Error
 }
 
+func (b *BaselineCheckResult) DeleteByTaskIDAndTargetIP(ctx context.Context, taskID int, targetIP string) error {
+	return mysql.FromContext(ctx).Model(b).Where("task_id = ? AND target_ip = ?", taskID, targetIP).Delete(nil).Error
+}
+
+func (b *BaselineCheckResult) DeleteByTaskTargetAndScene(ctx context.Context, taskID int, targetIP string, scanScene int) error {
+	q := mysql.FromContext(ctx).Model(b).Where("task_id = ? AND target_ip = ?", taskID, targetIP)
+	if scanScene > 0 {
+		q = q.Where("scan_scene = ?", scanScene)
+	}
+	return q.Delete(nil).Error
+}
+
 func (b *BaselineCheckResult) GetStatByTaskID(ctx context.Context, taskID int) (passCount, failCount, total int64, err error) {
 	db := mysql.FromContext(ctx).Model(b).Where("task_id = ?", taskID)
 	db.Count(&total)

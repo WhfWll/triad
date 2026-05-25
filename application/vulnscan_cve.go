@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"smart/api/typespec"
+	"smart/models/mysqls"
 	"smart/services"
 	"smart/tools/enums"
 	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"gitlabee.4dogs.cn/common/mysql"
 )
 
 type VulnScanCveApp struct{}
@@ -55,6 +57,11 @@ func (a *VulnScanCveApp) RunCveScan(ctx context.Context, req *typespec.VulnScanC
 	report, err := scanner.RunVulnScan(ctx, task)
 	if err != nil {
 		return nil, err
+	}
+
+	dbCtx := mysql.NewContext(ctx, mysql.GetDB())
+	if persistErr := services.PersistHostVulnScanResults(dbCtx, report, nil); persistErr != nil {
+		log.Errorf("PersistHostVulnScanResults failed: %v", persistErr)
 	}
 
 	resp := &typespec.VulnScanCveResp{
@@ -162,14 +169,29 @@ func (a *VulnScanCveApp) runBatchCveScan(taskID int, req *typespec.VulnScanCveBa
 				OSType:   t.OSType,
 			}
 
+			dbCtx := mysql.NewContext(context.Background(), mysql.GetDB())
 			if err != nil {
 				result.Error = err.Error()
+				stub := &services.VulnScanReport{
+					TaskID:   taskID,
+					TargetID: idx + 1,
+					TargetIP: t.Host,
+					OSType:   t.OSType,
+					EndTime:  time.Now(),
+				}
+				if persistErr := services.PersistHostVulnScanResults(dbCtx, stub, err); persistErr != nil {
+					log.Errorf("PersistHostVulnScanResults failed for %s: %v", t.Host, persistErr)
+				}
 				bt.mu.Lock()
 				bt.Errors = append(bt.Errors, fmt.Sprintf("%s: %v", t.Host, err))
 				bt.Results = append(bt.Results, result)
 				bt.Progress++
 				bt.mu.Unlock()
 				return
+			}
+
+			if persistErr := services.PersistHostVulnScanResults(dbCtx, report, nil); persistErr != nil {
+				log.Errorf("PersistHostVulnScanResults failed for %s: %v", t.Host, persistErr)
 			}
 
 			result.Packages = report.Packages
@@ -234,5 +256,133 @@ func (a *VulnScanCveApp) GetBatchProgress(ctx context.Context, req *typespec.Vul
 		resp.Status = bt.Status
 	}
 
+	return resp, nil
+}
+
+func hostVulnRiskName(level int) string {
+	if level <= 0 {
+		return "—"
+	}
+	return enums.BaselineEnum.GetBaselineRiskName(level)
+}
+
+func hostVulnScanStatusName(status int) string {
+	if status == mysqls.HostVulnScanStatusError {
+		return "异常"
+	}
+	return "已完成"
+}
+
+func (a *VulnScanCveApp) GetTaskList(ctx context.Context, req *typespec.HostVulnTaskListReq) (*typespec.HostVulnTaskListResp, error) {
+	page := req.Page
+	if page < 1 {
+		page = 1
+	}
+	size := req.Size
+	if size < 1 {
+		size = 10
+	}
+	var model mysqls.HostVulnScan
+	total, err := model.CountAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := model.ListPaged(ctx, page, size)
+	if err != nil {
+		return nil, err
+	}
+	resp := &typespec.HostVulnTaskListResp{Total: int(total)}
+	for _, r := range rows {
+		resp.List = append(resp.List, typespec.HostVulnTaskListItem{
+			TaskID:         r.TaskID,
+			TargetIP:       r.TargetIP,
+			OSType:         r.OSType,
+			OSTypeName:     enums.BaselineEnum.GetOSTypeName(r.OSType),
+			Packages:       r.Packages,
+			MatchedVulns:   r.MatchedVulns,
+			Critical:       r.Critical,
+			High:           r.High,
+			Medium:         r.Medium,
+			Low:            r.Low,
+			WorstRiskLevel: r.WorstRiskLevel,
+			WorstRiskName:  hostVulnRiskName(r.WorstRiskLevel),
+			ScanStatus:     r.ScanStatus,
+			ScanStatusName: hostVulnScanStatusName(r.ScanStatus),
+			ErrorMessage:   r.ErrorMessage,
+			CheckTime:      r.CreateTime.Format("2006-01-02 15:04:05"),
+		})
+	}
+	return resp, nil
+}
+
+func (a *VulnScanCveApp) GetTaskStat(ctx context.Context, req *typespec.HostVulnStatReq) (*typespec.HostVulnStatResp, error) {
+	var model mysqls.HostVulnScan
+	rows, err := model.ListByTaskID(ctx, req.TaskID)
+	if err != nil {
+		return nil, err
+	}
+	resp := &typespec.HostVulnStatResp{TaskID: req.TaskID, TargetCount: len(rows)}
+	for _, r := range rows {
+		resp.Packages += r.Packages
+		resp.MatchedVulns += r.MatchedVulns
+		resp.Critical += r.Critical
+		resp.High += r.High
+		resp.Medium += r.Medium
+		resp.Low += r.Low
+	}
+	return resp, nil
+}
+
+func (a *VulnScanCveApp) GetTaskTargets(ctx context.Context, taskID int) ([]typespec.HostVulnTaskListItem, error) {
+	var model mysqls.HostVulnScan
+	rows, err := model.ListByTaskID(ctx, taskID)
+	if err != nil {
+		return nil, err
+	}
+	items := make([]typespec.HostVulnTaskListItem, 0, len(rows))
+	for _, r := range rows {
+		items = append(items, typespec.HostVulnTaskListItem{
+			TaskID:         r.TaskID,
+			TargetIP:       r.TargetIP,
+			OSType:         r.OSType,
+			OSTypeName:     enums.BaselineEnum.GetOSTypeName(r.OSType),
+			Packages:       r.Packages,
+			MatchedVulns:   r.MatchedVulns,
+			Critical:       r.Critical,
+			High:           r.High,
+			Medium:         r.Medium,
+			Low:            r.Low,
+			WorstRiskLevel: r.WorstRiskLevel,
+			WorstRiskName:  hostVulnRiskName(r.WorstRiskLevel),
+			ScanStatus:     r.ScanStatus,
+			ScanStatusName: hostVulnScanStatusName(r.ScanStatus),
+			ErrorMessage:   r.ErrorMessage,
+			CheckTime:      r.CreateTime.Format("2006-01-02 15:04:05"),
+		})
+	}
+	return items, nil
+}
+
+func (a *VulnScanCveApp) GetFindings(ctx context.Context, req *typespec.HostVulnFindingListReq) (*typespec.HostVulnFindingListResp, error) {
+	var model mysqls.HostVulnFinding
+	list, err := model.ListByTask(ctx, req.TaskID, req.TargetIP)
+	if err != nil {
+		return nil, err
+	}
+	resp := &typespec.HostVulnFindingListResp{Total: len(list)}
+	for _, r := range list {
+		resp.List = append(resp.List, typespec.HostVulnFindingItem{
+			ID:             r.ID,
+			TargetIP:       r.TargetIP,
+			CveID:          r.CveID,
+			Title:          r.Title,
+			Severity:       r.Severity,
+			RiskLevel:      r.RiskLevel,
+			RiskName:       hostVulnRiskName(r.RiskLevel),
+			PackageName:    r.PackageName,
+			PackageVersion: r.PackageVersion,
+			CheckTime:      r.CreateTime.Format("2006-01-02 15:04:05"),
+		})
+	}
 	return resp, nil
 }

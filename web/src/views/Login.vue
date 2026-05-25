@@ -12,8 +12,8 @@
               <path d="M18 24l4 4 8-8" fill="none" stroke="#00d4aa" stroke-width="2.5" stroke-linecap="round"/>
             </svg>
           </div>
-          <h1 class="brand-title">SecGuard</h1>
-          <p class="brand-subtitle">智能安全检测与分析平台</p>
+          <h1 class="brand-title">{{ productName }}</h1>
+          <p class="brand-subtitle">{{ productSlogan }}</p>
         </div>
         <div class="login-card">
           <div class="card-header">
@@ -69,11 +69,14 @@ import router from '@/router';
 import common from '@/utils/common.js'
 import login from '@/api/login.js'
 import { system } from '@/api/system.js'
+import { PRODUCT_NAME, PRODUCT_SLOGAN } from '@/config/product.js'
 
 export default {
   name: 'Login',
   data() {
     return {
+      productName: PRODUCT_NAME,
+      productSlogan: PRODUCT_SLOGAN,
       loading: false,
       code: '',
       baseUrl: '/api',

@@ -306,6 +306,9 @@ export default {
       return (this.rulesPayload && this.rulesPayload.builtinTotal) || 24
     },
     enabledCount() {
+      if (this.rulesPayload && this.rulesPayload.enabledTotal != null) {
+        return this.rulesPayload.enabledTotal
+      }
       const rows = (this.rulesPayload && this.rulesPayload.rules) || []
       return rows.filter((r) => r.enabled === 1).length
     },
@@ -331,7 +334,7 @@ export default {
         if (db !== null && db !== undefined && db !== '' && r.dbType !== db) return false
         if (cat !== null && cat !== undefined && cat !== '' && r.category !== cat) return false
         if (!kw) return true
-        const blob = [r.name, r.description, r.fixSuggestion, r.riskDescription].filter(Boolean).join(' ').toLowerCase()
+        const blob = [r.name, r.description].filter(Boolean).join(' ').toLowerCase()
         return blob.includes(kw)
       })
     },
@@ -392,31 +395,50 @@ export default {
         this.rulesLoading = false
       }
     },
-    openDetail(row) {
-      this.detailRule = row
-      this.detailVisible = true
+    async openDetail(row) {
+      try {
+        const res = await security.getDatasecRuleDetail({ id: row.id })
+        if (res.code === 200 && res.data) {
+          this.detailRule = res.data
+          this.detailVisible = true
+        } else {
+          this.$message({ message: res.msg || '加载详情失败', type: 'error' })
+        }
+      } catch (e) {
+        this.$message({ message: '加载详情失败: ' + (e.message || ''), type: 'error' })
+      }
     },
     openCreate() {
       this.formMode = 'create'
       this.resetForm()
       this.formDialogVisible = true
     },
-    openEdit(row) {
-      this.formMode = 'edit'
-      this.ruleForm = {
-        id: row.id,
-        name: row.name || '',
-        description: row.description || '',
-        category: row.category || 1,
-        risk: row.risk != null ? row.risk : 1,
-        dbType: row.dbType != null ? row.dbType : 1,
-        queriesText: (row.queries || []).join('\n'),
-        expectedValue: row.expectedValue || '',
-        matchType: row.matchType || 'contains',
-        fixSuggestion: row.fixSuggestion || '',
-        riskDescription: row.riskDescription || ''
+    async openEdit(row) {
+      try {
+        const res = await security.getDatasecRuleDetail({ id: row.id })
+        if (res.code !== 200 || !res.data) {
+          this.$message({ message: res.msg || '加载规则失败', type: 'error' })
+          return
+        }
+        const detail = res.data
+        this.formMode = 'edit'
+        this.ruleForm = {
+          id: detail.id,
+          name: detail.name || '',
+          description: detail.description || '',
+          category: detail.category || 1,
+          risk: detail.risk != null ? detail.risk : 1,
+          dbType: detail.dbType != null ? detail.dbType : 1,
+          queriesText: (detail.queries || []).join('\n'),
+          expectedValue: detail.expectedValue || '',
+          matchType: detail.matchType || 'contains',
+          fixSuggestion: detail.fixSuggestion || '',
+          riskDescription: detail.riskDescription || ''
+        }
+        this.formDialogVisible = true
+      } catch (e) {
+        this.$message({ message: '加载规则失败: ' + (e.message || ''), type: 'error' })
       }
-      this.formDialogVisible = true
     },
     confirmDelete(row) {
       this.$confirm(`确定删除规则「${row.name}」？`, '确认删除', { type: 'warning' })

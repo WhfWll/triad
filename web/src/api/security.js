@@ -76,6 +76,9 @@ const security = {
   getDatasecRules: () => {
     return axios.get('/smart/datasec/rules')
   },
+  getDatasecRulesStats: () => {
+    return axios.get('/smart/datasec/rules/stats')
+  },
   reloadDatasecRules: () => {
     return axios.postJson('/smart/datasec/rules/reload', {})
   },
@@ -111,6 +114,9 @@ const security = {
   runBaselineCheck: (data) => {
     return axios.postJson('/smart/baseline/check', data)
   },
+  testHostConn: (data) => {
+    return axios.postJson('/smart/baseline/test-conn', data)
+  },
   runBaselineBatchCheck: (data) => {
     return axios.postJson('/smart/baseline/check/batch', data)
   },
@@ -126,6 +132,9 @@ const security = {
   getBaselineTaskList: (params) => {
     return axios.get('/smart/baseline/tasks', params)
   },
+  deleteHostSecTasks: (data) => {
+    return axios.postJson('/smart/hostsec/tasks/delete', data)
+  },
   getBaselineTaskTargets: (params) => {
     return axios.get('/smart/baseline/task/targets', params)
   },
@@ -134,6 +143,9 @@ const security = {
   },
   getBaselineRulesFromDB: () => {
     return axios.get('/smart/baseline/rules/db')
+  },
+  getBaselineRulesStats: () => {
+    return axios.get('/smart/baseline/rules/stats')
   },
   getBaselineRuleDetail: (params) => {
     return axios.get('/smart/baseline/rule/detail', params)
@@ -186,6 +198,18 @@ const security = {
   getCveBatchProgress: (params) => {
     return axios.get('/smart/vulnscan/cve/progress', params)
   },
+  getHostVulnTaskList: (params) => {
+    return axios.get('/smart/vulnscan/cve/tasks', params)
+  },
+  getHostVulnStat: (params) => {
+    return axios.get('/smart/vulnscan/cve/stat', params)
+  },
+  getHostVulnTargets: (params) => {
+    return axios.get('/smart/vulnscan/cve/targets', params)
+  },
+  getHostVulnFindings: (params) => {
+    return axios.get('/smart/vulnscan/cve/findings', params)
+  },
 
   // YARA恶意代码检测 (后端路由: /smart/malware/yara/*)
   runYaraScan: (data) => {
@@ -202,6 +226,15 @@ const security = {
   },
   getYaraTaskList: (params) => {
     return axios.get('/smart/malware/yara/tasks', params)
+  },
+  getHostMalwareStat: (params) => {
+    return axios.get('/smart/malware/yara/stat', params)
+  },
+  getHostMalwareTargets: (params) => {
+    return axios.get('/smart/malware/yara/targets', params)
+  },
+  getHostMalwareFindings: (params) => {
+    return axios.get('/smart/malware/yara/result', params)
   },
 
   // 病毒库规则管理 (后端路由: /smart/malware/rule/*)

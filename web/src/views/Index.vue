@@ -1,320 +1,652 @@
 <template>
-    <div class="dashboard">
-        <div class="stats-row">
-            <div class="stat-card">
-                <div class="stat-icon tasks"><i class="el-icon-s-order"></i></div>
-                <div class="stat-body">
-                    <div class="stat-top">
-                        <span class="stat-label">总任务</span>
-                        <span class="stat-trend">+{{latestWeekTaskCount}} 本周</span>
-                    </div>
-                    <span class="stat-value">{{taskCount}}</span>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon targets"><i class="el-icon-monitor"></i></div>
-                <div class="stat-body">
-                    <div class="stat-top">
-                        <span class="stat-label">总目标</span>
-                        <span class="stat-trend warn">高危 {{targetriskstat.highCount}}</span>
-                    </div>
-                    <span class="stat-value">{{targetriskstat.targetRiskCount}}</span>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon vulns"><i class="el-icon-warning"></i></div>
-                <div class="stat-body">
-                    <div class="stat-top">
-                        <span class="stat-label">总漏洞</span>
-                        <span class="stat-trend danger">高危 {{highRiskCount}}</span>
-                    </div>
-                    <span class="stat-value">{{vulTotal}}</span>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon tools"><i class="el-icon-tools"></i></div>
-                <div class="stat-body">
-                    <div class="stat-top">
-                        <span class="stat-label">工具总数</span>
-                        <span class="stat-trend">场景 {{tool.taskSceneCount}}</span>
-                    </div>
-                    <span class="stat-value">{{tool.vulCount + tool.fingerCount + tool.taskSceneCount}}</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="charts-grid">
-            <div class="chart-card">
-                <div class="chart-hd">
-                    <h3>任务统计</h3>
-                    <div class="tab-group">
-                        <span :class="{on: taskTab === 1}" @click="switchTaskTab(1)">周</span>
-                        <span :class="{on: taskTab === 2}" @click="switchTaskTab(2)">月</span>
-                        <span :class="{on: taskTab === 3}" @click="switchTaskTab(3)">年</span>
-                    </div>
-                </div>
-                <div class="chart-bd"><div id="taskTj" style="height:200px"></div></div>
-            </div>
-            <div class="chart-card">
-                <div class="chart-hd"><h3>目标风险</h3></div>
-                <div class="chart-bd chart-bd-row">
-                    <div class="risk-dots">
-                        <div class="rd"><i class="dot h"></i><span>高危</span><em>{{targetriskstat.highCount}}</em></div>
-                        <div class="rd"><i class="dot m"></i><span>中危</span><em>{{targetriskstat.mediumCount}}</em></div>
-                        <div class="rd"><i class="dot l"></i><span>低危</span><em>{{targetriskstat.lowCount}}</em></div>
-                        <div class="rd"><i class="dot s"></i><span>安全</span><em>{{targetriskstat.safeCount}}</em></div>
-                    </div>
-                    <div id="bar" style="flex:1;height:180px"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="charts-grid">
-            <div class="chart-card chart-wide">
-                <div class="chart-hd">
-                    <h3>漏洞类型</h3>
-                    <div class="tab-group">
-                        <span :class="{on: vulnTypeTab===1}" @click="switchVulnTypeTab(1)">周</span>
-                        <span :class="{on: vulnTypeTab===2}" @click="switchVulnTypeTab(2)">月</span>
-                        <span :class="{on: vulnTypeTab===3}" @click="switchVulnTypeTab(3)">年</span>
-                    </div>
-                </div>
-                <div class="chart-bd"><div id="vuln_type_bar" style="height:200px"></div></div>
-            </div>
-            <div class="chart-card chart-narrow">
-                <div class="chart-hd"><h3>漏洞等级</h3></div>
-                <div class="chart-bd">
-                    <div id="vuln_pie" style="height:150px"></div>
-                    <div class="vbar">
-                        <div class="vbar-i" v-for="(it,i) in vulExploitImpact" :key="i">
-                            <span class="lbl">{{it.label}}</span>
-                            <span class="val" :class="it.color">{{it.value}}</span>
-                            <span class="pct">{{it.percentage}}%</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="charts-grid">
-            <div class="chart-card chart-wide">
-                <div class="chart-hd">
-                    <h3>漏洞趋势</h3>
-                    <div class="tab-group">
-                        <span :class="{on: trendTab===1}" @click="switchTrendTab(1)">周</span>
-                        <span :class="{on: trendTab===2}" @click="switchTrendTab(2)">月</span>
-                        <span :class="{on: trendTab===3}" @click="switchTrendTab(3)">年</span>
-                    </div>
-                </div>
-                <div class="chart-bd"><div id="vuln_line" style="height:180px"></div></div>
-            </div>
-            <div class="chart-card chart-narrow">
-                <div class="chart-hd"><h3>漏洞取证</h3></div>
-                <div class="chart-bd">
-                    <div class="ev-grid">
-                        <div class="ev-i" v-for="ev in evList" :key="ev.label">
-                            <div class="ev-i-icon" :style="{background:ev.bg}"><i :class="ev.icon"></i></div>
-                            <div class="ev-i-info"><span class="ev-lbl">{{ev.label}}</span><span class="ev-val">{{ev.count}}</span></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="charts-grid">
-            <div class="chart-card chart-full">
-                <div class="chart-hd"><h3>最新消息</h3></div>
-                <div class="chart-bd">
-                    <div class="msgs">
-                        <div class="msg-i" v-for="(it,i) in msgstat" :key="i">
-                            <span class="msg-t">{{it.createTime}}</span>
-                            <span class="msg-c">{{it.content}}</span>
-                        </div>
-                        <div v-if="msgstat.length===0" class="msg-empty">暂无消息</div>
-                    </div>
-                </div>
-            </div>
-        </div>
+  <div v-loading="loading" class="dashboard security-container">
+    <div class="welcome-bar">
+      <div>
+        <h2 class="welcome-title">{{ productName }} · 安全运营概览</h2>
+        <p class="welcome-desc">汇总主机 / 应用 / 数据三大安全检查模块的任务执行与规则库现状</p>
+      </div>
+      <el-button type="primary" size="small" :loading="loading" @click="loadDashboard">刷新</el-button>
     </div>
+
+    <div class="module-row">
+      <router-link
+        v-for="mod in modules"
+        :key="mod.key"
+        :to="mod.link"
+        class="module-card"
+        :class="'mod-' + mod.key"
+      >
+        <div class="mod-icon"><i :class="mod.icon"></i></div>
+        <div class="mod-body">
+          <span class="mod-label">{{ mod.label }}</span>
+          <span class="mod-value">{{ mod.taskCount }}</span>
+          <span class="mod-sub">{{ mod.subText }}</span>
+        </div>
+      </router-link>
+    </div>
+
+    <div class="rules-row">
+      <div v-for="rule in ruleStats" :key="rule.key" class="rule-chip">
+        <span class="rule-name">{{ rule.label }}</span>
+        <span class="rule-count">{{ rule.count }}</span>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-hd"><h3>主机核查结果（最近任务）</h3></div>
+        <div class="chart-bd"><div id="hostPie" class="chart-box"></div></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-hd"><h3>各模块任务数量</h3></div>
+        <div class="chart-bd"><div id="moduleBar" class="chart-box"></div></div>
+      </div>
+    </div>
+
+    <div class="chart-card recent-card">
+      <div class="chart-hd">
+        <h3>最近检查记录</h3>
+        <span class="recent-hint">合并展示各模块最近一批任务</span>
+      </div>
+      <div class="chart-bd table-bd">
+        <el-table :data="recentTasks" style="width: 100%" class="myTable" empty-text="暂无检查记录，请从各模块发起扫描任务">
+          <el-table-column prop="moduleLabel" label="模块" width="100" />
+          <el-table-column prop="kindLabel" label="类型" width="130" />
+          <el-table-column prop="target" label="目标" min-width="180" :show-overflow-tooltip="true" />
+          <el-table-column prop="summary" label="结果摘要" min-width="160" :show-overflow-tooltip="true" />
+          <el-table-column prop="checkTime" label="时间" width="170" />
+          <el-table-column label="操作" width="90" align="right">
+            <template slot-scope="scope">
+              <el-link :underline="false" class="link_primary" @click.prevent="goTask(scope.row)">查看</el-link>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+    </div>
+
+    <div class="quick-row">
+      <router-link v-for="q in quickLinks" :key="q.to" :to="q.to" class="quick-item">
+        <i :class="q.icon"></i>
+        <span>{{ q.label }}</span>
+      </router-link>
+    </div>
+  </div>
 </template>
 
-<style lang="less" scoped>
-.dashboard {
-  height: 100%; overflow-y: auto; padding: 4px;
-
-  .stats-row {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px;
-  }
-
-  .stat-card {
-    background: #1a1a2e; border: 1px solid rgba(0,212,170,.08); border-radius: 12px; padding: 20px;
-    display: flex; align-items: flex-start; gap: 16px; transition: all .25s;
-    &:hover { border-color: rgba(0,212,170,.25); transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,.3); }
-  }
-
-  .stat-icon {
-    width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff; flex-shrink: 0;
-    &.tasks { background: linear-gradient(135deg,#00d4aa,#00b894); }
-    &.targets { background: linear-gradient(135deg,#7c3aed,#6d28d9); }
-    &.vulns { background: linear-gradient(135deg,#ef4444,#dc2626); }
-    &.tools { background: linear-gradient(135deg,#f59e0b,#d97706); }
-  }
-
-  .stat-body { flex: 1; }
-
-  .stat-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-
-  .stat-label { font-size: 13px; color: rgba(148,163,184,.6); }
-  .stat-trend { font-size: 12px; color: rgba(148,163,184,.5); &.warn { color: #f59e0b; } &.danger { color: #ef4444; } }
-
-  .stat-value { display: block; font-size: 28px; font-weight: 700; color: rgba(226,232,240,.9); }
-
-  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-  .chart-wide { grid-column: 1 / 2; }
-  .chart-narrow { grid-column: 2 / 3; }
-  .chart-full { grid-column: 1 / -1; }
-
-  .chart-card {
-    background: #1a1a2e; border: 1px solid rgba(0,212,170,.08); border-radius: 12px; overflow: hidden;
-    &:hover { border-color: rgba(0,212,170,.15); }
-  }
-
-  .chart-hd {
-    display: flex; justify-content: space-between; align-items: center; padding: 16px 20px;
-    border-bottom: 1px solid rgba(0,212,170,.06);
-    h3 { margin: 0; font-size: 14px; font-weight: 600; color: rgba(226,232,240,.85); }
-  }
-
-  .tab-group {
-    display: flex; background: rgba(15,15,26,.6); border-radius: 6px; padding: 2px;
-    span {
-      display: inline-block; padding: 4px 12px; font-size: 12px; border-radius: 4px;
-      color: rgba(148,163,184,.5); cursor: pointer; transition: all .2s;
-      &:hover { color: rgba(226,232,240,.7); }
-      &.on { background: #00d4aa; color: #0f0f1a; font-weight: 600; }
-    }
-  }
-
-  .chart-bd { padding: 16px 20px; }
-  .chart-bd-row { display: flex; gap: 16px; }
-
-  .risk-dots {
-    min-width: 100px;
-    .rd {
-      display: flex; align-items: center; gap: 6px; margin-bottom: 8px;
-      .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
-        &.h { background: #ef4444; } &.m { background: #f59e0b; } &.l { background: #eab308; } &.s { background: #00d4aa; }
-      }
-      span { font-size: 13px; color: rgba(148,163,184,.6); flex:1; }
-      em { font-size: 14px; font-weight: 600; color: rgba(226,232,240,.8); font-style: normal; }
-    }
-  }
-
-  .vbar { display: flex; gap: 8px; margin-top: 8px; }
-  .vbar-i { flex: 1; text-align: center;
-    .lbl { display: block; font-size: 12px; color: rgba(148,163,184,.5); margin-bottom: 4px; }
-    .val { display: block; font-size: 18px; font-weight: 700; color: rgba(226,232,240,.8); }
-    .pct { display: block; font-size: 11px; color: rgba(148,163,184,.4); margin-top: 2px; }
-  }
-
-  .ev-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .ev-i { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 8px; background: rgba(15,15,26,.4); }
-  .ev-i-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #fff; flex-shrink: 0; }
-  .ev-i-info { flex:1; .ev-lbl { display: block; font-size: 12px; color: rgba(148,163,184,.5); } .ev-val { font-size: 18px; font-weight: 700; color: rgba(226,232,240,.85); } }
-
-  .msgs { max-height: 200px; overflow-y: auto; }
-  .msg-i { display: flex; align-items: center; gap: 16px; padding: 8px 0; border-bottom: 1px solid rgba(0,212,170,.04);
-    &:last-child { border-bottom: none; }
-  }
-  .msg-t { font-size: 12px; color: rgba(148,163,184,.4); white-space: nowrap; min-width: 140px; }
-  .msg-c { font-size: 13px; color: rgba(148,163,184,.65); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .msg-empty { text-align: center; padding: 20px; color: rgba(148,163,184,.3); }
-}
-</style>
-
 <script>
-import { system } from '@/api/system.js'
+var echarts = require('echarts')
+import security from '@/api/security.js'
+import { PRODUCT_NAME } from '@/config/product.js'
+
+const CHART_THEME = {
+  text: '#94a3b8',
+  axis: '#64748b',
+  split: 'rgba(255,255,255,0.08)',
+  primary: '#00d4aa',
+  pass: '#34d399',
+  fail: '#f87171',
+  warn: '#fbbf24',
+  info: '#60a5fa',
+}
 
 export default {
   name: 'Index',
   data() {
     return {
-      taskCount: '--', latestWeekTaskCount: '--',
-      targetriskstat: { targetRiskCount: '--', highCount: 0, mediumCount: 0, lowCount: 0, safeCount: 0 },
-      vulTotal: 0, highRiskCount: 0,
-      vulExploitImpact: [],
-      vulevidencestat: { fileLeakCount: 0, dbCount: 0, infoLeakCount: 0, loginCredentialsCount: 0, remoteControlCount: 0 },
-      tool: { vulCount: 0, fingerCount: 0, taskSceneCount: 0 },
-      msgstat: [],
-      taskTab: 1, vulnTypeTab: 1, trendTab: 1,
+      productName: PRODUCT_NAME,
+      loading: false,
+      modules: [
+        { key: 'host', label: '主机安全', icon: 'el-icon-monitor', link: '/hostsec/tasks', taskCount: 0, subText: '任务 0 · 不通过 0' },
+        { key: 'app', label: '应用安全', icon: 'el-icon-mobile-phone', link: '/appsec/tasks', taskCount: 0, subText: '任务 0 · 漏洞 0' },
+        { key: 'data', label: '数据安全', icon: 'el-icon-document', link: '/datasec/tasks', taskCount: 0, subText: '任务 0 · 目标库 0' },
+      ],
+      ruleStats: [
+        { key: 'hostRule', label: '主机核查规则', count: '—' },
+        { key: 'cve', label: 'CVE 漏洞库', count: '—' },
+        { key: 'malware', label: '病毒库规则', count: '—' },
+        { key: 'datasec', label: '数据检测规则', count: '—' },
+      ],
+      hostCheckStat: { pass: 0, fail: 0, error: 0 },
+      moduleBarData: [],
+      recentTasks: [],
+      chartHost: null,
+      chartModule: null,
     }
   },
   computed: {
-    evList() {
-      const s = this.vulevidencestat;
+    quickLinks() {
       return [
-        { icon: 'el-icon-folder-opened', label: '文件泄露', count: s.fileLeakCount, bg: 'linear-gradient(135deg,#3b82f6,#2563eb)' },
-        { icon: 'el-icon-s-data', label: '数据库', count: s.dbCount, bg: 'linear-gradient(135deg,#00d4aa,#00b894)' },
-        { icon: 'el-icon-document-copy', label: '信息泄露', count: s.infoLeakCount, bg: 'linear-gradient(135deg,#7c3aed,#6d28d9)' },
-        { icon: 'el-icon-user', label: '登录凭证', count: s.loginCredentialsCount, bg: 'linear-gradient(135deg,#f59e0b,#d97706)' },
-        { icon: 'el-icon-monitor', label: '远程控制', count: s.remoteControlCount, bg: 'linear-gradient(135deg,#ef4444,#dc2626)' },
-      ];
+        { to: '/hostsec/tasks', icon: 'el-icon-monitor', label: '新建主机检查' },
+        { to: '/appsec/task/new', icon: 'el-icon-mobile-phone', label: '新建应用扫描' },
+        { to: '/datasec/tasks', icon: 'el-icon-document', label: '新建数据检查' },
+        { to: '/hostsec/rules', icon: 'el-icon-setting', label: '主机规则' },
+        { to: '/datasec/rules', icon: 'el-icon-tickets', label: '数据规则' },
+        { to: '/systemsetting', icon: 'el-icon-s-tools', label: '系统配置' },
+      ]
     },
   },
-  created() {
-    this.getTaskStat();
-    this.getTargetRiskStat();
-    this.getVulStat();
-    this.getToolStat();
-    this.getMsgStat();
+  mounted() {
+    this.loadDashboard()
+    window.addEventListener('resize', this.handleResize)
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.handleResize)
+    if (this.chartHost) this.chartHost.dispose()
+    if (this.chartModule) this.chartModule.dispose()
   },
   methods: {
-    switchTaskTab(t) { this.taskTab = t; this.getTaskStat(); },
-    switchVulnTypeTab(t) { this.vulnTypeTab = t; this.getVulStat(); },
-    switchTrendTab(t) { this.trendTab = t; this.getVulStat(); },
-    getTaskStat() {
-      system.getTaskInfoStat().then(r => {
-        if (r.data.code === 200) { this.taskCount = r.data.data.totalTaskCount; this.latestWeekTaskCount = r.data.data.latestWeekTaskCount; }
-      });
+    parseTime(str) {
+      if (!str) return 0
+      return new Date(String(str).replace(/-/g, '/')).getTime() || 0
     },
-    getTargetRiskStat() {
-      system.getTargetRiskStat().then(r => {
-        if (r.data.code === 200 && r.data.data) {
-          const d = r.data.data.riskStatistics;
-          this.targetriskstat = { targetRiskCount: r.data.data.targetRiskCount, highCount: d?.highCount || 0, mediumCount: d?.mediumCount || 0, lowCount: d?.lowCount || 0, safeCount: d?.safeCount || 0 };
-        }
-      });
+    pickTotal(res) {
+      if (res && res.code === 200 && res.data) return res.data.total || 0
+      return 0
     },
-    getVulStat() {
-      system.getTaskVulRiskStat().then(r => {
-        if (r.data.code === 200) {
-          const d = r.data.data;
-          this.vulTotal = d?.totalVulnerabilities || 0;
-          this.highRiskCount = d?.highRiskCount || 0;
-          this.vulExploitImpact = (d?.riskLevelStatistics || []).map(it => ({
-            label: it.riskName, value: it.count, color: this.getRiskColor(it.riskName),
-            percentage: this.vulTotal > 0 ? ((it.count / this.vulTotal) * 100).toFixed(1) : 0,
-          }));
-        }
-      });
-      system.getVulEvidenceStat().then(r => {
-        if (r.data.code === 200) { this.vulevidencestat = r.data.data || this.vulevidencestat; }
-      });
+    async loadDashboard() {
+      this.loading = true
+      try {
+        const [
+          baselineRes,
+          yaraRes,
+          dynRes,
+          appRes,
+          dbRes,
+          hostRulesRes,
+          cveRes,
+          malwareRulesRes,
+          datasecRulesRes,
+          targetsRes,
+        ] = await Promise.all([
+          security.getBaselineTaskList({ page: 1, size: 40, scanScene: 0 }).catch(() => null),
+          security.getYaraTaskList({ page: 1, size: 15 }).catch(() => null),
+          security.getDynamicScanList({ page: 1, size: 15 }).catch(() => null),
+          security.getAppSpecificList({ page: 1, size: 15 }).catch(() => null),
+          security.getDBCheckList({ page: 1, size: 15 }).catch(() => null),
+          security.getBaselineRulesStats().catch(() => null),
+          security.getCveDBInfo().catch(() => null),
+          security.getMalwareRuleList({ page: 1, size: 1 }).catch(() => null),
+          security.getDatasecRulesStats().catch(() => null),
+          security.getDatasecTargetList({ page: 1, size: 1 }).catch(() => null),
+        ])
+
+        const baselineTotal = this.pickTotal(baselineRes)
+        const yaraTotal = this.pickTotal(yaraRes)
+        const dynTotal = this.pickTotal(dynRes)
+        const appTotal = this.pickTotal(appRes)
+        const dbTotal = this.pickTotal(dbRes)
+        const targetTotal = this.pickTotal(targetsRes)
+
+        let pass = 0
+        let fail = 0
+        let error = 0
+        const baselineList = (baselineRes && baselineRes.data && baselineRes.data.list) || []
+        baselineList.forEach((r) => {
+          pass += r.passCount || 0
+          fail += r.failCount || 0
+          error += r.errorCount || 0
+        })
+        this.hostCheckStat = { pass, fail, error }
+
+        let appVuln = 0
+        const dynList = (dynRes && dynRes.data && dynRes.data.list) || []
+        const appList = (appRes && appRes.data && appRes.data.list) || []
+        ;[...dynList, ...appList].forEach((r) => {
+          appVuln += r.vulnCount || 0
+        })
+
+        this.modules = [
+          {
+            key: 'host',
+            label: '主机安全',
+            icon: 'el-icon-monitor',
+            link: '/hostsec/tasks',
+            taskCount: baselineTotal + yaraTotal,
+            subText: `基线 ${baselineTotal} · 恶意代码 ${yaraTotal} · 不通过 ${fail}`,
+          },
+          {
+            key: 'app',
+            label: '应用安全',
+            icon: 'el-icon-mobile-phone',
+            link: '/appsec/tasks',
+            taskCount: dynTotal + appTotal,
+            subText: `动态 ${dynTotal} · 专项 ${appTotal} · 漏洞 ${appVuln}`,
+          },
+          {
+            key: 'data',
+            label: '数据安全',
+            icon: 'el-icon-document',
+            link: '/datasec/tasks',
+            taskCount: dbTotal,
+            subText: `数据库任务 ${dbTotal} · 目标库 ${targetTotal}`,
+          },
+        ]
+
+        const hostRuleTotal = (hostRulesRes && hostRulesRes.data && hostRulesRes.data.total) || 0
+        const cveTotal = (cveRes && cveRes.data && cveRes.data.totalRecords) || 0
+        const malwareTotal = this.pickTotal(malwareRulesRes)
+        const datasecTotal = (datasecRulesRes && datasecRulesRes.data && (datasecRulesRes.data.enabledTotal ?? datasecRulesRes.data.total)) || 0
+
+        this.ruleStats = [
+          { key: 'hostRule', label: '主机核查规则', count: this.fmtNum(hostRuleTotal) },
+          { key: 'cve', label: 'CVE 漏洞库', count: this.fmtNum(cveTotal) },
+          { key: 'malware', label: '病毒库规则', count: this.fmtNum(malwareTotal) },
+          { key: 'datasec', label: '数据检测规则', count: this.fmtNum(datasecTotal) },
+        ]
+
+        this.moduleBarData = [
+          { name: '主机基线', value: baselineTotal },
+          { name: '恶意代码', value: yaraTotal },
+          { name: '动态扫描', value: dynTotal },
+          { name: '专项应用', value: appTotal },
+          { name: '数据库', value: dbTotal },
+        ]
+
+        this.recentTasks = this.buildRecentTasks(baselineList, yaraRes, dynList, appList, dbRes)
+        this.$nextTick(() => this.renderCharts())
+      } finally {
+        this.loading = false
+      }
     },
-    getToolStat() {
-      system.getToolInfoStat().then(r => {
-        if (r.data.code === 200) { this.tool = r.data.data || this.tool; }
-      });
+    fmtNum(n) {
+      const v = Number(n)
+      if (!v) return '0'
+      return v >= 1000 ? v.toLocaleString() : String(v)
     },
-    getMsgStat() {
-      system.getMessageStat().then(r => {
-        if (r.data.code === 200) { this.msgstat = r.data.data || []; }
-      });
+    buildRecentTasks(baselineList, yaraRes, dynList, appList, dbRes) {
+      const rows = []
+      baselineList.forEach((r) => {
+        rows.push({
+          module: 'host',
+          moduleLabel: '主机安全',
+          kindLabel: r.scanSceneName || '安全配置核查',
+          target: r.targetIp,
+          summary: `通过 ${r.passCount || 0} / 不通过 ${r.failCount || 0}`,
+          checkTime: r.checkTime,
+          _ts: this.parseTime(r.checkTime),
+          route: {
+            path: '/hostsec/task-detail',
+            query: {
+              taskId: r.taskId,
+              kindLabel: r.scanSceneName || '安全配置核查',
+              checkTime: r.checkTime || '',
+            },
+          },
+        })
+      })
+      const yaraList = (yaraRes && yaraRes.data && yaraRes.data.list) || []
+      yaraList.forEach((r) => {
+        rows.push({
+          module: 'host',
+          moduleLabel: '主机安全',
+          kindLabel: '恶意代码检测',
+          target: r.targetIp,
+          summary: `发现 ${r.totalFindings || 0} 项 · ${r.worstRiskName || '—'}`,
+          checkTime: r.checkTime,
+          _ts: this.parseTime(r.checkTime),
+          route: {
+            path: '/hostsec/task-detail',
+            query: {
+              taskId: r.taskId,
+              kindLabel: '恶意代码检测',
+              checkTime: r.checkTime || '',
+              source: 'malware',
+            },
+          },
+        })
+      })
+      dynList.forEach((r) => {
+        rows.push({
+          module: 'app',
+          moduleLabel: '应用安全',
+          kindLabel: '动态扫描',
+          target: r.targetSummary || r.name || '—',
+          summary: `漏洞 ${r.vulnCount || 0} · 高危 ${r.highRiskCount || 0}`,
+          checkTime: r.scanTime || r.createTime || '—',
+          _ts: this.parseTime(r.scanTime || r.createTime),
+          route: { path: '/appsec/task/detail', query: { id: r.id, type: 'dyn' } },
+        })
+      })
+      appList.forEach((r) => {
+        rows.push({
+          module: 'app',
+          moduleLabel: '应用安全',
+          kindLabel: '专项应用检测',
+          target: r.targetSummary || r.name || '—',
+          summary: `漏洞 ${r.vulnCount || 0} · 高危 ${r.highRiskCount || 0}`,
+          checkTime: r.scanTime || r.createTime || '—',
+          _ts: this.parseTime(r.scanTime || r.createTime),
+          route: { path: '/appsec/task/detail', query: { id: r.id, type: 'app' } },
+        })
+      })
+      const dbList = (dbRes && dbRes.data && dbRes.data.list) || []
+      dbList.forEach((r) => {
+        rows.push({
+          module: 'data',
+          moduleLabel: '数据安全',
+          kindLabel: '数据库安全检查',
+          target: r.targetSummary || r.name || '—',
+          summary: `基线不通过 ${r.baselineFail || 0} · CVE ${r.cveMatchCount || 0}`,
+          checkTime: r.checkTime || r.createTime || '—',
+          _ts: this.parseTime(r.checkTime || r.createTime),
+          route: { path: '/datasec/task/detail', query: { id: r.id } },
+        })
+      })
+      rows.sort((a, b) => (b._ts || 0) - (a._ts || 0))
+      return rows.slice(0, 12)
     },
-    getRiskColor(name) {
-      const m = { '致命': 'danger', '高危': 'danger', '中危': 'warning', '低危': 'info', '信息': 'info' };
-      return m[name] || 'info';
+    goTask(row) {
+      if (row.route) this.$router.push(row.route)
+    },
+    handleResize() {
+      if (this.chartHost) this.chartHost.resize()
+      if (this.chartModule) this.chartModule.resize()
+    },
+    chartTooltip(extra) {
+      return Object.assign({
+        backgroundColor: 'rgba(26, 26, 46, 0.95)',
+        borderColor: 'rgba(0, 212, 170, 0.2)',
+        textStyle: { color: '#e2e8f0' },
+      }, extra || {})
+    },
+    renderCharts() {
+      this.renderHostPie()
+      this.renderModuleBar()
+    },
+    renderHostPie() {
+      const el = document.getElementById('hostPie')
+      if (!el) return
+      if (this.chartHost) this.chartHost.dispose()
+      this.chartHost = echarts.init(el)
+      const s = this.hostCheckStat
+      const data = [
+        { name: '通过', value: s.pass, itemStyle: { color: CHART_THEME.pass } },
+        { name: '不通过', value: s.fail, itemStyle: { color: CHART_THEME.fail } },
+        { name: '异常', value: s.error, itemStyle: { color: CHART_THEME.warn } },
+      ].filter((d) => d.value > 0)
+      if (!data.length) {
+        data.push({ name: '暂无数据', value: 1, itemStyle: { color: 'rgba(148,163,184,0.2)' } })
+      }
+      this.chartHost.setOption({
+        tooltip: this.chartTooltip({ trigger: 'item', formatter: '{b}: {c} ({d}%)' }),
+        legend: {
+          bottom: 0,
+          textStyle: { color: CHART_THEME.text, fontSize: 12 },
+        },
+        series: [{
+          type: 'pie',
+          radius: ['42%', '68%'],
+          center: ['50%', '45%'],
+          label: { color: CHART_THEME.text, fontSize: 12 },
+          data,
+        }],
+      })
+    },
+    renderModuleBar() {
+      const el = document.getElementById('moduleBar')
+      if (!el) return
+      if (this.chartModule) this.chartModule.dispose()
+      this.chartModule = echarts.init(el)
+      const names = this.moduleBarData.map((d) => d.name)
+      const values = this.moduleBarData.map((d) => d.value)
+      this.chartModule.setOption({
+        tooltip: this.chartTooltip({ trigger: 'axis' }),
+        grid: { left: 12, right: 12, top: 24, bottom: 8, containLabel: true },
+        xAxis: {
+          type: 'category',
+          data: names,
+          axisLabel: { color: CHART_THEME.axis, fontSize: 11, interval: 0 },
+          axisLine: { lineStyle: { color: CHART_THEME.split } },
+          axisTick: { show: false },
+        },
+        yAxis: {
+          type: 'value',
+          minInterval: 1,
+          axisLabel: { color: CHART_THEME.axis },
+          splitLine: { lineStyle: { color: CHART_THEME.split, type: 'dashed' } },
+        },
+        series: [{
+          type: 'bar',
+          data: values,
+          barMaxWidth: 36,
+          itemStyle: {
+            color: CHART_THEME.primary,
+            borderRadius: [4, 4, 0, 0],
+          },
+        }],
+      })
     },
   },
-};
+}
 </script>
+
+<style lang="less" scoped>
+@import '../pages/bas/css/bas-list-page.less';
+
+.dashboard {
+  height: 100%;
+  overflow-y: auto;
+  padding: 4px 0 24px;
+  box-sizing: border-box;
+}
+
+.welcome-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, rgba(0, 212, 170, 0.12), rgba(124, 58, 237, 0.08));
+  border: 1px solid rgba(0, 212, 170, 0.15);
+  border-radius: 12px;
+}
+
+.welcome-title {
+  margin: 0 0 6px;
+  font-size: 20px;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.welcome-desc {
+  margin: 0;
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.module-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.module-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px;
+  background: #1a1a2e;
+  border: 1px solid rgba(0, 212, 170, 0.08);
+  border-radius: 12px;
+  text-decoration: none;
+  transition: all 0.25s;
+
+  &:hover {
+    border-color: rgba(0, 212, 170, 0.28);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+  }
+}
+
+.mod-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.mod-host .mod-icon { background: linear-gradient(135deg, #00d4aa, #00b894); }
+.mod-app .mod-icon { background: linear-gradient(135deg, #7c3aed, #6d28d9); }
+.mod-data .mod-icon { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+
+.mod-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mod-label {
+  font-size: 13px;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+
+.mod-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #e2e8f0;
+  line-height: 1.2;
+}
+
+.mod-sub {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rules-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.rule-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(0, 212, 170, 0.08);
+  border-radius: 10px;
+}
+
+.rule-name {
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.rule-count {
+  font-size: 18px;
+  font-weight: 600;
+  color: #00d4aa;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.chart-card {
+  background: #1a1a2e;
+  border: 1px solid rgba(0, 212, 170, 0.08);
+  border-radius: 12px;
+  overflow: hidden;
+
+  &:hover {
+    border-color: rgba(0, 212, 170, 0.15);
+  }
+}
+
+.recent-card {
+  margin-bottom: 16px;
+}
+
+.chart-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(0, 212, 170, 0.06);
+
+  h3 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(226, 232, 240, 0.85);
+  }
+}
+
+.recent-hint {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.chart-bd {
+  padding: 12px 16px 16px;
+}
+
+.table-bd {
+  padding: 0 16px 16px;
+}
+
+.chart-box {
+  height: 220px;
+}
+
+.quick-row {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+}
+
+.quick-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(0, 212, 170, 0.08);
+  border-radius: 10px;
+  text-decoration: none;
+  color: #94a3b8;
+  font-size: 12px;
+  transition: all 0.2s;
+
+  i {
+    font-size: 20px;
+    color: #00d4aa;
+  }
+
+  &:hover {
+    border-color: rgba(0, 212, 170, 0.25);
+    color: #e2e8f0;
+    background: rgba(0, 212, 170, 0.06);
+  }
+}
+
+@media (max-width: 1200px) {
+  .module-row,
+  .rules-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+  .quick-row {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+</style>

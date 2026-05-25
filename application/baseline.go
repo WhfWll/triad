@@ -133,17 +133,18 @@ func registerBatchTask(taskID int, targets []typespec.BaselineCheckReq) {
 }
 
 func updateBatchTargetStatus(taskID int, idx int, status, message string) {
-	batchTasksMu.RLock()
+	batchTasksMu.Lock()
+	defer batchTasksMu.Unlock()
 	p, ok := batchTasks[taskID]
-	batchTasksMu.RUnlock()
-	if !ok {
+	if !ok || idx < 0 || idx >= len(p.Targets) {
 		return
 	}
+	prev := p.Targets[idx].Status
 	p.Targets[idx].Status = status
 	if message != "" {
 		p.Targets[idx].Message = message
 	}
-	if status == "completed" || status == "failed" {
+	if (status == "completed" || status == "failed") && prev != "completed" && prev != "failed" {
 		p.CompletedTargets++
 	}
 	if p.CompletedTargets >= p.TotalTargets {
@@ -167,7 +168,7 @@ func (a *BaselineApp) RunBaselineBatchCheckAsync(ctx context.Context, req *types
 
 	registerBatchTask(batchTaskID, req.Targets)
 
-	go a.runBatchChecks(context.Background(), batchTaskID, req.Targets)
+	go a.runBatchChecks(mysql.NewContext(context.Background(), mysql.GetDB()), batchTaskID, req.Targets)
 
 	return &typespec.BaselineBatchCheckResp{TaskID: batchTaskID}, nil
 }
@@ -190,13 +191,17 @@ func (a *BaselineApp) runBatchChecks(ctx context.Context, batchTaskID int, targe
 			defer func() { <-sem }()
 
 			updateBatchTargetStatus(batchTaskID, idx, "running", "")
-			_, err := a.RunBaselineCheck(ctx, &t)
+			resp, err := a.RunBaselineCheck(ctx, &t)
 			if err != nil {
 				log.Errorf("runBatchChecks: target %s failed: %v", t.Host, err)
 				updateBatchTargetStatus(batchTaskID, idx, "failed", err.Error())
 				return
 			}
-			updateBatchTargetStatus(batchTaskID, idx, "completed", "")
+			msg := fmt.Sprintf("核查完成：通过 %d / %d", resp.PassCount, resp.TotalRules)
+			if resp.FailCount > 0 || resp.ErrorCount > 0 {
+				msg = fmt.Sprintf("核查完成：通过 %d，不通过 %d，异常 %d", resp.PassCount, resp.FailCount, resp.ErrorCount)
+			}
+			updateBatchTargetStatus(batchTaskID, idx, "completed", msg)
 		}(i, target)
 	}
 
@@ -409,25 +414,23 @@ func (a *BaselineApp) ImportBaselineRules(ctx context.Context, req *typespec.Bas
 	}
 }
 
-// GetBaselineRulesFromDB 从数据库获取规则列表
-func (a *BaselineApp) GetBaselineRulesFromDB(ctx context.Context) *typespec.BaselineRulesListResp {
+// GetBaselineRulesStats 规则库统计（仅数量，供仪表盘等轻量场景）
+func (a *BaselineApp) GetBaselineRulesStats(ctx context.Context) *typespec.BaselineRulesStatsResp {
 	var model mysqls.HostBaselineRule
-	all, err := model.ListAll(ctx)
+	total, err := model.CountAll(ctx)
 	if err != nil {
-		return &typespec.BaselineRulesListResp{Total: 0}
+		return &typespec.BaselineRulesStatsResp{}
+	}
+	osHits, err := model.CountByOSType(ctx)
+	if err != nil {
+		osHits = map[int]int{}
+	}
+	catHits, err := model.CountByCategory(ctx)
+	if err != nil {
+		catHits = map[int]int{}
 	}
 
-	osHits := map[int]int{}
-	catHits := map[int]int{}
-	for _, r := range all {
-		osHits[r.OSType]++
-		catHits[r.Category]++
-	}
-
-	resp := &typespec.BaselineRulesListResp{
-		Total: len(all),
-		Rules: make([]typespec.BaselineRuleListItem, 0, len(all)),
-	}
+	resp := &typespec.BaselineRulesStatsResp{Total: int(total)}
 	osOrder := []int{
 		enums.BaselineOSTypeLinux,
 		enums.BaselineOSTypeWindows,
@@ -454,27 +457,41 @@ func (a *BaselineApp) GetBaselineRulesFromDB(ctx context.Context) *typespec.Base
 			Count:        catHits[cat],
 		})
 	}
+	return resp
+}
 
-	for _, r := range all {
-		var cmds []string
-		if r.CommandsJSON != "" {
-			json.Unmarshal([]byte(r.CommandsJSON), &cmds)
+// GetBaselineRulesFromDB 从数据库获取规则列表（摘要字段，详情见 GetBaselineRuleDetail）
+func (a *BaselineApp) GetBaselineRulesFromDB(ctx context.Context) *typespec.BaselineRulesListResp {
+	stats := a.GetBaselineRulesStats(ctx)
+	var model mysqls.HostBaselineRule
+	summaries, err := model.ListSummary(ctx)
+	if err != nil {
+		return &typespec.BaselineRulesListResp{
+			Total:      stats.Total,
+			ByOsType:   stats.ByOsType,
+			ByCategory: stats.ByCategory,
 		}
+	}
+
+	resp := &typespec.BaselineRulesListResp{
+		Total:      stats.Total,
+		ByOsType:   stats.ByOsType,
+		ByCategory: stats.ByCategory,
+		Rules:      make([]typespec.BaselineRuleListItem, 0, len(summaries)),
+	}
+	for _, r := range summaries {
 		resp.Rules = append(resp.Rules, typespec.BaselineRuleListItem{
-			ID:              r.ID,
-			Name:            r.Name,
-			Description:     r.Description,
-			Category:        r.Category,
-			CategoryName:    enums.BaselineEnum.GetCategoryName(r.Category),
-			Risk:            r.Risk,
-			RiskName:        enums.BaselineEnum.GetBaselineRiskName(r.Risk),
-			OSType:          r.OSType,
-			OSTypeName:      enums.BaselineEnum.GetOSTypeName(r.OSType),
-			ExpectedValue:   r.ExpectedValue,
-			MatchType:       r.MatchType,
-			FixSuggestion:   r.FixSuggestion,
-			RiskDescription: r.RiskDescription,
-			Commands:        cmds,
+			ID:            r.ID,
+			Name:          r.Name,
+			Description:   r.Description,
+			Category:      r.Category,
+			CategoryName:  enums.BaselineEnum.GetCategoryName(r.Category),
+			Risk:          r.Risk,
+			RiskName:      enums.BaselineEnum.GetBaselineRiskName(r.Risk),
+			OSType:        r.OSType,
+			OSTypeName:    enums.BaselineEnum.GetOSTypeName(r.OSType),
+			ExpectedValue: r.ExpectedValue,
+			MatchType:     r.MatchType,
 		})
 	}
 	return resp
@@ -728,24 +745,28 @@ func (a *BaselineApp) GetMalwareTaskList(ctx context.Context, req *typespec.Malw
 	if size < 1 {
 		size = 10
 	}
-	var model mysqls.MalwareCheckResult
-	total, err := model.CountDistinctMalwareTasks(ctx)
+	var model mysqls.HostMalwareScan
+	total, err := model.CountAll(ctx)
 	if err != nil {
 		return nil, err
 	}
-	rows, err := model.ListMalwareGroupedByTask(ctx, page, size)
+	rows, err := model.ListPaged(ctx, page, size)
 	if err != nil {
 		return nil, err
 	}
 	resp := &typespec.MalwareTaskListResp{Total: total}
 	for _, r := range rows {
+		worstName := "—"
+		if r.WorstRiskLevel > 0 {
+			worstName = enums.BaselineEnum.GetMalwareRiskName(r.WorstRiskLevel)
+		}
 		resp.List = append(resp.List, typespec.MalwareTaskListItem{
 			TaskID:         r.TaskID,
 			TargetIP:       r.TargetIP,
-			TotalFindings:  int(r.TotalFindings),
+			TotalFindings:  r.TotalFindings,
 			WorstRiskLevel: r.WorstRiskLevel,
-			WorstRiskName:  enums.BaselineEnum.GetMalwareRiskName(r.WorstRiskLevel),
-			CheckTime:      r.LastTime.Format("2006-01-02 15:04:05"),
+			WorstRiskName:  worstName,
+			CheckTime:      r.CreateTime.Format("2006-01-02 15:04:05"),
 		})
 	}
 	return resp, nil
@@ -937,6 +958,26 @@ func (a *BaselineApp) GetSensitiveDataStat(ctx context.Context, req *typespec.Se
 		MiddleCount: int(middle),
 		LowCount:    int(low),
 		TotalCount:  int(total),
+	}, nil
+}
+
+func (a *BaselineApp) TestHostConnection(ctx context.Context, req *typespec.BaselineCheckReq) (*typespec.HostTestConnResp, error) {
+	cfg := &services.HostConnConfig{
+		Host:       req.Host,
+		Port:       req.Port,
+		Username:   req.Username,
+		Password:   req.Password,
+		PrivateKey: req.Key,
+		OSType:     req.OSType,
+		Transport:  req.Transport,
+		UseHTTPS:   req.WinRMUseHttps,
+	}
+	result := services.GetHostConnManager().TestConnection(ctx, cfg)
+	return &typespec.HostTestConnResp{
+		OK:            result.OK,
+		Message:       result.Message,
+		TransportName: result.TransportName,
+		Detail:        result.Detail,
 	}, nil
 }
 

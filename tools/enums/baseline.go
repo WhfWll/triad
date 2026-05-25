@@ -163,8 +163,8 @@ func (baseline) GetCheckResultName(result int) string {
 	m := map[int]string{
 		BaselineCheckResultPass:  "通过",
 		BaselineCheckResultFail:  "不通过",
-		BaselineCheckResultError: "错误",
-		BaselineCheckResultSkip:  "跳过",
+		BaselineCheckResultError: "异常",
+		BaselineCheckResultSkip:  "不适配",
 	}
 	if v, ok := m[result]; ok {
 		return v

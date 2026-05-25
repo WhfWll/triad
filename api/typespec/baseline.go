@@ -128,6 +128,22 @@ type BaselineTaskListResp struct {
 	Total int64                  `json:"total"`
 }
 
+// HostSecTaskDeleteItem 主机安全检查任务删除项（列表一行对应一条记录）
+type HostSecTaskDeleteItem struct {
+	Source    string `json:"source"` // baseline / vuln / malware
+	TaskID    int    `json:"taskId" binding:"required"`
+	TargetIP  string `json:"targetIp"`
+	ScanScene int    `json:"scanScene"` // baseline/vuln 时：1=配置核查 2=漏洞检测
+}
+
+type HostSecTaskDeleteReq struct {
+	Items []HostSecTaskDeleteItem `json:"items" binding:"required,min=1"`
+}
+
+type HostSecTaskDeleteResp struct {
+	Deleted int `json:"deleted"`
+}
+
 // BaselineTaskTargetItem 任务的目标列表
 type BaselineTaskTargetItem struct {
 	TargetID   int    `json:"targetId"`
@@ -138,6 +154,13 @@ type BaselineTaskTargetItem struct {
 	PassCount  int    `json:"passCount"`
 	FailCount  int    `json:"failCount"`
 	ErrorCount int    `json:"errorCount"`
+}
+
+// BaselineRulesStatsResp 规则库统计（仅数量，供仪表盘等轻量场景）
+type BaselineRulesStatsResp struct {
+	Total      int                            `json:"total"`
+	ByOsType   []BaselineRulesCountByOS       `json:"byOsType"`
+	ByCategory []BaselineRulesCountByCategory `json:"byCategory"`
 }
 
 // BaselineRulesListResp 规则库：总条数、按操作系统/核查分类汇总、明细（供界面展示与验收对照）
@@ -172,8 +195,8 @@ type BaselineRuleListItem struct {
 	OSTypeName      string   `json:"osTypeName"`
 	ExpectedValue   string   `json:"expectedValue"`
 	MatchType       string   `json:"matchType"`
-	FixSuggestion   string   `json:"fixSuggestion"`
-	RiskDescription string   `json:"riskDescription"`
+	FixSuggestion   string   `json:"fixSuggestion,omitempty"`
+	RiskDescription string   `json:"riskDescription,omitempty"`
 	Commands        []string `json:"commands,omitempty"`
 }
 
@@ -435,4 +458,12 @@ type SensitiveDataStatResp struct {
 	MiddleCount int `json:"middleCount"`
 	LowCount    int `json:"lowCount"`
 	TotalCount  int `json:"totalCount"`
+}
+
+// HostTestConnResp 主机 SSH/WinRM 连接测试结果
+type HostTestConnResp struct {
+	OK            bool   `json:"ok"`
+	Message       string `json:"message"`
+	TransportName string `json:"transportName,omitempty"`
+	Detail        string `json:"detail,omitempty"`
 }

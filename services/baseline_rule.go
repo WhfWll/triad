@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"smart/tools/enums"
+	"strings"
 	"sync"
 )
 
@@ -38,7 +39,27 @@ type BaselineEngine struct {
 var (
 	globalBaselineEngine *BaselineEngine
 	baselineEngineOnce   sync.Once
+	builtinBaselineRules []BaselineRule
 )
+
+// mergeRulesWithBuiltin 将数据库规则与内置基础规则合并，避免仅导入 CIS 审计规则时基础项无法执行。
+func mergeRulesWithBuiltin(dbRules []BaselineRule) []BaselineRule {
+	if len(builtinBaselineRules) == 0 {
+		return dbRules
+	}
+	existing := make(map[string]bool, len(dbRules))
+	for _, r := range dbRules {
+		existing[ruleCompositeKey(r.Name, r.Category, r.OSType)] = true
+	}
+	merged := make([]BaselineRule, 0, len(dbRules)+len(builtinBaselineRules))
+	merged = append(merged, dbRules...)
+	for _, r := range builtinBaselineRules {
+		if !existing[ruleCompositeKey(r.Name, r.Category, r.OSType)] {
+			merged = append(merged, r)
+		}
+	}
+	return merged
+}
 
 func GetBaselineEngine() *BaselineEngine {
 	baselineEngineOnce.Do(func() {
@@ -188,6 +209,9 @@ func (e *BaselineEngine) CheckCommandOutput(output string, expected string, matc
 	} else if matchType == "regex" {
 		return matchRegex(output, expected)
 	} else if matchType == "not_contains" {
+		if expected == "" {
+			return strings.TrimSpace(output) == ""
+		}
 		return !containsOutput(output, expected)
 	}
 	return false
@@ -239,7 +263,7 @@ func matchRegex(output, pattern string) bool {
 }
 
 func init() {
-	defaultBaselineRules := []BaselineRule{
+	builtinBaselineRules = []BaselineRule{
 		// SSH配置检查
 		{ID: 1, Name: "检查SSH协议版本", Description: "SSH应仅使用协议版本2", Category: enums.BaselineCategorySSHConfig, Risk: enums.BaselineRiskHigh, OSType: enums.BaselineOSTypeLinux, Commands: []string{"grep '^Protocol' /etc/ssh/sshd_config"}, ExpectedValue: "Protocol 2", MatchType: "contains", FixSuggestion: "在/etc/ssh/sshd_config中设置 Protocol 2"},
 		{ID: 2, Name: "检查SSH root登录限制", Description: "应禁止root直接通过SSH登录", Category: enums.BaselineCategorySSHConfig, Risk: enums.BaselineRiskHigh, OSType: enums.BaselineOSTypeLinux, Commands: []string{"grep '^PermitRootLogin' /etc/ssh/sshd_config"}, ExpectedValue: "PermitRootLogin no", MatchType: "contains", FixSuggestion: "在/etc/ssh/sshd_config中设置 PermitRootLogin no"},
@@ -278,7 +302,7 @@ func init() {
 		{ID: 27, Name: "检查IPv6转发", Description: "IPv6转发应禁用", Category: enums.BaselineCategoryKernelSecurity, Risk: enums.BaselineRiskMiddle, OSType: enums.BaselineOSTypeLinux, Commands: []string{"sysctl net.ipv6.conf.all.forwarding"}, ExpectedValue: "= 0", MatchType: "contains", FixSuggestion: "设置 net.ipv6.conf.all.forwarding=0"},
 
 		// 文件权限检查
-		{ID: 28, Name: "检查/etc/shadow权限", Description: "shadow文件权限应设置为600", Category: enums.BaselineCategoryFilePermission, Risk: enums.BaselineRiskHigh, OSType: enums.BaselineOSTypeLinux, Commands: []string{"stat -c %a /etc/shadow"}, ExpectedValue: "0", MatchType: "contains", FixSuggestion: "chmod 600 /etc/shadow"},
+		{ID: 28, Name: "检查/etc/shadow权限", Description: "shadow文件权限应设置为600", Category: enums.BaselineCategoryFilePermission, Risk: enums.BaselineRiskHigh, OSType: enums.BaselineOSTypeLinux, Commands: []string{"stat -c %a /etc/shadow"}, ExpectedValue: "600", MatchType: "exact", FixSuggestion: "chmod 600 /etc/shadow"},
 		{ID: 29, Name: "检查/etc/passwd权限", Description: "passwd文件权限应设置为644", Category: enums.BaselineCategoryFilePermission, Risk: enums.BaselineRiskMiddle, OSType: enums.BaselineOSTypeLinux, Commands: []string{"stat -c %a /etc/passwd"}, ExpectedValue: "644", MatchType: "exact", FixSuggestion: "chmod 644 /etc/passwd"},
 		{ID: 30, Name: "检查/etc/group权限", Description: "group文件权限应设置为644", Category: enums.BaselineCategoryFilePermission, Risk: enums.BaselineRiskMiddle, OSType: enums.BaselineOSTypeLinux, Commands: []string{"stat -c %a /etc/group"}, ExpectedValue: "644", MatchType: "exact", FixSuggestion: "chmod 644 /etc/group"},
 		{ID: 31, Name: "检查/etc/sudoers权限", Description: "sudoers文件权限应设置为440", Category: enums.BaselineCategoryFilePermission, Risk: enums.BaselineRiskHigh, OSType: enums.BaselineOSTypeLinux, Commands: []string{"stat -c %a /etc/sudoers"}, ExpectedValue: "440", MatchType: "exact", FixSuggestion: "chmod 440 /etc/sudoers"},
@@ -354,7 +378,7 @@ func init() {
 		{ID: 209, Name: "检查国产系统密码过期", Description: "密码最长有效期应不超过90天", Category: enums.BaselineCategoryPasswordPolicy, Risk: enums.BaselineRiskMiddle, OSType: enums.BaselineOSTypeDomestic, Commands: []string{"grep '^PASS_MAX_DAYS' /etc/login.defs"}, ExpectedValue: "PASS_MAX_DAYS", MatchType: "contains", FixSuggestion: "设置PASS_MAX_DAYS <= 90"},
 		{ID: 210, Name: "检查国产系统空密码账户", Description: "不应存在空密码账户", Category: enums.BaselineCategoryUserPermission, Risk: enums.BaselineRiskHigh, OSType: enums.BaselineOSTypeDomestic, Commands: []string{"awk -F: '($2 == \"\") {print $1}' /etc/shadow"}, ExpectedValue: "", MatchType: "exact", FixSuggestion: "为空密码账户设置密码"},
 		{ID: 211, Name: "检查国产系统UID为0账户", Description: "不应存在非root的UID为0账户", Category: enums.BaselineCategoryUserPermission, Risk: enums.BaselineRiskCritical, OSType: enums.BaselineOSTypeDomestic, Commands: []string{"awk -F: '$3==0 {print $1}' /etc/passwd"}, ExpectedValue: "root", MatchType: "exact", FixSuggestion: "检查并删除非root的UID为0账户"},
-		{ID: 212, Name: "检查国产系统文件权限", Description: "/etc/shadow权限应设置为600", Category: enums.BaselineCategoryFilePermission, Risk: enums.BaselineRiskHigh, OSType: enums.BaselineOSTypeDomestic, Commands: []string{"stat -c %a /etc/shadow"}, ExpectedValue: "0", MatchType: "contains", FixSuggestion: "chmod 600 /etc/shadow"},
+		{ID: 212, Name: "检查国产系统文件权限", Description: "/etc/shadow权限应设置为600", Category: enums.BaselineCategoryFilePermission, Risk: enums.BaselineRiskHigh, OSType: enums.BaselineOSTypeDomestic, Commands: []string{"stat -c %a /etc/shadow"}, ExpectedValue: "600", MatchType: "exact", FixSuggestion: "chmod 600 /etc/shadow"},
 		{ID: 213, Name: "检查国产系统审计服务", Description: "auditd服务应运行", Category: enums.BaselineCategoryAuditLog, Risk: enums.BaselineRiskMiddle, OSType: enums.BaselineOSTypeDomestic, Commands: []string{"systemctl is-active auditd 2>/dev/null || echo inactive"}, ExpectedValue: "active", MatchType: "contains", FixSuggestion: "启动审计服务"},
 		{ID: 214, Name: "检查国产系统内核参数", Description: "IP转发应禁用", Category: enums.BaselineCategoryKernelSecurity, Risk: enums.BaselineRiskMiddle, OSType: enums.BaselineOSTypeDomestic, Commands: []string{"sysctl net.ipv4.ip_forward"}, ExpectedValue: "= 0", MatchType: "contains", FixSuggestion: "设置net.ipv4.ip_forward=0"},
 		{ID: 215, Name: "检查国产系统SYN Cookie", Description: "应启用SYN Cookie", Category: enums.BaselineCategoryKernelSecurity, Risk: enums.BaselineRiskMiddle, OSType: enums.BaselineOSTypeDomestic, Commands: []string{"sysctl net.ipv4.tcp_syncookies"}, ExpectedValue: "= 1", MatchType: "contains", FixSuggestion: "设置net.ipv4.tcp_syncookies=1"},
@@ -363,7 +387,7 @@ func init() {
 		{ID: 218, Name: "检查国产系统NTP同步", Description: "系统时间应同步", Category: enums.BaselineCategoryOther, Risk: enums.BaselineRiskLow, OSType: enums.BaselineOSTypeDomestic, Commands: []string{"timedatectl status 2>/dev/null | grep 'System clock synchronized'"}, ExpectedValue: "yes", MatchType: "contains", FixSuggestion: "配置NTP时间同步"},
 	}
 	if err := GetBaselineEngine().LoadRules(func() []byte {
-		data, _ := json.Marshal(defaultBaselineRules)
+		data, _ := json.Marshal(builtinBaselineRules)
 		return data
 	}()); err != nil {
 		fmt.Printf("load default baseline rules warning: %v\n", err)

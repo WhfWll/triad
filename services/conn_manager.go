@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"smart/tools/enums"
+	"strings"
 	"sync"
 	"time"
 
@@ -279,6 +280,114 @@ func (m *HostConnManager) Close(key string) {
 		}
 		delete(m.connPool, key)
 	}
+}
+
+// HostTestConnResult 连接测试结果。
+type HostTestConnResult struct {
+	OK            bool
+	Message       string
+	TransportName string
+	Detail        string
+}
+
+// TestConnection 验证 SSH/WinRM 凭据是否可用（测试后关闭连接，不长期占用连接池）。
+func (m *HostConnManager) TestConnection(ctx context.Context, config *HostConnConfig) *HostTestConnResult {
+	if config == nil || strings.TrimSpace(config.Host) == "" {
+		return &HostTestConnResult{OK: false, Message: "请填写目标主机"}
+	}
+	if strings.TrimSpace(config.Username) == "" {
+		return &HostTestConnResult{OK: false, Message: "请填写用户名"}
+	}
+
+	transport := config.Transport
+	if transport != enums.HostTransportSSH && transport != enums.HostTransportWinRM {
+		if config.OSType == enums.BaselineOSTypeWindows {
+			transport = enums.HostTransportWinRM
+		} else {
+			transport = enums.HostTransportSSH
+		}
+		config.Transport = transport
+	}
+
+	if transport == enums.HostTransportWinRM {
+		if config.Password == "" {
+			return &HostTestConnResult{OK: false, Message: "WinRM 需要填写密码"}
+		}
+	} else if config.Password == "" && config.PrivateKey == "" {
+		return &HostTestConnResult{OK: false, Message: "请填写 SSH 密码或私钥"}
+	}
+
+	timeout := config.Timeout
+	if timeout == 0 {
+		timeout = 15 * time.Second
+	}
+	config.Timeout = timeout
+
+	testCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	conn, err := m.GetConnection(testCtx, config)
+	if err != nil {
+		return &HostTestConnResult{OK: false, Message: err.Error()}
+	}
+	defer m.closeByConfig(config)
+
+	transportName := enums.BaselineEnum.GetHostTransportName(config.Transport)
+	cmd := "echo triad_ok"
+	if transport == enums.HostTransportWinRM {
+		cmd = "hostname"
+	}
+	output, err := m.ExecuteCommand(testCtx, conn, cmd)
+	if err != nil {
+		return &HostTestConnResult{OK: false, Message: err.Error(), TransportName: transportName}
+	}
+
+	port := config.Port
+	if port <= 0 {
+		if transport == enums.HostTransportWinRM {
+			if config.UseHTTPS {
+				port = 5986
+			} else {
+				port = 5985
+			}
+		} else {
+			port = 22
+		}
+	}
+	detail := strings.TrimSpace(output)
+	if detail == "" {
+		detail = "命令执行成功"
+	}
+	return &HostTestConnResult{
+		OK:            true,
+		Message:       fmt.Sprintf("连接成功（%s · %s:%d）", transportName, config.Host, port),
+		TransportName: transportName,
+		Detail:        detail,
+	}
+}
+
+func (m *HostConnManager) closeByConfig(config *HostConnConfig) {
+	transport := config.Transport
+	if transport != enums.HostTransportSSH && transport != enums.HostTransportWinRM {
+		if config.OSType == enums.BaselineOSTypeWindows {
+			transport = enums.HostTransportWinRM
+		} else {
+			transport = enums.HostTransportSSH
+		}
+	}
+	port := config.Port
+	if transport == enums.HostTransportWinRM {
+		if port <= 0 {
+			if config.UseHTTPS {
+				port = 5986
+			} else {
+				port = 5985
+			}
+		}
+	} else if port <= 0 {
+		port = 22
+	}
+	m.Close(connPoolKey(config.Host, port, config.Username, transport))
 }
 
 func (m *HostConnManager) CloseAll() {

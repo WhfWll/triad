@@ -1,7 +1,17 @@
 package typespec
 
+type DatasecRulesStatsResp struct {
+	Total        int                            `json:"total"`
+	EnabledTotal int                            `json:"enabledTotal"`
+	BuiltinTotal int                            `json:"builtinTotal"`
+	TargetTotal  int                            `json:"targetTotal"`
+	ByDBType     []DatasecRulesCountByDBType    `json:"byDbType"`
+	ByCategory   []DatasecRulesCountByCategory  `json:"byCategory"`
+}
+
 type DatasecRulesListResp struct {
 	Total        int                            `json:"total"`
+	EnabledTotal int                            `json:"enabledTotal"`
 	BuiltinTotal int                            `json:"builtinTotal"`
 	TargetTotal  int                            `json:"targetTotal"`
 	ByDBType     []DatasecRulesCountByDBType    `json:"byDbType"`
@@ -34,8 +44,8 @@ type DatasecRuleListItem struct {
 	DBTypeName      string   `json:"dbTypeName"`
 	ExpectedValue   string   `json:"expectedValue"`
 	MatchType       string   `json:"matchType"`
-	FixSuggestion   string   `json:"fixSuggestion"`
-	RiskDescription string   `json:"riskDescription"`
+	FixSuggestion   string   `json:"fixSuggestion,omitempty"`
+	RiskDescription string   `json:"riskDescription,omitempty"`
 	Queries         []string `json:"queries,omitempty"`
 	Enabled         int      `json:"enabled"`
 }

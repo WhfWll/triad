@@ -8,6 +8,12 @@
       <div class="search-box">
         <div class="operationbutton">
           <el-button type="primary" size="small" @click="openCreateDialog">新建主机检查任务</el-button>
+          <el-button
+            size="small"
+            :disabled="selectedRows.length === 0"
+            :loading="batchDeleteLoading"
+            @click="batchDeleteTasks"
+          >批量删除</el-button>
         </div>
       </div>
 
@@ -18,24 +24,73 @@
         <el-tab-pane label="恶意代码检测" name="malware" />
       </el-tabs>
 
-      <el-table v-loading="tableLoading" :data="tableRows" style="width: 100%" class="myTable">
-        <el-table-column prop="kindLabel" label="任务类型" width="130" />
-        <el-table-column prop="targetIp" label="目标主机" :show-overflow-tooltip="true" />
-        <el-table-column v-if="listTab !== 'malware'" prop="osTypeName" label="操作系统" width="120" />
-        <el-table-column v-if="listTab === 'malware'" prop="totalFindings" label="发现项数" width="100" />
-        <el-table-column v-if="listTab !== 'malware'" prop="totalRules" label="检查项数" width="100" />
-        <el-table-column v-if="listTab !== 'malware'" prop="passCount" label="通过" width="72" />
-        <el-table-column v-if="listTab !== 'malware'" prop="failCount" label="不通过" width="82" />
-        <el-table-column v-if="listTab !== 'malware'" prop="errorCount" label="异常" width="72" />
-        <el-table-column v-if="listTab === 'malware'" prop="worstRiskName" label="最高风险" width="100" />
-        <el-table-column prop="checkTime" label="时间" width="170" />
-        <el-table-column label="操作" width="90">
+      <div class="hub-table-wrap">
+      <el-table
+        ref="taskTable"
+        v-loading="tableLoading"
+        :data="tableRows"
+        :row-key="taskRowKey"
+        style="width: 100%"
+        class="myTable hub-task-table"
+        @selection-change="onSelectionChange"
+      >
+        <el-table-column type="selection" width="48" reserve-selection :selectable="row => !row.isRunning" />
+        <el-table-column v-if="listTab === 'all'" prop="kindLabel" label="任务类型" width="130" />
+        <el-table-column prop="targetIp" label="目标主机" min-width="110" :show-overflow-tooltip="true" />
+        <el-table-column v-if="listTab === 'baseline' || listTab === 'vuln' || listTab === 'all'" prop="osTypeName" label="操作系统" width="108" />
+        <!-- 基线核查列 -->
+        <template v-if="listTab === 'baseline'">
+          <el-table-column prop="totalRules" label="检查项数" width="88" align="center" />
+          <el-table-column prop="passCount" label="通过" width="64" align="center" />
+          <el-table-column prop="failCount" label="不通过" width="72" align="center" />
+          <el-table-column prop="errorCount" label="异常" width="64" align="center" />
+        </template>
+        <!-- 漏洞检测列 -->
+        <template v-if="listTab === 'vuln'">
+          <el-table-column prop="packages" label="扫描包数" width="88" align="center" />
+          <el-table-column prop="matchedVulns" label="漏洞数" width="76" align="center" />
+          <el-table-column prop="critical" label="严重" width="64" align="center" />
+          <el-table-column prop="high" label="高危" width="64" align="center" />
+          <el-table-column prop="worstRiskName" label="最高风险" width="88" align="center" />
+        </template>
+        <!-- 恶意代码列 -->
+        <template v-if="listTab === 'malware'">
+          <el-table-column prop="osTypeName" label="操作系统" width="108" />
+          <el-table-column prop="totalFindings" label="发现项数" width="88" align="center" />
+          <el-table-column prop="worstRiskName" label="最高风险" width="88" align="center" />
+        </template>
+        <!-- 全部：结果摘要 -->
+        <el-table-column v-if="listTab === 'all'" label="结果摘要" min-width="180" :show-overflow-tooltip="true">
           <template slot-scope="scope">
-            <el-link v-if="scope.row.source === 'baseline'" :underline="false" class="link_primary" @click="openDetailPage(scope.row)">详情</el-link>
-            <el-link v-else :underline="false" class="link_primary" @click="openDetail(scope.row)">详情</el-link>
+            {{ rowSummary(scope.row) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" width="88" align="center">
+          <template slot-scope="scope">
+            <el-tag v-if="scope.row.isRunning" :type="runStatusTagType(scope.row.runStatus)" size="mini">{{ scope.row.runStatusLabel }}</el-tag>
+            <el-tag v-else-if="(scope.row.source === 'vuln' || scope.row.source === 'malware') && scope.row.scanStatus === 2" type="danger" size="mini" effect="plain">异常</el-tag>
+            <el-tag v-else type="success" size="mini" effect="plain">已完成</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="进度" width="72" align="center">
+          <template slot-scope="scope">
+            <span v-if="scope.row.isRunning" class="inline-progress">{{ scope.row.progressText }}</span>
+            <span v-else class="inline-progress done">—</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="checkTime" label="时间" width="158" :show-overflow-tooltip="true" />
+        <el-table-column label="操作" width="112">
+          <template slot-scope="scope">
+            <template v-if="!scope.row.isRunning">
+              <el-link v-if="scope.row.source === 'baseline' || scope.row.source === 'vuln' || scope.row.source === 'malware'" :underline="false" class="link_primary" @click="openDetailPage(scope.row)">详情</el-link>
+              <el-link v-else :underline="false" class="link_primary" @click="openDetail(scope.row)">详情</el-link>
+              <el-link :underline="false" class="link_danger" style="margin-left: 10px" @click="deleteTask(scope.row)">删除</el-link>
+            </template>
+            <span v-else class="run-hint">{{ scope.row.runMessage || '—' }}</span>
           </template>
         </el-table-column>
       </el-table>
+      </div>
 
       <p v-if="listTab === 'all'" class="merge-hint">以上为各类型最近一批记录的合并视图；精确分页请在上方子类页签中查看。</p>
 
@@ -106,81 +161,109 @@
       </span>
     </el-dialog>
 
-    <el-dialog :title="editTargetIndex >= 0 ? '编辑目标' : '添加目标'" :visible.sync="targetDialogVisible" width="500px" custom-class="theme-dialog">
-      <el-form :model="editTargetForm" :rules="targetRules" ref="editTargetForm" label-width="90px">
-        <el-row :gutter="12">
-          <el-col :span="12">
-            <el-form-item label="目标主机" prop="host">
-              <el-input v-model="editTargetForm.host" placeholder="IP 或域名" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="连接协议" prop="transport">
-              <el-select v-model="editTargetForm.transport" placeholder="请选择" style="width: 100%" @change="onEditTargetTransportChange">
-                <el-option :value="'ssh'" label="SSH" />
-                <el-option :value="'winrm'" label="WinRM" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="12">
-          <el-col :span="12">
-            <el-form-item :label="editTargetPortLabel" prop="port">
-              <el-input-number v-model="editTargetForm.port" :min="1" :max="65535" :controls="false" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="HTTPS" v-if="editTargetForm.transport === 'winrm'">
-              <el-switch v-model="editTargetForm.winrmUseHttps" @change="onEditWinrmHttpsChange" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="12">
-          <el-col :span="12">
-            <el-form-item :label="editTargetUsernameLabel" prop="username">
-              <el-input v-model="editTargetForm.username" placeholder="登录用户名" autocomplete="off" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item :label="editTargetPasswordLabel" prop="password">
-              <el-input v-model="editTargetForm.password" type="password" :placeholder="editTargetForm.transport === 'winrm' ? 'WinRM 密码（必填）' : '密码（与私钥二选一）'" show-password autocomplete="new-password" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="12">
-          <el-col :span="12">
-            <el-form-item label="操作系统" prop="osType">
-              <el-select v-model="editTargetForm.osType" placeholder="请选择" style="width: 100%" @change="onEditTargetOsTypeChange">
-                <el-option v-for="opt in osTypes" :key="opt.value" :label="opt.label" :value="opt.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item v-if="editTargetForm.transport !== 'winrm'" label="SSH 私钥" prop="key">
-              <el-input v-model="editTargetForm.key" type="textarea" :rows="2" placeholder="可选：粘贴私钥 PEM" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-      <span slot="footer">
-        <el-button @click="targetDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="saveTarget">保存</el-button>
-      </span>
-    </el-dialog>
+    <el-dialog
+      :title="editTargetIndex >= 0 ? '编辑目标' : '添加目标'"
+      :visible.sync="targetDialogVisible"
+      width="580px"
+      custom-class="theme-dialog host-target-dialog"
+      :close-on-click-modal="false"
+      @closed="onTargetDialogClosed"
+    >
+      <el-form
+        ref="editTargetForm"
+        :model="editTargetForm"
+        :rules="targetRules"
+        label-position="top"
+        size="small"
+        class="host-target-form nessus-form"
+      >
+        <div class="form-section">
+          <div class="section-title">连接信息</div>
+          <el-row :gutter="16">
+            <el-col :span="14">
+              <el-form-item label="目标主机" prop="host">
+                <el-input v-model="editTargetForm.host" placeholder="IP 或域名" @input="clearConnTestResult" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="10">
+              <el-form-item label="连接协议" prop="transport">
+                <el-select v-model="editTargetForm.transport" placeholder="请选择" style="width: 100%" @change="onEditTargetTransportChange">
+                  <el-option :value="'ssh'" label="SSH" />
+                  <el-option :value="'winrm'" label="WinRM" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="16">
+            <el-col :span="8">
+              <el-form-item :label="editTargetPortLabel" prop="port">
+                <el-input-number v-model="editTargetForm.port" :min="1" :max="65535" :controls="false" style="width: 100%" @change="clearConnTestResult" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
+              <el-form-item label="操作系统" prop="osType">
+                <el-select v-model="editTargetForm.osType" placeholder="请选择" style="width: 100%" @change="onEditTargetOsTypeChange">
+                  <el-option v-for="opt in osTypes" :key="opt.value" :label="opt.label" :value="opt.value" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col v-if="editTargetForm.transport === 'winrm'" :span="8">
+              <el-form-item label="HTTPS">
+                <el-switch v-model="editTargetForm.winrmUseHttps" @change="onEditWinrmHttpsChange" />
+                <span class="switch-hint">{{ editTargetForm.winrmUseHttps ? '5986' : '5985' }}</span>
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </div>
 
-    <el-dialog title="任务执行中" :visible.sync="progressVisible" width="500px" custom-class="theme-dialog" :close-on-click-modal="false" :show-close="false">
-      <div class="progress-body">
-        <div class="progress-summary">
-          <el-progress :percentage="progressPercent" :status="progressStatus" :stroke-width="16" />
-          <p class="progress-text">{{ progressText }}</p>
+        <div class="form-section">
+          <div class="section-title">认证信息</div>
+          <p class="form-tip">
+            <template v-if="editTargetForm.transport === 'winrm'">WinRM 使用用户名 + 密码认证。</template>
+            <template v-else>SSH 支持密码或 PEM 私钥，二者至少填一项。</template>
+          </p>
+          <el-row :gutter="16">
+            <el-col :span="12">
+              <el-form-item label="用户名" prop="username">
+                <el-input v-model="editTargetForm.username" placeholder="登录用户名" autocomplete="off" @input="clearConnTestResult" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="密码" prop="password">
+                <el-input
+                  v-model="editTargetForm.password"
+                  type="password"
+                  :placeholder="editTargetForm.transport === 'winrm' ? 'WinRM 密码（必填）' : '密码（与私钥二选一）'"
+                  show-password
+                  autocomplete="new-password"
+                  @input="clearConnTestResult"
+                />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-form-item v-if="editTargetForm.transport !== 'winrm'" label="SSH 私钥（可选）">
+            <el-input
+              v-model="editTargetForm.key"
+              type="textarea"
+              :rows="3"
+              placeholder="粘贴 PEM 格式私钥；留空则使用密码登录"
+              @input="clearConnTestResult"
+            />
+          </el-form-item>
         </div>
-        <div v-for="(t, idx) in progressTargets" :key="idx" class="progress-target-row">
-          <span class="progress-target-host">{{ t.host }}</span>
-          <el-tag :type="progressTagType(t.status)" size="mini">{{ progressTagLabel(t.status) }}</el-tag>
+
+        <div v-if="connTestResult" :class="['conn-test-result', connTestResult.ok ? 'ok' : 'fail']">
+          <div class="result-line">
+            <i :class="connTestResult.ok ? 'el-icon-success' : 'el-icon-error'"></i>
+            <span>{{ connTestResult.message }}</span>
+          </div>
+          <div v-if="connTestResult.detail" class="result-detail">{{ connTestResult.detail }}</div>
         </div>
-      </div>
-      <span slot="footer">
-        <el-button v-if="progressDone" type="primary" @click="onProgressDone">查看结果</el-button>
+      </el-form>
+      <span slot="footer" class="host-target-footer">
+        <el-button @click="targetDialogVisible = false">取消</el-button>
+        <el-button :loading="connTestLoading" @click="testTargetConnection">连接测试</el-button>
+        <el-button type="primary" @click="saveTarget">保存</el-button>
       </span>
     </el-dialog>
 
@@ -245,6 +328,8 @@ export default {
       },
       targetDialogVisible: false,
       editTargetIndex: -1,
+      connTestLoading: false,
+      connTestResult: null,
       editTargetForm: {
         host: '',
         transport: 'ssh',
@@ -260,35 +345,25 @@ export default {
       detailRows: [],
       detailMeta: '',
       detailMode: 'baseline',
-      progressVisible: false,
       progressTaskId: 0,
-      progressTargets: [],
-      progressPercent: 0,
-      progressText: '',
-      progressDone: false,
-      progressTimer: null
+      progressPollType: '',
+      progressTimer: null,
+      selectedRows: [],
+      batchDeleteLoading: false
     }
   },
   computed: {
-    progressStatus() {
-      if (!this.progressVisible) return ''
-      if (this.progressDone) return 'success'
-      return ''
-    },
     editTargetPortLabel() {
       return this.editTargetForm.transport === 'winrm' ? 'WinRM 端口' : 'SSH 端口'
-    },
-    editTargetUsernameLabel() {
-      return this.editTargetForm.transport === 'winrm' ? '用户名' : 'SSH 用户名'
-    },
-    editTargetPasswordLabel() {
-      return this.editTargetForm.transport === 'winrm' ? '密码' : 'SSH 密码'
     }
   },
   mounted() {
     this.$store.state.activefirstMenu = '/hostsec/tasks'
     this.loadEnums()
     this.loadData()
+  },
+  beforeDestroy() {
+    this.stopProgressPoll()
   },
   methods: {
     createTarget() {
@@ -308,6 +383,7 @@ export default {
     },
     openAddTargetDialog() {
       this.editTargetIndex = -1
+      this.connTestResult = null
       this.editTargetForm = {
         host: '',
         transport: 'ssh',
@@ -320,7 +396,68 @@ export default {
       }
       this.targetDialogVisible = true
     },
+    onTargetDialogClosed() {
+      this.connTestResult = null
+      this.connTestLoading = false
+    },
+    clearConnTestResult() {
+      this.connTestResult = null
+    },
+    buildTargetConnPayload(form) {
+      return {
+        host: (form.host || '').trim(),
+        port: form.port,
+        username: (form.username || '').trim(),
+        password: form.password || '',
+        key: form.transport === 'winrm' ? '' : (form.key || ''),
+        osType: form.osType,
+        transport: form.transport === 'winrm' ? 2 : 1,
+        winrmUseHttps: form.transport === 'winrm' ? form.winrmUseHttps : false
+      }
+    },
+    validateTargetForm(showMessage = true) {
+      const form = this.editTargetForm
+      const warn = (msg) => {
+        if (showMessage) this.$message({ message: msg, type: 'warning' })
+        return false
+      }
+      if (!(form.host || '').trim()) return warn('请输入目标主机')
+      if (!(form.username || '').trim()) return warn('请输入用户名')
+      if (form.transport === 'winrm') {
+        if (!form.password) return warn('WinRM 需要填写密码')
+      } else if (!form.password && !form.key) {
+        return warn('请填写 SSH 密码或私钥')
+      }
+      return true
+    },
+    async testTargetConnection() {
+      if (!this.validateTargetForm()) return
+      this.connTestLoading = true
+      this.connTestResult = null
+      try {
+        const res = await security.testHostConn(this.buildTargetConnPayload(this.editTargetForm))
+        if (res.code === 200 && res.data) {
+          this.connTestResult = {
+            ok: !!res.data.ok,
+            message: res.data.message || (res.data.ok ? '连接成功' : '连接失败'),
+            detail: res.data.detail || ''
+          }
+          if (res.data.ok) {
+            this.$message({ message: '连接测试通过', type: 'success' })
+          }
+        } else {
+          this.connTestResult = { ok: false, message: res.msg || '连接测试失败', detail: '' }
+          this.$message({ message: res.msg || '连接测试失败', type: 'error' })
+        }
+      } catch (e) {
+        this.connTestResult = { ok: false, message: e.message || '连接测试失败', detail: '' }
+        this.$message({ message: '连接测试失败: ' + (e.message || ''), type: 'error' })
+      } finally {
+        this.connTestLoading = false
+      }
+    },
     onEditTargetTransportChange() {
+      this.clearConnTestResult()
       if (this.editTargetForm.transport === 'winrm') {
         this.editTargetForm.port = this.editTargetForm.winrmUseHttps ? 5986 : 5985
         this.editTargetForm.key = ''
@@ -329,13 +466,18 @@ export default {
       }
     },
     onEditWinrmHttpsChange() {
+      this.clearConnTestResult()
       if (this.editTargetForm.transport === 'winrm') {
         this.editTargetForm.port = this.editTargetForm.winrmUseHttps ? 5986 : 5985
       }
     },
+    onEditTargetOsTypeChange() {
+      this.clearConnTestResult()
+    },
     editTarget(idx) {
       const t = this.targets[idx]
       this.editTargetIndex = idx
+      this.connTestResult = null
       this.editTargetForm = {
         host: t.host,
         transport: t.transport || 'ssh',
@@ -349,23 +491,7 @@ export default {
       this.targetDialogVisible = true
     },
     saveTarget() {
-      if (!this.editTargetForm.host) {
-        this.$message({ message: '请输入目标主机', type: 'warning' })
-        return
-      }
-      if (!this.editTargetForm.username) {
-        this.$message({ message: '请输入用户名', type: 'warning' })
-        return
-      }
-      if (this.editTargetForm.transport === 'winrm') {
-        if (!this.editTargetForm.password) {
-          this.$message({ message: 'WinRM 需要填写密码', type: 'warning' })
-          return
-        }
-      } else if (!this.editTargetForm.password && !this.editTargetForm.key) {
-        this.$message({ message: '请填写 SSH 密码或私钥', type: 'warning' })
-        return
-      }
+      if (!this.validateTargetForm()) return
       if (this.editTargetIndex >= 0) {
         this.targets[this.editTargetIndex] = { ...this.editTargetForm }
       } else {
@@ -400,9 +526,14 @@ export default {
     onListTabChange() {
       this.formData.page = 1
       this.currentpage = 1
+      this.selectedRows = []
+      if (this.$refs.taskTable) {
+        this.$refs.taskTable.clearSelection()
+      }
       this.loadData()
     },
     async loadData() {
+      const runningRows = this.tableRows.filter(r => r.isRunning)
       this.tableLoading = true
       try {
         if (this.listTab === 'all') {
@@ -420,8 +551,45 @@ export default {
               kindLabel: '恶意代码检测',
               taskId: r.taskId,
               targetIp: r.targetIp,
+              scanScene: 0,
+              osTypeName: r.osTypeName,
               totalFindings: r.totalFindings,
+              critical: r.critical,
+              high: r.high,
               worstRiskName: r.worstRiskName,
+              scanStatus: r.scanStatus,
+              scanStatusName: r.scanStatusName,
+              errorMessage: r.errorMessage,
+              checkTime: r.checkTime
+            }))
+          } else {
+            this.tableRows = []
+            this.$message({ message: res.msg || '加载失败', type: 'error' })
+          }
+        } else if (this.listTab === 'vuln') {
+          const res = await security.getHostVulnTaskList({
+            page: this.formData.page,
+            size: this.pageSize
+          })
+          if (res.code === 200 && res.data) {
+            this.totalpage = res.data.total || 0
+            this.tableRows = (res.data.list || []).map((r) => ({
+              source: 'vuln',
+              kindLabel: '主机漏洞检测',
+              taskId: r.taskId,
+              targetIp: r.targetIp,
+              scanScene: 2,
+              osTypeName: r.osTypeName,
+              packages: r.packages,
+              matchedVulns: r.matchedVulns,
+              critical: r.critical,
+              high: r.high,
+              medium: r.medium,
+              low: r.low,
+              worstRiskName: r.worstRiskName,
+              scanStatus: r.scanStatus,
+              scanStatusName: r.scanStatusName,
+              errorMessage: r.errorMessage,
               checkTime: r.checkTime
             }))
           } else {
@@ -429,11 +597,10 @@ export default {
             this.$message({ message: res.msg || '加载失败', type: 'error' })
           }
         } else {
-          const scanScene = this.listTab === 'vuln' ? 2 : 1
           const res = await security.getBaselineTaskList({
             page: this.formData.page,
             size: this.pageSize,
-            scanScene
+            scanScene: 1
           })
           if (res.code === 200 && res.data) {
             this.totalpage = res.data.total || 0
@@ -442,6 +609,7 @@ export default {
               kindLabel: r.scanSceneName || '安全配置核查',
               taskId: r.taskId,
               targetIp: r.targetIp,
+              scanScene: r.scanScene || 1,
               osTypeName: r.osTypeName,
               totalRules: r.totalRules,
               passCount: r.passCount,
@@ -454,14 +622,18 @@ export default {
             this.$message({ message: res.msg || '加载失败', type: 'error' })
           }
         }
+        if (runningRows.length) {
+          this.tableRows = [...runningRows, ...this.tableRows]
+        }
       } finally {
         this.tableLoading = false
       }
     },
     async loadMerged() {
       const take = 25
-      const [bRes, mRes] = await Promise.all([
-        security.getBaselineTaskList({ page: 1, size: take, scanScene: 0 }),
+      const [bRes, vRes, mRes] = await Promise.all([
+        security.getBaselineTaskList({ page: 1, size: take, scanScene: 1 }),
+        security.getHostVulnTaskList({ page: 1, size: take }),
         security.getYaraTaskList({ page: 1, size: take })
       ])
       const merged = []
@@ -472,11 +644,33 @@ export default {
             kindLabel: r.scanSceneName || '安全配置核查',
             taskId: r.taskId,
             targetIp: r.targetIp,
+            scanScene: r.scanScene || 1,
             osTypeName: r.osTypeName,
             totalRules: r.totalRules,
             passCount: r.passCount,
             failCount: r.failCount,
             errorCount: r.errorCount,
+            checkTime: r.checkTime,
+            _ts: new Date(r.checkTime.replace(/-/g, '/')).getTime()
+          })
+        }
+      }
+      if (vRes.code === 200 && vRes.data && vRes.data.list) {
+        for (const r of vRes.data.list) {
+          merged.push({
+            source: 'vuln',
+            kindLabel: '主机漏洞检测',
+            taskId: r.taskId,
+            targetIp: r.targetIp,
+            scanScene: 2,
+            osTypeName: r.osTypeName,
+            packages: r.packages,
+            matchedVulns: r.matchedVulns,
+            critical: r.critical,
+            high: r.high,
+            worstRiskName: r.worstRiskName,
+            scanStatus: r.scanStatus,
+            errorMessage: r.errorMessage,
             checkTime: r.checkTime,
             _ts: new Date(r.checkTime.replace(/-/g, '/')).getTime()
           })
@@ -489,8 +683,14 @@ export default {
             kindLabel: '恶意代码检测',
             taskId: r.taskId,
             targetIp: r.targetIp,
+            scanScene: 0,
+            osTypeName: r.osTypeName,
             totalFindings: r.totalFindings,
+            critical: r.critical,
+            high: r.high,
             worstRiskName: r.worstRiskName,
+            scanStatus: r.scanStatus,
+            errorMessage: r.errorMessage,
             checkTime: r.checkTime,
             _ts: new Date(r.checkTime.replace(/-/g, '/')).getTime()
           })
@@ -541,8 +741,10 @@ export default {
         }
       }
       this.submitLoading = true
+      const targetSnapshot = this.targets.map(t => ({ ...t }))
+      const taskKind = this.taskForm.taskKind
       try {
-        if (this.taskForm.taskKind === 'malware') {
+        if (taskKind === 'malware') {
           const payload = {
             targets: this.targets.map(t => ({
               host: t.host,
@@ -558,11 +760,11 @@ export default {
           this.createVisible = false
           const res = await security.runYaraBatchScan(payload)
           if (res.code === 200) {
-            this.startYaraProgressPolling(res.data.taskId)
+            this.startInlineProgress(res.data.taskId, taskKind, targetSnapshot)
           } else {
             this.$message({ message: res.msg || '创建任务失败', type: 'error' })
           }
-        } else if (this.taskForm.taskKind === 'vuln') {
+        } else if (taskKind === 'vuln') {
           const payload = {
             targets: this.targets.map(t => ({
               host: t.host,
@@ -578,7 +780,7 @@ export default {
           this.createVisible = false
           const res = await security.runCveBatchScan(payload)
           if (res.code === 200) {
-            this.startCveProgressPolling(res.data.taskId)
+            this.startInlineProgress(res.data.taskId, taskKind, targetSnapshot)
           } else {
             this.$message({ message: res.msg || '创建任务失败', type: 'error' })
           }
@@ -600,7 +802,7 @@ export default {
           this.createVisible = false
           const res = await security.runBaselineBatchCheck(payload)
           if (res.code === 200) {
-            this.startProgressPolling(res.data.taskId)
+            this.startInlineProgress(res.data.taskId, taskKind, targetSnapshot)
           } else {
             this.$message({ message: res.msg || '创建任务失败', type: 'error' })
           }
@@ -609,135 +811,132 @@ export default {
         this.submitLoading = false
       }
     },
-    startProgressPolling(taskId) {
-      this.progressTaskId = taskId
-      this.progressTargets = []
-      this.progressPercent = 0
-      this.progressText = '任务已创建，正在后台执行…'
-      this.progressDone = false
-      this.progressVisible = true
-      this.pollProgress()
+    buildRunningRows(taskId, kind, targets) {
+      const kindMap = { baseline: '安全配置核查', vuln: '主机漏洞检测', malware: '恶意代码检测' }
+      const sourceMap = { baseline: 'baseline', vuln: 'vuln', malware: 'malware' }
+      const scanScene = kind === 'vuln' ? 2 : kind === 'baseline' ? 1 : 0
+      const total = targets.length || 1
+      return targets.map(t => ({
+        isRunning: true,
+        taskId,
+        source: sourceMap[kind],
+        kindLabel: kindMap[kind],
+        targetIp: t.host,
+        osTypeName: this.getOsTypeName(t.osType),
+        scanScene,
+        runStatus: 'running',
+        runStatusLabel: '执行中',
+        progressText: `0/${total}`,
+        progressDone: 0,
+        progressTotal: total,
+        checkTime: '—',
+        runMessage: ''
+      }))
     },
-    async pollProgress() {
-      if (!this.progressVisible || !this.progressTaskId) return
+    startInlineProgress(taskId, kind, targets) {
+      this.stopProgressPoll()
+      this.progressTaskId = taskId
+      const pollMap = { baseline: 'baseline', vuln: 'cve', malware: 'yara' }
+      this.progressPollType = pollMap[kind] || 'baseline'
+      const tabMap = { baseline: 'baseline', vuln: 'vuln', malware: 'malware' }
+      this.listTab = tabMap[kind] || 'baseline'
+      const runningRows = this.buildRunningRows(taskId, kind, targets)
+      this.tableRows = [...runningRows, ...this.tableRows.filter(r => !r.isRunning)]
+      this.pollProgressInline()
+    },
+    updateRunningRowsFromProgress(apiTargets, done, total) {
+      if (!this.progressTaskId) return
+      this.tableRows = this.tableRows.map(row => {
+        if (!row.isRunning || row.taskId !== this.progressTaskId) return row
+        const pt = (apiTargets || []).find(t => (t.host || t.targetIp) === row.targetIp)
+        const updates = {
+          progressDone: done,
+          progressTotal: total,
+          progressText: `${done}/${total}`
+        }
+        if (pt) {
+          const status = pt.status || (pt.error ? 'failed' : 'completed')
+          updates.runStatus = status
+          updates.runStatusLabel = this.runStatusLabel(status)
+          updates.runMessage = pt.message || pt.error || ''
+        } else if (done < total) {
+          updates.runStatus = 'running'
+          updates.runStatusLabel = '执行中'
+        }
+        return { ...row, ...updates }
+      })
+    },
+    async pollProgressInline() {
+      if (!this.progressTaskId) return
       try {
-        const res = await security.getBaselineBatchProgress({ taskId: this.progressTaskId })
-        if (res.code === 200 && res.data) {
-          const d = res.data
-          this.progressTargets = d.targets || []
-          const total = d.totalTargets || 1
-          const done = d.completedTargets || 0
-          this.progressPercent = Math.round((done / total) * 100)
-          this.progressText = `进度：${done}/${total} 个目标完成`
-          if (d.status === 'completed') {
-            this.progressDone = true
-            this.progressPercent = 100
-            this.progressText = `全部完成（${total} 个目标）`
-            this.formData.page = 1
-            this.currentpage = 1
-            this.loadData()
-            return
+        let completed = false
+        if (this.progressPollType === 'baseline') {
+          const res = await security.getBaselineBatchProgress({ taskId: this.progressTaskId })
+          if (res.code === 200 && res.data) {
+            const d = res.data
+            this.updateRunningRowsFromProgress(d.targets, d.completedTargets || 0, d.totalTargets || 1)
+            completed = d.status === 'completed'
+          }
+        } else if (this.progressPollType === 'cve') {
+          const res = await security.getCveBatchProgress({ taskId: this.progressTaskId })
+          if (res.code === 200 && res.data) {
+            const d = res.data
+            const targets = (d.results || []).map(r => ({
+              host: r.targetIp,
+              status: r.error ? 'failed' : 'completed',
+              error: r.error
+            }))
+            this.updateRunningRowsFromProgress(targets, d.progress || 0, d.total || 1)
+            completed = d.status === 'completed'
+          }
+        } else if (this.progressPollType === 'yara') {
+          const res = await security.getYaraBatchProgress({ taskId: this.progressTaskId })
+          if (res.code === 200 && res.data) {
+            const d = res.data
+            const targets = (d.results || []).map(r => ({
+              host: r.targetIp,
+              status: r.error ? 'failed' : 'completed',
+              error: r.error
+            }))
+            this.updateRunningRowsFromProgress(targets, d.progress || 0, d.total || 1)
+            completed = d.status === 'completed'
           }
         }
-      } catch (e) {
-        console.error('pollProgress error:', e)
-      }
-      this.progressTimer = setTimeout(() => this.pollProgress(), 2000)
-    },
-    startCveProgressPolling(taskId) {
-      this.progressTaskId = taskId
-      this.progressTargets = []
-      this.progressPercent = 0
-      this.progressText = 'CVE 漏洞扫描任务已创建，正在后台执行…'
-      this.progressDone = false
-      this.progressVisible = true
-      this.pollCveProgress()
-    },
-    async pollCveProgress() {
-      if (!this.progressVisible || !this.progressTaskId) return
-      try {
-        const res = await security.getCveBatchProgress({ taskId: this.progressTaskId })
-        if (res.code === 200 && res.data) {
-          const d = res.data
-          this.progressTargets = (d.results || []).map(r => ({
-            host: r.targetIp,
-            status: r.error ? 'failed' : 'completed'
-          }))
-          const total = d.total || 1
-          const done = d.progress || 0
-          this.progressPercent = Math.round((done / total) * 100)
-          this.progressText = `进度：${done}/${total} 个目标完成`
-          if (d.status === 'completed') {
-            this.progressDone = true
-            this.progressPercent = 100
-            this.progressText = `全部完成（${total} 个目标）`
-            this.formData.page = 1
-            this.currentpage = 1
-            this.loadData()
-            return
-          }
+        if (completed) {
+          this.finishProgressPoll()
+          return
         }
       } catch (e) {
-        console.error('pollCveProgress error:', e)
+        console.error('pollProgressInline error:', e)
       }
-      this.progressTimer = setTimeout(() => this.pollCveProgress(), 2000)
+      this.progressTimer = setTimeout(() => this.pollProgressInline(), 2000)
     },
-    startYaraProgressPolling(taskId) {
-      this.progressTaskId = taskId
-      this.progressTargets = []
-      this.progressPercent = 0
-      this.progressText = 'YARA 恶意代码检测任务已创建，正在后台执行…'
-      this.progressDone = false
-      this.progressVisible = true
-      this.pollYaraProgress()
+    finishProgressPoll() {
+      this.stopProgressPoll()
+      this.progressTaskId = 0
+      this.progressPollType = ''
+      this.tableRows = this.tableRows.filter(r => !r.isRunning)
+      this.formData.page = 1
+      this.currentpage = 1
+      this.loadData()
     },
-    async pollYaraProgress() {
-      if (!this.progressVisible || !this.progressTaskId) return
-      try {
-        const res = await security.getYaraBatchProgress({ taskId: this.progressTaskId })
-        if (res.code === 200 && res.data) {
-          const d = res.data
-          this.progressTargets = (d.results || []).map(r => ({
-            host: r.targetIp,
-            status: r.error ? 'failed' : 'completed'
-          }))
-          const total = d.total || 1
-          const done = d.progress || 0
-          this.progressPercent = Math.round((done / total) * 100)
-          this.progressText = `进度：${done}/${total} 个目标完成`
-          if (d.status === 'completed') {
-            this.progressDone = true
-            this.progressPercent = 100
-            this.progressText = `全部完成（${total} 个目标）`
-            this.formData.page = 1
-            this.currentpage = 1
-            this.loadData()
-            return
-          }
-        }
-      } catch (e) {
-        console.error('pollYaraProgress error:', e)
+    stopProgressPoll() {
+      if (this.progressTimer) {
+        clearTimeout(this.progressTimer)
+        this.progressTimer = null
       }
-      this.progressTimer = setTimeout(() => this.pollYaraProgress(), 2000)
     },
-    progressTagType(status) {
+    runStatusTagType(status) {
       if (status === 'completed') return 'success'
       if (status === 'failed') return 'danger'
       if (status === 'running') return 'warning'
       return 'info'
     },
-    progressTagLabel(status) {
+    runStatusLabel(status) {
       if (status === 'completed') return '已完成'
-      if (status === 'failed') return '失败'
+      if (status === 'failed') return '执行失败'
       if (status === 'running') return '执行中'
       return '等待中'
-    },
-    onProgressDone() {
-      this.progressVisible = false
-      if (this.progressTimer) {
-        clearTimeout(this.progressTimer)
-        this.progressTimer = null
-      }
     },
     openDetailPage(row) {
       this.$router.push({
@@ -745,9 +944,82 @@ export default {
         query: {
           taskId: row.taskId,
           kindLabel: row.kindLabel || '安全配置核查',
-          checkTime: row.checkTime || ''
+          checkTime: row.checkTime || '',
+          source: row.source || (row.scanScene === 2 ? 'vuln' : row.source === 'malware' ? 'malware' : 'baseline')
         }
       })
+    },
+    rowSummary(row) {
+      if (row.source === 'vuln') {
+        if (row.scanStatus === 2) return `扫描异常：${row.errorMessage || '未知错误'}`
+        return `包 ${row.packages || 0} · 漏洞 ${row.matchedVulns || 0} · 严重 ${row.critical || 0} / 高危 ${row.high || 0}`
+      }
+      if (row.source === 'malware') {
+        if (row.scanStatus === 2) return `扫描异常：${row.errorMessage || '未知错误'}`
+        return `发现 ${row.totalFindings || 0} 项 · 严重 ${row.critical || 0} / 高危 ${row.high || 0}`
+      }
+      return `检查 ${row.totalRules || 0} · 通过 ${row.passCount || 0} / 不通过 ${row.failCount || 0}`
+    },
+    taskRowKey(row) {
+      return `${row.source}-${row.taskId}-${row.targetIp || ''}-${row.scanScene || 0}`
+    },
+    onSelectionChange(rows) {
+      this.selectedRows = rows || []
+    },
+    toDeleteItem(row) {
+      return {
+        source: row.source,
+        taskId: row.taskId,
+        targetIp: row.targetIp || '',
+        scanScene: row.scanScene || (row.source === 'vuln' ? 2 : row.source === 'baseline' ? 1 : 0)
+      }
+    },
+    async deleteTask(row) {
+      try {
+        await this.$confirm(
+          `确定删除「${row.kindLabel}」任务记录吗？\n目标：${row.targetIp || '-'} · #${row.taskId}`,
+          '删除确认',
+          { type: 'warning' }
+        )
+      } catch {
+        return
+      }
+      await this.doDeleteTasks([row])
+    },
+    async batchDeleteTasks() {
+      if (!this.selectedRows.length) return
+      try {
+        await this.$confirm(
+          `确定删除选中的 ${this.selectedRows.length} 条任务记录吗？此操作不可恢复。`,
+          '批量删除确认',
+          { type: 'warning' }
+        )
+      } catch {
+        return
+      }
+      await this.doDeleteTasks(this.selectedRows)
+    },
+    async doDeleteTasks(rows) {
+      this.batchDeleteLoading = true
+      try {
+        const res = await security.deleteHostSecTasks({
+          items: rows.map(r => this.toDeleteItem(r))
+        })
+        if (res.code === 200) {
+          this.$message({ message: `已删除 ${(res.data && res.data.deleted) || rows.length} 条记录`, type: 'success' })
+          this.selectedRows = []
+          if (this.$refs.taskTable) {
+            this.$refs.taskTable.clearSelection()
+          }
+          this.loadData()
+        } else {
+          this.$message({ message: res.msg || '删除失败', type: 'error' })
+        }
+      } catch (e) {
+        this.$message({ message: e.message || '删除失败', type: 'error' })
+      } finally {
+        this.batchDeleteLoading = false
+      }
     },
     async openDetail(row) {
       this.detailVisible = true
@@ -784,6 +1056,7 @@ export default {
 
 <style lang="less" scoped>
 @import '../bas/css/bas-list-page.less';
+@import './css/appsec-tokens.less';
 
 .page-intro {
   color: #94a3b8;
@@ -795,6 +1068,21 @@ export default {
 
 .hub-tabs {
   margin-bottom: 12px;
+}
+
+.hub-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+::v-deep .hub-task-table {
+  min-width: 100%;
+
+  .el-table__body,
+  .el-table__header {
+    table-layout: fixed;
+    width: 100% !important;
+  }
 }
 
 .merge-hint {
@@ -864,36 +1152,24 @@ export default {
   margin: 0;
 }
 
-.progress-body {
-  padding: 8px 0;
-}
-
-.progress-summary {
-  margin-bottom: 20px;
-  text-align: center;
-}
-
-.progress-text {
-  margin-top: 10px;
-  font-size: 14px;
-  color: #94a3b8;
-}
-
-.progress-target-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-}
-
-.progress-target-row:last-child {
-  border-bottom: none;
-}
-
-.progress-target-host {
-  font-size: 13px;
+.inline-progress {
+  font-variant-numeric: tabular-nums;
   color: #e2e8f0;
+  font-size: 13px;
+
+  &.done {
+    color: rgba(148, 163, 184, 0.5);
+  }
+}
+
+.run-hint {
+  font-size: 12px;
+  color: rgba(148, 163, 184, 0.75);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  max-width: 110px;
 }
 
 .targets-empty {
@@ -994,5 +1270,99 @@ export default {
 
 ::v-deep .el-table--enable-row-hover .el-table__body tr:hover > td {
   background-color: rgba(0, 212, 170, 0.08) !important;
+}
+
+::v-deep .host-target-dialog {
+  .el-dialog__body {
+    padding: 8px 24px 4px;
+  }
+}
+
+.host-target-form {
+  .form-section {
+    margin-bottom: 18px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+
+    &:last-of-type {
+      border-bottom: none;
+      margin-bottom: 8px;
+    }
+  }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #00d4aa;
+    margin-bottom: 12px;
+  }
+
+  .form-tip {
+    font-size: 12px;
+    color: #64748b;
+    margin: -4px 0 12px;
+    line-height: 1.5;
+  }
+
+  .switch-hint {
+    margin-left: 8px;
+    font-size: 12px;
+    color: #64748b;
+  }
+
+  ::v-deep .el-form-item__label {
+    color: #cbd5e1;
+    font-weight: 600;
+    line-height: 1.4;
+    padding-bottom: 6px;
+  }
+
+  ::v-deep .el-form-item {
+    margin-bottom: 14px;
+  }
+
+  ::v-deep .el-textarea__inner {
+    font-family: Consolas, 'Courier New', monospace;
+    font-size: 12px;
+  }
+}
+
+.conn-test-result {
+  padding: 10px 12px;
+  border-radius: @appsec-radius-sm;
+  font-size: 13px;
+  line-height: 1.5;
+
+  .result-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  &.ok {
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    color: #6ee7b7;
+  }
+
+  &.fail {
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #fca5a5;
+  }
+
+  .result-detail {
+    padding-left: 20px;
+    font-size: 12px;
+    opacity: 0.9;
+    word-break: break-all;
+    font-family: Consolas, 'Courier New', monospace;
+  }
+}
+
+.host-target-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 </style>

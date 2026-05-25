@@ -44,6 +44,78 @@ func (m *HostBaselineRule) ListAll(ctx context.Context) ([]HostBaselineRule, err
 	return list, err
 }
 
+// HostBaselineRuleSummary 列表摘要（不含 commands_json / fix_suggestion / risk_description 等大字段）
+type HostBaselineRuleSummary struct {
+	ID            int    `gorm:"column:id"`
+	Name          string `gorm:"column:name"`
+	Description   string `gorm:"column:description"`
+	Category      int    `gorm:"column:category"`
+	Risk          int    `gorm:"column:risk"`
+	OSType        int    `gorm:"column:os_type"`
+	ExpectedValue string `gorm:"column:expected_value"`
+	MatchType     string `gorm:"column:match_type"`
+	Enabled       int    `gorm:"column:enabled"`
+}
+
+// ListSummary 返回规则摘要列表，按 id 降序
+func (m *HostBaselineRule) ListSummary(ctx context.Context) ([]HostBaselineRuleSummary, error) {
+	var list []HostBaselineRuleSummary
+	err := mysql.FromContext(ctx).Model(m).
+		Select("id, name, description, category, risk, os_type, expected_value, match_type, enabled").
+		Order("id desc").
+		Find(&list).Error
+	return list, err
+}
+
+// CountAll 返回规则总数（含已停用）
+func (m *HostBaselineRule) CountAll(ctx context.Context) (int64, error) {
+	var count int64
+	err := mysql.FromContext(ctx).Model(m).Count(&count).Error
+	return count, err
+}
+
+// CountByOSType 按操作系统分组统计
+func (m *HostBaselineRule) CountByOSType(ctx context.Context) (map[int]int, error) {
+	type row struct {
+		OSType int `gorm:"column:os_type"`
+		Count  int `gorm:"column:cnt"`
+	}
+	var rows []row
+	err := mysql.FromContext(ctx).Model(m).
+		Select("os_type, COUNT(*) AS cnt").
+		Group("os_type").
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[int]int, len(rows))
+	for _, r := range rows {
+		out[r.OSType] = r.Count
+	}
+	return out, nil
+}
+
+// CountByCategory 按核查分类分组统计
+func (m *HostBaselineRule) CountByCategory(ctx context.Context) (map[int]int, error) {
+	type row struct {
+		Category int `gorm:"column:category"`
+		Count    int `gorm:"column:cnt"`
+	}
+	var rows []row
+	err := mysql.FromContext(ctx).Model(m).
+		Select("category, COUNT(*) AS cnt").
+		Group("category").
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[int]int, len(rows))
+	for _, r := range rows {
+		out[r.Category] = r.Count
+	}
+	return out, nil
+}
+
 // GetByID 根据主键获取单条规则
 func (m *HostBaselineRule) GetByID(ctx context.Context, id int) (*HostBaselineRule, error) {
 	var rule HostBaselineRule

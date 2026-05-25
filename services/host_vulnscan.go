@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"smart/models/mysqls"
 	"smart/tools/enums"
 	"strings"
 	"sync"
@@ -266,4 +267,69 @@ func cleanVersion(version string) string {
 		version = version[:idx]
 	}
 	return strings.TrimRight(version, ". ")
+}
+
+// PersistHostVulnScanResults 将 CVE 扫描结果写入 host_vuln_scan / host_vuln_finding。
+func PersistHostVulnScanResults(ctx context.Context, report *VulnScanReport, scanErr error) error {
+	if report == nil {
+		return fmt.Errorf("report is nil")
+	}
+
+	var scanModel mysqls.HostVulnScan
+	var findingModel mysqls.HostVulnFinding
+	if err := findingModel.DeleteByTaskTarget(ctx, report.TaskID, report.TargetIP); err != nil {
+		return err
+	}
+
+	now := time.Now()
+	if !report.EndTime.IsZero() {
+		now = report.EndTime
+	}
+
+	row := &mysqls.HostVulnScan{
+		TaskID:       report.TaskID,
+		TargetID:     report.TargetID,
+		TargetIP:     report.TargetIP,
+		OSType:       report.OSType,
+		Packages:     report.Packages,
+		MatchedVulns: report.MatchedVulns,
+		Critical:     report.CriticalCount,
+		High:         report.HighCount,
+		Medium:       report.MediumCount,
+		Low:          report.LowCount,
+		ScanStatus:   mysqls.HostVulnScanStatusOK,
+		CreateTime:   now,
+	}
+
+	if scanErr != nil {
+		row.ScanStatus = mysqls.HostVulnScanStatusError
+		row.ErrorMessage = truncateBaselineField(scanErr.Error())
+		return scanModel.Save(ctx, row)
+	}
+
+	worst := 0
+	findings := make([]mysqls.HostVulnFinding, 0, len(report.Results))
+	for _, r := range report.Results {
+		if r.RiskLevel > worst {
+			worst = r.RiskLevel
+		}
+		findings = append(findings, mysqls.HostVulnFinding{
+			TaskID:         report.TaskID,
+			TargetID:       report.TargetID,
+			TargetIP:       report.TargetIP,
+			CveID:          r.Cve,
+			Title:          r.Title,
+			Severity:       r.Severity,
+			RiskLevel:      r.RiskLevel,
+			PackageName:    r.PackageName,
+			PackageVersion: r.PackageVersion,
+			CreateTime:     now,
+		})
+	}
+	row.WorstRiskLevel = worst
+
+	if err := scanModel.Save(ctx, row); err != nil {
+		return err
+	}
+	return findingModel.BatchAdd(ctx, findings)
 }

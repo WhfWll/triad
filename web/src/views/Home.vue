@@ -7,7 +7,7 @@
             <path d="M24 4L8 12v10c0 12 7 22 16 24 9-2 16-12 16-24V12L24 4z" fill="none" stroke="#00d4aa" stroke-width="2.5"/>
             <path d="M18 24l4 4 8-8" fill="none" stroke="#00d4aa" stroke-width="2.5" stroke-linecap="round"/>
           </svg>
-          <span class="logo-text" v-show="!isCollapsed">SecGuard</span>
+          <span class="logo-text" v-show="!isCollapsed">{{ productName }}</span>
         </div>
       </div>
 
@@ -154,11 +154,13 @@
 <script>
 import store from '@/store'
 import { system } from '@/api/system.js'
+import { PRODUCT_NAME } from '@/config/product.js'
 
 export default {
   name: 'Home',
   data() {
     return {
+      productName: PRODUCT_NAME,
       isCollapsed: false,
       navselected: '/index',
       sysUserName: '',
@@ -194,6 +196,7 @@ export default {
         '/logicvuln': '逻辑漏洞',
         '/taskgroup': '任务组',
         '/hostsec/tasks': '主机安全 · 任务管理',
+        '/hostsec/task-detail': '主机安全 · 任务详情',
         '/hostsec/rules': '主机安全 · 配置核查规则',
         '/hostsec/vuln-rules': '主机安全 · 漏洞扫描规则',
         '/hostsec/malware-rules': '主机安全 · 病毒库规则',

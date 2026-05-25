@@ -435,16 +435,19 @@ func RegisterRoute() *gin.Engine {
 
 	// 安全检查 - 安全配置核查
 	smartRouterGroup.POST("/baseline/check", rest.BaselineCheckRun)                   // 安全配置核查 - 执行主机基线检查（单目标）
+	smartRouterGroup.POST("/baseline/test-conn", rest.BaselineTestConn)               // 主机远程连接测试（SSH/WinRM）
 	smartRouterGroup.POST("/baseline/check/batch", rest.BaselineBatchCheckRun)        // 安全配置核查 - 批量多目标核查（异步）
 	smartRouterGroup.GET("/baseline/check/progress", rest.BaselineBatchCheckProgress) // 安全配置核查 - 批量任务进度
 	smartRouterGroup.GET("/baseline/result", rest.BaselineCheckResultList)            // 安全配置核查 - 检查结果列表
 	smartRouterGroup.GET("/baseline/stat", rest.BaselineCheckStat)                    // 安全配置核查 - 检查统计
 	smartRouterGroup.GET("/baseline/tasks", rest.BaselineTaskList)                    // 安全配置核查 - 核查批次列表
+	smartRouterGroup.POST("/hostsec/tasks/delete", rest.HostSecTaskDelete)             // 主机安全检查 - 删除任务记录（支持批量）
 	smartRouterGroup.GET("/baseline/task/targets", rest.BaselineTaskTargets)          // 安全配置核查 - 任务目标列表
 	smartRouterGroup.GET("/baseline/rules", rest.BaselineRulesList)                   // 安全配置核查 - 规则列表
 	smartRouterGroup.POST("/baseline/rules/reload", rest.BaselineRulesReload)         // 安全配置核查 - 从库重载规则（导入 host_baseline_rule 后调用）
 	smartRouterGroup.POST("/baseline/rules/import", rest.BaselineRulesImport)         // 安全配置核查 - 导入规则（JSON格式）
 	smartRouterGroup.GET("/baseline/rules/db", rest.BaselineRulesListFromDB)          // 安全配置核查 - 从数据库获取规则列表
+	smartRouterGroup.GET("/baseline/rules/stats", rest.BaselineRulesStats)          // 安全配置核查 - 规则库统计（轻量）
 	smartRouterGroup.GET("/baseline/rule/detail", rest.BaselineRuleDetail)            // 安全配置核查 - 规则详情
 	smartRouterGroup.POST("/baseline/rule/create", rest.BaselineRuleCreate)           // 安全配置核查 - 新增规则
 	smartRouterGroup.POST("/baseline/rule/update", rest.BaselineRuleUpdate)           // 安全配置核查 - 编辑规则
@@ -453,6 +456,10 @@ func RegisterRoute() *gin.Engine {
 	smartRouterGroup.POST("/vulnscan/cve/run", rest.VulnScanCveRun)          // CVE漏洞扫描 - 单目标执行
 	smartRouterGroup.POST("/vulnscan/cve/batch", rest.VulnScanCveBatchRun)   // CVE漏洞扫描 - 批量多目标（异步）
 	smartRouterGroup.GET("/vulnscan/cve/progress", rest.VulnScanCveProgress) // CVE漏洞扫描 - 批量任务进度
+	smartRouterGroup.GET("/vulnscan/cve/tasks", rest.VulnScanCveTaskList)  // CVE漏洞扫描 - 任务列表
+	smartRouterGroup.GET("/vulnscan/cve/stat", rest.VulnScanCveStat)         // CVE漏洞扫描 - 任务统计
+	smartRouterGroup.GET("/vulnscan/cve/targets", rest.VulnScanCveTargets)  // CVE漏洞扫描 - 任务目标
+	smartRouterGroup.GET("/vulnscan/cve/findings", rest.VulnScanCveFindings) // CVE漏洞扫描 - 漏洞明细
 	// 安全检查 - 恶意代码检测
 	smartRouterGroup.POST("/malware/scan", rest.MalwareScanRun)      // 恶意代码检测 - 执行扫描
 	smartRouterGroup.GET("/malware/result", rest.MalwareResultList)  // 恶意代码检测 - 扫描结果
@@ -463,6 +470,8 @@ func RegisterRoute() *gin.Engine {
 	smartRouterGroup.GET("/malware/yara/progress", rest.MalwareYaraProgress) // YARA恶意代码检测 - 批量任务进度
 	smartRouterGroup.GET("/malware/yara/result", rest.MalwareYaraResultList) // YARA恶意代码检测 - 扫描结果
 	smartRouterGroup.GET("/malware/yara/tasks", rest.MalwareYaraTaskList)    // YARA恶意代码检测 - 按批次聚合列表
+	smartRouterGroup.GET("/malware/yara/stat", rest.MalwareYaraStat)         // YARA恶意代码检测 - 任务统计
+	smartRouterGroup.GET("/malware/yara/targets", rest.MalwareYaraTargets)  // YARA恶意代码检测 - 任务目标
 	// 安全检查 - 病毒库规则管理
 	smartRouterGroup.POST("/malware/rule/create", rest.MalwareRuleCreate) // 病毒库规则 - 新增
 	smartRouterGroup.POST("/malware/rule/update", rest.MalwareRuleUpdate) // 病毒库规则 - 编辑
@@ -512,6 +521,7 @@ func RegisterRoute() *gin.Engine {
 	smartRouterGroup.POST("/datasec/target/batch-test-conn", rest.DataSecDBTargetBatchTestConn) // 目标库批量连接测试
 	// 数据安全 - 检测规则库
 	smartRouterGroup.GET("/datasec/rules", rest.DataSecRulesList)                        // 规则列表与统计
+	smartRouterGroup.GET("/datasec/rules/stats", rest.DataSecRulesStats)                // 规则库统计（轻量）
 	smartRouterGroup.POST("/datasec/rules/reload", rest.DataSecRulesReload)            // 从库重载规则
 	smartRouterGroup.POST("/datasec/rules/import", rest.DataSecRulesImport)             // JSON 导入规则
 	smartRouterGroup.POST("/datasec/rules/import-builtin", rest.DataSecRulesImportBuiltin) // 导入内置规则到库

@@ -18,6 +18,12 @@ func DataSecRulesList(c *gin.Context) {
 	server.RespSuccess(c, app.GetRulesFromDB(ctx))
 }
 
+func DataSecRulesStats(c *gin.Context) {
+	ctx := server.NewContext(context.Background(), c)
+	var app application.DataSecRuleApp
+	server.RespSuccess(c, app.GetRulesStatsFromDB(ctx))
+}
+
 func DataSecRulesReload(c *gin.Context) {
 	ctx := server.NewContext(context.Background(), c)
 	var app application.DataSecRuleApp

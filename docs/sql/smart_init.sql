@@ -1241,8 +1241,8 @@ CREATE TABLE IF NOT EXISTS `baseline_check_result` (
   `rule_category` int(11) NOT NULL DEFAULT '0' COMMENT '规则分类',
   `rule_risk` int(11) NOT NULL DEFAULT '0' COMMENT '规则风险',
   `check_result` int(11) NOT NULL DEFAULT '0' COMMENT '检查结果',
-  `expected_value` varchar(512) NOT NULL DEFAULT '' COMMENT '期望值',
-  `actual_value` varchar(512) NOT NULL DEFAULT '' COMMENT '实际值',
+  `expected_value` text COMMENT '期望值',
+  `actual_value` text COMMENT '实际值',
   `check_command` text COMMENT '检查命令',
   `fix_suggestion` text COMMENT '修复建议',
   `risk_description` text COMMENT '风险描述',
@@ -1400,4 +1400,64 @@ CREATE TABLE IF NOT EXISTS `datasec_db_target` (
   KEY `idx_user_db_type` (`user_id`, `db_type`),
   KEY `idx_user_group` (`user_id`, `group_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='数据安全-数据库扫描目标库';
+
+-- 主机 CVE 漏洞扫描（与 baseline_check_result scan_scene=2 分离）
+CREATE TABLE IF NOT EXISTS `host_vuln_scan` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `task_id` int(11) NOT NULL DEFAULT '0' COMMENT '任务批次',
+  `target_id` int(11) NOT NULL DEFAULT '0' COMMENT '目标序号',
+  `target_ip` varchar(64) NOT NULL DEFAULT '' COMMENT '目标 IP',
+  `os_type` int(11) NOT NULL DEFAULT '0' COMMENT '操作系统类型',
+  `packages` int(11) NOT NULL DEFAULT '0' COMMENT '扫描软件包数',
+  `matched_vulns` int(11) NOT NULL DEFAULT '0' COMMENT '匹配 CVE 数',
+  `critical` int(11) NOT NULL DEFAULT '0' COMMENT '严重',
+  `high` int(11) NOT NULL DEFAULT '0' COMMENT '高危',
+  `medium` int(11) NOT NULL DEFAULT '0' COMMENT '中危',
+  `low` int(11) NOT NULL DEFAULT '0' COMMENT '低危',
+  `worst_risk_level` int(11) NOT NULL DEFAULT '0' COMMENT '最高风险等级',
+  `scan_status` int(11) NOT NULL DEFAULT '1' COMMENT '1=完成 2=异常',
+  `error_message` text COMMENT '扫描失败原因',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '扫描时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_task_target` (`task_id`, `target_ip`),
+  KEY `idx_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='主机 CVE 漏洞扫描任务汇总';
+
+CREATE TABLE IF NOT EXISTS `host_vuln_finding` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `task_id` int(11) NOT NULL DEFAULT '0' COMMENT '任务批次',
+  `target_id` int(11) NOT NULL DEFAULT '0' COMMENT '目标序号',
+  `target_ip` varchar(64) NOT NULL DEFAULT '' COMMENT '目标 IP',
+  `cve_id` varchar(32) NOT NULL DEFAULT '' COMMENT 'CVE 编号',
+  `title` varchar(512) NOT NULL DEFAULT '' COMMENT '漏洞标题',
+  `severity` varchar(32) NOT NULL DEFAULT '' COMMENT '严重程度文本',
+  `risk_level` int(11) NOT NULL DEFAULT '0' COMMENT '风险等级',
+  `package_name` varchar(255) NOT NULL DEFAULT '' COMMENT '影响软件包',
+  `package_version` varchar(128) NOT NULL DEFAULT '' COMMENT '软件包版本',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '发现时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_task_target` (`task_id`, `target_ip`),
+  KEY `idx_cve` (`cve_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='主机 CVE 漏洞发现明细';
+
+-- 主机 YARA 恶意代码扫描汇总（与 malware_check_result 明细分离，0 发现也可见）
+CREATE TABLE IF NOT EXISTS `host_malware_scan` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `task_id` int(11) NOT NULL DEFAULT '0' COMMENT '任务批次',
+  `target_id` int(11) NOT NULL DEFAULT '0' COMMENT '目标序号',
+  `target_ip` varchar(64) NOT NULL DEFAULT '' COMMENT '目标 IP',
+  `os_type` int(11) NOT NULL DEFAULT '0' COMMENT '操作系统类型',
+  `total_findings` int(11) NOT NULL DEFAULT '0' COMMENT '发现项数',
+  `critical` int(11) NOT NULL DEFAULT '0' COMMENT '严重',
+  `high` int(11) NOT NULL DEFAULT '0' COMMENT '高危',
+  `medium` int(11) NOT NULL DEFAULT '0' COMMENT '中危',
+  `low` int(11) NOT NULL DEFAULT '0' COMMENT '低危',
+  `worst_risk_level` int(11) NOT NULL DEFAULT '0' COMMENT '最高风险等级',
+  `scan_status` int(11) NOT NULL DEFAULT '1' COMMENT '1=完成 2=异常',
+  `error_message` text COMMENT '扫描失败原因',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '扫描时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_task_target` (`task_id`, `target_ip`),
+  KEY `idx_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='主机 YARA 恶意代码扫描任务汇总';
 
