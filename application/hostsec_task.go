@@ -33,6 +33,7 @@ func (a *BaselineApp) DeleteHostSecTasks(ctx context.Context, req *typespec.Host
 			if item.TargetIP == "" {
 				return nil, fmt.Errorf("targetIp required for malware delete")
 			}
+			markYaraBatchTargetDeleted(item.TaskID, item.TargetIP)
 			var scanModel mysqls.HostMalwareScan
 			if err := scanModel.DeleteByTaskTarget(ctx, item.TaskID, item.TargetIP); err != nil {
 				return nil, err

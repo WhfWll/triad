@@ -256,6 +256,9 @@ const security = {
   importMalwareRules: (data) => {
     return axios.postFormData('/smart/malware/rule/import', data)
   },
+  reloadMalwareRules: () => {
+    return axios.postJson('/smart/malware/rules/reload', {})
+  },
 
   // CVE漏洞库查询 (后端路由: /smart/cvedb/*)
   getCveDBInfo: (params) => {

@@ -207,8 +207,18 @@
           <el-table-column prop="checkTypeName" label="检测类型" width="110" />
           <el-table-column prop="matchRule" label="匹配规则" min-width="160" :show-overflow-tooltip="true" />
           <el-table-column prop="riskName" label="风险" width="80" />
-          <el-table-column prop="filePath" label="文件路径" min-width="160" :show-overflow-tooltip="true" />
-          <el-table-column prop="processInfo" label="进程信息" min-width="140" :show-overflow-tooltip="true" />
+          <el-table-column label="文件路径" min-width="160" :show-overflow-tooltip="true">
+            <template slot-scope="scope">
+              <span v-if="scope.row.filePath">{{ scope.row.filePath }}</span>
+              <span v-else class="text-muted">-</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="进程信息" min-width="140" :show-overflow-tooltip="true">
+            <template slot-scope="scope">
+              <span v-if="scope.row.processInfo">{{ scope.row.processInfo }}</span>
+              <span v-else class="text-muted">-</span>
+            </template>
+          </el-table-column>
           <el-table-column label="操作" width="72" align="right">
             <template slot-scope="scope">
               <el-link :underline="false" class="link_primary" @click="openItemDetail(scope.row)">详情</el-link>
@@ -387,7 +397,7 @@
               <el-table-column prop="high" label="高危" width="72" />
             </template>
             <el-table-column prop="logCount" label="日志条数" width="96" />
-            <el-table-column label="操作" width="88" align="right">
+            <el-table-column label="操作" width="120" align="right">
               <template slot-scope="scope">
                 <el-link :underline="false" class="link_primary" @click="openTargetLogDetail(scope.row)">日志详情</el-link>
               </template>

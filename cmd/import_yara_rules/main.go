@@ -101,27 +101,129 @@ func extractRules(text string) []ruleInfo {
 	text = stripComments(text)
 
 	var rules []ruleInfo
-	re := regexp.MustCompile(`(?s)((?:private\s+)?rule\s+(\w+)\s*(?::\s*[\w_]+\s*)?\{.*?\})`)
-	matches := re.FindAllStringSubmatch(text, -1)
-
 	metaRe := regexp.MustCompile(`(?m)^\s*description\s*=\s*"([^"]*)"`)
 
-	for _, m := range matches {
-		fullRule := m[1]
-		ruleName := m[2]
+	pos := 0
+	for pos < len(text) {
+		// 跳过空白和无关行
+		trimPos := strings.IndexFunc(text[pos:], func(r rune) bool { return r != ' ' && r != '\t' && r != '\n' && r != '\r' })
+		if trimPos < 0 {
+			break
+		}
+		pos += trimPos
+
+		remaining := text[pos:]
+
+		// 跳过 include 指令
+		if strings.HasPrefix(remaining, "include") {
+			nl := strings.Index(remaining, "\n")
+			if nl < 0 {
+				break
+			}
+			pos += nl + 1
+			continue
+		}
+
+		// 检查是否为 rule 定义
+		rulePrefix := "rule "
+		privatePrefix := "private "
+		isPrivate := false
+		if strings.HasPrefix(remaining, privatePrefix) {
+			isPrivate = true
+			remaining = remaining[len(privatePrefix):]
+			pos += len(privatePrefix)
+		}
+
+		if !strings.HasPrefix(remaining, rulePrefix) {
+			// 不是 rule，跳到下一行
+			nl := strings.Index(text[pos:], "\n")
+			if nl < 0 {
+				break
+			}
+			pos += nl + 1
+			continue
+		}
+		ruleNameStart := pos
+		pos += len(rulePrefix) // 跳过 "rule "
+
+		// 提取规则名：直到遇到空格/换行/tab/:/{
+		nameStart := pos
+		for pos < len(text) {
+			ch := text[pos]
+			if ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' || ch == ':' || ch == '{' {
+				break
+			}
+			pos++
+		}
+		ruleName := text[nameStart:pos]
+
+		// 跳过 tags 部分（如果有 : 分隔）
+		for pos < len(text) && (text[pos] == ' ' || text[pos] == '\t') {
+			pos++
+		}
+		if pos < len(text) && text[pos] == ':' {
+			pos++ // 跳过 :
+			// 读取 tags 直到找到 {
+			for pos < len(text) {
+				ch := text[pos]
+				if ch == '{' {
+					break
+				}
+				pos++
+			}
+		}
+
+		// 跳过空白到 {
+		for pos < len(text) && (text[pos] == ' ' || text[pos] == '\t' || text[pos] == '\n' || text[pos] == '\r') {
+			pos++
+		}
+		if pos >= len(text) || text[pos] != '{' {
+			continue
+		}
+
+		// 基于大括号深度找到匹配的 }
+		braceDepth := 0
+		for pos < len(text) {
+			if text[pos] == '{' {
+				braceDepth++
+			} else if text[pos] == '}' {
+				braceDepth--
+				if braceDepth == 0 {
+					pos++ // 包含最后的 }
+					break
+				}
+			}
+			pos++
+		}
+
+		if braceDepth != 0 {
+			// 没有找到匹配的 }，说明文件不完整，跳过
+			break
+		}
+
+		// 提取完整规则文本
+		fullText := text[ruleNameStart:pos]
+		if isPrivate {
+			fullText = "private " + fullText
+		}
 
 		desc := ""
-		metaMatch := metaRe.FindStringSubmatch(fullRule)
+		metaMatch := metaRe.FindStringSubmatch(fullText)
 		if len(metaMatch) >= 2 {
 			desc = metaMatch[1]
+		}
+
+		if len(ruleName) > 200 {
+			ruleName = ruleName[:200]
 		}
 
 		rules = append(rules, ruleInfo{
 			name:        ruleName,
 			description: desc,
-			fullText:    fullRule,
+			fullText:    fullText,
 		})
 	}
+
 	return rules
 }
 

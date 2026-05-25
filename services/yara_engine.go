@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type YaraRule struct {
@@ -68,10 +70,6 @@ func GetYaraEngine() *YaraEngine {
 }
 
 func (e *YaraEngine) LoadRules(rulesDir string) error {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-
-	e.rules = nil
 	var allRules []*YaraRule
 
 	err := filepath.Walk(rulesDir, func(path string, info os.FileInfo, err error) error {
@@ -92,15 +90,13 @@ func (e *YaraEngine) LoadRules(rulesDir string) error {
 		return err
 	}
 
+	e.mu.Lock()
 	e.rules = allRules
+	e.mu.Unlock()
 	return nil
 }
 
 func (e *YaraEngine) LoadRulesFromFiles(files []string) error {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-
-	e.rules = nil
 	var allRules []*YaraRule
 
 	for _, f := range files {
@@ -111,31 +107,52 @@ func (e *YaraEngine) LoadRulesFromFiles(files []string) error {
 		allRules = append(allRules, rules...)
 	}
 
+	e.mu.Lock()
 	e.rules = allRules
+	e.mu.Unlock()
 	return nil
 }
 
 // LoadRulesFromContents 从 YARA 规则文本片段加载（如 malware_rule.rule_content）。
-func (e *YaraEngine) LoadRulesFromContents(contents []string, osTypes []int) error {
-	e.mu.Lock()
-	defer e.mu.Unlock()
+func (e *YaraEngine) LoadRulesFromContents(contents []string, osTypes []int) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic during rule loading: %v", r)
+		}
+	}()
 
-	e.rules = nil
 	var allRules []*YaraRule
+	skipCount := 0
 
 	for i, text := range contents {
-		rules := parseYaraContent(text)
-		osType := 0
-		if i < len(osTypes) {
-			osType = osTypes[i]
-		}
-		for _, rule := range rules {
-			rule.OSType = osType
-			allRules = append(allRules, rule)
-		}
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Warnf("malware YARA rules: skip rule index %d due to panic: %v", i, r)
+					skipCount++
+				}
+			}()
+			rules := parseYaraContent(text)
+			osType := 0
+			if i < len(osTypes) {
+				osType = osTypes[i]
+			}
+			for _, rule := range rules {
+				rule.OSType = osType
+				allRules = append(allRules, rule)
+			}
+		}()
 	}
 
+	e.mu.Lock()
 	e.rules = allRules
+	e.mu.Unlock()
+
+	if skipCount > 0 {
+		log.Warnf("malware YARA rules: loaded %d rules, skipped %d problematic entries", len(allRules), skipCount)
+	} else {
+		log.Infof("malware YARA rules: loaded %d rules from %d contents", len(allRules), len(contents))
+	}
 	return nil
 }
 
@@ -207,6 +224,9 @@ func parseYaraContent(raw string) []*YaraRule {
 		if rule != nil {
 			rules = append(rules, rule)
 		}
+		if remaining == text {
+			break
+		}
 		text = remaining
 	}
 
@@ -268,8 +288,9 @@ func parseOneRule(text string) (*YaraRule, string) {
 	rule.Name = ruleName
 	rest = rest[nameEnd:]
 
+	bracePos := strings.Index(rest, "{")
 	colonIdx := strings.Index(rest, ":")
-	if colonIdx >= 0 {
+	if colonIdx >= 0 && (bracePos < 0 || colonIdx < bracePos) {
 		tagPart := rest[colonIdx+1:]
 		tagEnd := strings.IndexAny(tagPart, " \t\n{")
 		if tagEnd > 0 {

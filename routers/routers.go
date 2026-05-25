@@ -41,52 +41,52 @@ func RegisterRoute() *gin.Engine {
 	smartRouterGroup.POST("/user/loginfreepassf", rest.LoginByGAYS)                                                                               // 用户 - 公安一所免密登录
 
 	// 系统管理
-	smartRouterGroup.GET("/system/authinfo", rest.AuthInfo)                                    // 产品授权 - 查询
-	smartRouterGroup.POST("/system/authsave", rest.AuthSave)                                   // 产品授权 - 授权
-	smartRouterGroup.GET("/system/generateProductID", rest.GenerateProductID)                  // 产品授权 - 生成产品id
-	smartRouterGroup.POST("/system/securities", rest.CreateSystemSecurity)                     // 系统管理 - 创建安全配置
-	smartRouterGroup.GET("/system/initialinfo", rest.SystemSecurityInfo)                       // 系统管理 - 安全配置初始化信息
-	smartRouterGroup.POST("/system/configbackupconfigsave", rest.SystemConfigBackupConfigSave) // 配置备份 - 保存配置
-	smartRouterGroup.GET("/system/configbackupconfiginfo", rest.SystemConfigBackupConfigInfo)  // 配置备份 - 配置信息
-	smartRouterGroup.POST("/system/configbackupnow", rest.SystemConfigBackupNow)               // 配置备份 - 立即备份
-	smartRouterGroup.GET("/system/configbackuplist", rest.SystemConfigBackupList)              // 配置备份 - 列表
-	smartRouterGroup.GET("/system/configbackupdownload", rest.SystemConfigBackupDownload)      // 配置备份 - 下载
-	smartRouterGroup.POST("/system/configbackupdelete", rest.SystemConfigBackupDelete)         // 配置备份 - 删除
-	smartRouterGroup.POST("/system/configbackuprestore", rest.SystemConfigBackupRestore)       // 配置备份 - 恢复
-	smartRouterGroup.POST("/system/ipwhitesave", rest.SystemSettingIpWhiteSave)                // 系统设置 - ip白名单 - 保存
-	smartRouterGroup.GET("/system/ipwhiteinfo", rest.SystemSettingIpWhiteInfo)                 // 系统设置 - ip白名单 - 信息
-	smartRouterGroup.POST("/system/syslogsave", rest.SystemSettingSyslogSave)                  // 系统设置 - syslog服务 - 保存
-	smartRouterGroup.GET("/system/sysloginfo", rest.SystemSettingSyslogInfo)                   // 系统设置 - syslog服务 - 信息
-	smartRouterGroup.POST("/system/mailsave", rest.SystemSettingMailSave)                      // 系统设置 - 邮箱配置 - 保存
-	smartRouterGroup.GET("/system/mailinfo", rest.SystemSettingMailInfo)                       // 系统设置 - 邮箱配置 - 信息
-	smartRouterGroup.POST("/system/mailverify", rest.SystemSettingMailVerify)                  // 系统设置 - 邮箱配置 - 验证
-	smartRouterGroup.POST("/system/networkconfigsave", rest.SystemSettingNetworkConfigSave)    // 系统设置 - 网络配置 - 保存
-	smartRouterGroup.GET("/system/networkconfiginfo", rest.SystemSettingNetworkConfigInfo)     // 系统设置 - 网络配置 - 信息
-	smartRouterGroup.GET("/system/routelist", rest.RouteList)                                  // 系统设置 - 配置路由 - 列表
-	smartRouterGroup.POST("/system/routeadd", rest.RouteAdd)                                   // 系统设置 - 配置路由 - 增加
-	smartRouterGroup.POST("/system/routedelete", rest.RouteDelete)                             // 系统设置 - 配置路由 - 删除
-	smartRouterGroup.GET("/system/monitorwarninfo", rest.SystemSettingMonitorWarnInfo)         // 系统设置 - 系统监控告警 - 信息
-	smartRouterGroup.POST("/system/monitorwarnsave", rest.SystemSettingMonitorWarnSave)        // 系统设置 - 系统监控告警 - 保存
-	smartRouterGroup.POST("/system/targetipsave", rest.TargetIpSave)                           // 业务设置 - 测试目标黑白名单更新
-	smartRouterGroup.GET("/system/targetiplist", rest.TargetIpList)                            // 业务设置 - 测试目标黑白名单查询
-	smartRouterGroup.GET("/system/getreverseiphost", rest.GetReverseIpHost)                    // 业务设置 - 远程监听查询
-	smartRouterGroup.POST("/system/reverseiphostsave", rest.ReverseIpHostSave)                 // 业务设置 - 远程监听修改
-	smartRouterGroup.POST("/system/tcpblindtestsave", rest.BusinessSettingTcpBlindTestSave)    // 业务设置 - tcp盲测平台 - 保存
-	smartRouterGroup.GET("/system/tcpblindtestinfo", rest.BusinessSettingTcpBlindTestInfo)     // 业务设置 - tcp盲测平台 - 信息
-	smartRouterGroup.POST("/system/httpblindtestsave", rest.BusinessSettingHttpBlindTestSave)  // 业务设置 - http盲测平台 - 保存
-	smartRouterGroup.GET("/system/httpblindtestinfo", rest.BusinessSettingHttpBlindTestInfo)   // 业务设置 - http盲测平台 - 信息
-	smartRouterGroup.POST("/system/dnsblindtestsave", rest.BusinessSettingDnsBlindTestSave)    // 业务设置 - dns盲测平台 - 保存
-	smartRouterGroup.GET("/system/dnsblindtestinfo", rest.BusinessSettingDnsBlindTestInfo)     // 业务设置 - dns盲测平台 - 信息
-	smartRouterGroup.POST("/system/icmpblindtestsave", rest.BusinessSettingIcmpBlindTestSave)  // 业务设置 - icmp盲测平台 - 保存
-	smartRouterGroup.GET("/system/icmpblindtestinfo", rest.BusinessSettingIcmpBlindTestInfo)   // 业务设置 - icmp盲测平台 - 信息
-	smartRouterGroup.GET("/system/curtasksinfo", rest.CurTasksInfo)                            // 业务设置 - 任务并发配置 - 信息
-	smartRouterGroup.GET("/system/curtaskssave", rest.CurTasksSave)                            // 业务设置 - 任务并发配置 - 保存
-	smartRouterGroup.GET("/system/securityscanconcurrencyinfo", rest.SecurityScanConcurrencyInfo)   // 安全检查并发配置 - 信息
+	smartRouterGroup.GET("/system/authinfo", rest.AuthInfo)                                        // 产品授权 - 查询
+	smartRouterGroup.POST("/system/authsave", rest.AuthSave)                                       // 产品授权 - 授权
+	smartRouterGroup.GET("/system/generateProductID", rest.GenerateProductID)                      // 产品授权 - 生成产品id
+	smartRouterGroup.POST("/system/securities", rest.CreateSystemSecurity)                         // 系统管理 - 创建安全配置
+	smartRouterGroup.GET("/system/initialinfo", rest.SystemSecurityInfo)                           // 系统管理 - 安全配置初始化信息
+	smartRouterGroup.POST("/system/configbackupconfigsave", rest.SystemConfigBackupConfigSave)     // 配置备份 - 保存配置
+	smartRouterGroup.GET("/system/configbackupconfiginfo", rest.SystemConfigBackupConfigInfo)      // 配置备份 - 配置信息
+	smartRouterGroup.POST("/system/configbackupnow", rest.SystemConfigBackupNow)                   // 配置备份 - 立即备份
+	smartRouterGroup.GET("/system/configbackuplist", rest.SystemConfigBackupList)                  // 配置备份 - 列表
+	smartRouterGroup.GET("/system/configbackupdownload", rest.SystemConfigBackupDownload)          // 配置备份 - 下载
+	smartRouterGroup.POST("/system/configbackupdelete", rest.SystemConfigBackupDelete)             // 配置备份 - 删除
+	smartRouterGroup.POST("/system/configbackuprestore", rest.SystemConfigBackupRestore)           // 配置备份 - 恢复
+	smartRouterGroup.POST("/system/ipwhitesave", rest.SystemSettingIpWhiteSave)                    // 系统设置 - ip白名单 - 保存
+	smartRouterGroup.GET("/system/ipwhiteinfo", rest.SystemSettingIpWhiteInfo)                     // 系统设置 - ip白名单 - 信息
+	smartRouterGroup.POST("/system/syslogsave", rest.SystemSettingSyslogSave)                      // 系统设置 - syslog服务 - 保存
+	smartRouterGroup.GET("/system/sysloginfo", rest.SystemSettingSyslogInfo)                       // 系统设置 - syslog服务 - 信息
+	smartRouterGroup.POST("/system/mailsave", rest.SystemSettingMailSave)                          // 系统设置 - 邮箱配置 - 保存
+	smartRouterGroup.GET("/system/mailinfo", rest.SystemSettingMailInfo)                           // 系统设置 - 邮箱配置 - 信息
+	smartRouterGroup.POST("/system/mailverify", rest.SystemSettingMailVerify)                      // 系统设置 - 邮箱配置 - 验证
+	smartRouterGroup.POST("/system/networkconfigsave", rest.SystemSettingNetworkConfigSave)        // 系统设置 - 网络配置 - 保存
+	smartRouterGroup.GET("/system/networkconfiginfo", rest.SystemSettingNetworkConfigInfo)         // 系统设置 - 网络配置 - 信息
+	smartRouterGroup.GET("/system/routelist", rest.RouteList)                                      // 系统设置 - 配置路由 - 列表
+	smartRouterGroup.POST("/system/routeadd", rest.RouteAdd)                                       // 系统设置 - 配置路由 - 增加
+	smartRouterGroup.POST("/system/routedelete", rest.RouteDelete)                                 // 系统设置 - 配置路由 - 删除
+	smartRouterGroup.GET("/system/monitorwarninfo", rest.SystemSettingMonitorWarnInfo)             // 系统设置 - 系统监控告警 - 信息
+	smartRouterGroup.POST("/system/monitorwarnsave", rest.SystemSettingMonitorWarnSave)            // 系统设置 - 系统监控告警 - 保存
+	smartRouterGroup.POST("/system/targetipsave", rest.TargetIpSave)                               // 业务设置 - 测试目标黑白名单更新
+	smartRouterGroup.GET("/system/targetiplist", rest.TargetIpList)                                // 业务设置 - 测试目标黑白名单查询
+	smartRouterGroup.GET("/system/getreverseiphost", rest.GetReverseIpHost)                        // 业务设置 - 远程监听查询
+	smartRouterGroup.POST("/system/reverseiphostsave", rest.ReverseIpHostSave)                     // 业务设置 - 远程监听修改
+	smartRouterGroup.POST("/system/tcpblindtestsave", rest.BusinessSettingTcpBlindTestSave)        // 业务设置 - tcp盲测平台 - 保存
+	smartRouterGroup.GET("/system/tcpblindtestinfo", rest.BusinessSettingTcpBlindTestInfo)         // 业务设置 - tcp盲测平台 - 信息
+	smartRouterGroup.POST("/system/httpblindtestsave", rest.BusinessSettingHttpBlindTestSave)      // 业务设置 - http盲测平台 - 保存
+	smartRouterGroup.GET("/system/httpblindtestinfo", rest.BusinessSettingHttpBlindTestInfo)       // 业务设置 - http盲测平台 - 信息
+	smartRouterGroup.POST("/system/dnsblindtestsave", rest.BusinessSettingDnsBlindTestSave)        // 业务设置 - dns盲测平台 - 保存
+	smartRouterGroup.GET("/system/dnsblindtestinfo", rest.BusinessSettingDnsBlindTestInfo)         // 业务设置 - dns盲测平台 - 信息
+	smartRouterGroup.POST("/system/icmpblindtestsave", rest.BusinessSettingIcmpBlindTestSave)      // 业务设置 - icmp盲测平台 - 保存
+	smartRouterGroup.GET("/system/icmpblindtestinfo", rest.BusinessSettingIcmpBlindTestInfo)       // 业务设置 - icmp盲测平台 - 信息
+	smartRouterGroup.GET("/system/curtasksinfo", rest.CurTasksInfo)                                // 业务设置 - 任务并发配置 - 信息
+	smartRouterGroup.GET("/system/curtaskssave", rest.CurTasksSave)                                // 业务设置 - 任务并发配置 - 保存
+	smartRouterGroup.GET("/system/securityscanconcurrencyinfo", rest.SecurityScanConcurrencyInfo)  // 安全检查并发配置 - 信息
 	smartRouterGroup.POST("/system/securityscanconcurrencysave", rest.SecurityScanConcurrencySave) // 安全检查并发配置 - 保存
-	smartRouterGroup.GET("/system/usescoreinfo", rest.UseScoreInfo)                            // 业务设置 - 可以利用评分 - 信息
-	smartRouterGroup.POST("/system/usescoresave", rest.UseScoreSave)                           // 业务设置 - 可以利用评分 - 保存
-	smartRouterGroup.GET("/system/testscopeinfo", rest.TestScopeInfo)                          // 业务设置 - 测试范围校验开关 - 信息
-	smartRouterGroup.POST("/system/testscopesave", rest.TestScopeSave)                         // 业务设置 - 测试范围校验开关 - 保存
+	smartRouterGroup.GET("/system/usescoreinfo", rest.UseScoreInfo)                                // 业务设置 - 可以利用评分 - 信息
+	smartRouterGroup.POST("/system/usescoresave", rest.UseScoreSave)                               // 业务设置 - 可以利用评分 - 保存
+	smartRouterGroup.GET("/system/testscopeinfo", rest.TestScopeInfo)                              // 业务设置 - 测试范围校验开关 - 信息
+	smartRouterGroup.POST("/system/testscopesave", rest.TestScopeSave)                             // 业务设置 - 测试范围校验开关 - 保存
 
 	smartRouterGroup.GET("/system/cpuinfo", rest.CpuInfo)                            // 系统监控 - cpu
 	smartRouterGroup.GET("/system/memoryinfo", rest.MemoryInfo)                      // 系统监控 - 内存
@@ -442,13 +442,13 @@ func RegisterRoute() *gin.Engine {
 	smartRouterGroup.GET("/baseline/result", rest.BaselineCheckResultList)            // 安全配置核查 - 检查结果列表
 	smartRouterGroup.GET("/baseline/stat", rest.BaselineCheckStat)                    // 安全配置核查 - 检查统计
 	smartRouterGroup.GET("/baseline/tasks", rest.BaselineTaskList)                    // 安全配置核查 - 核查批次列表
-	smartRouterGroup.POST("/hostsec/tasks/delete", rest.HostSecTaskDelete)             // 主机安全检查 - 删除任务记录（支持批量）
+	smartRouterGroup.POST("/hostsec/tasks/delete", rest.HostSecTaskDelete)            // 主机安全检查 - 删除任务记录（支持批量）
 	smartRouterGroup.GET("/baseline/task/targets", rest.BaselineTaskTargets)          // 安全配置核查 - 任务目标列表
 	smartRouterGroup.GET("/baseline/rules", rest.BaselineRulesList)                   // 安全配置核查 - 规则列表
 	smartRouterGroup.POST("/baseline/rules/reload", rest.BaselineRulesReload)         // 安全配置核查 - 从库重载规则（导入 host_baseline_rule 后调用）
 	smartRouterGroup.POST("/baseline/rules/import", rest.BaselineRulesImport)         // 安全配置核查 - 导入规则（JSON格式）
 	smartRouterGroup.GET("/baseline/rules/db", rest.BaselineRulesListFromDB)          // 安全配置核查 - 从数据库获取规则列表
-	smartRouterGroup.GET("/baseline/rules/stats", rest.BaselineRulesStats)          // 安全配置核查 - 规则库统计（轻量）
+	smartRouterGroup.GET("/baseline/rules/stats", rest.BaselineRulesStats)            // 安全配置核查 - 规则库统计（轻量）
 	smartRouterGroup.GET("/baseline/rule/detail", rest.BaselineRuleDetail)            // 安全配置核查 - 规则详情
 	smartRouterGroup.POST("/baseline/rule/create", rest.BaselineRuleCreate)           // 安全配置核查 - 新增规则
 	smartRouterGroup.POST("/baseline/rule/update", rest.BaselineRuleUpdate)           // 安全配置核查 - 编辑规则
@@ -457,9 +457,9 @@ func RegisterRoute() *gin.Engine {
 	smartRouterGroup.POST("/vulnscan/cve/run", rest.VulnScanCveRun)          // CVE漏洞扫描 - 单目标执行
 	smartRouterGroup.POST("/vulnscan/cve/batch", rest.VulnScanCveBatchRun)   // CVE漏洞扫描 - 批量多目标（异步）
 	smartRouterGroup.GET("/vulnscan/cve/progress", rest.VulnScanCveProgress) // CVE漏洞扫描 - 批量任务进度
-	smartRouterGroup.GET("/vulnscan/cve/tasks", rest.VulnScanCveTaskList)  // CVE漏洞扫描 - 任务列表
+	smartRouterGroup.GET("/vulnscan/cve/tasks", rest.VulnScanCveTaskList)    // CVE漏洞扫描 - 任务列表
 	smartRouterGroup.GET("/vulnscan/cve/stat", rest.VulnScanCveStat)         // CVE漏洞扫描 - 任务统计
-	smartRouterGroup.GET("/vulnscan/cve/targets", rest.VulnScanCveTargets)  // CVE漏洞扫描 - 任务目标
+	smartRouterGroup.GET("/vulnscan/cve/targets", rest.VulnScanCveTargets)   // CVE漏洞扫描 - 任务目标
 	smartRouterGroup.GET("/vulnscan/cve/findings", rest.VulnScanCveFindings) // CVE漏洞扫描 - 漏洞明细
 	// 安全检查 - 恶意代码检测
 	smartRouterGroup.POST("/malware/scan", rest.MalwareScanRun)      // 恶意代码检测 - 执行扫描
@@ -472,14 +472,15 @@ func RegisterRoute() *gin.Engine {
 	smartRouterGroup.GET("/malware/yara/result", rest.MalwareYaraResultList) // YARA恶意代码检测 - 扫描结果
 	smartRouterGroup.GET("/malware/yara/tasks", rest.MalwareYaraTaskList)    // YARA恶意代码检测 - 按批次聚合列表
 	smartRouterGroup.GET("/malware/yara/stat", rest.MalwareYaraStat)         // YARA恶意代码检测 - 任务统计
-	smartRouterGroup.GET("/malware/yara/targets", rest.MalwareYaraTargets)  // YARA恶意代码检测 - 任务目标
+	smartRouterGroup.GET("/malware/yara/targets", rest.MalwareYaraTargets)   // YARA恶意代码检测 - 任务目标
 	// 安全检查 - 病毒库规则管理
-	smartRouterGroup.POST("/malware/rule/create", rest.MalwareRuleCreate) // 病毒库规则 - 新增
-	smartRouterGroup.POST("/malware/rule/update", rest.MalwareRuleUpdate) // 病毒库规则 - 编辑
-	smartRouterGroup.GET("/malware/rule/delete", rest.MalwareRuleDelete)  // 病毒库规则 - 删除
-	smartRouterGroup.GET("/malware/rule/detail", rest.MalwareRuleDetail)  // 病毒库规则 - 详情
-	smartRouterGroup.GET("/malware/rules", rest.MalwareRuleList)          // 病毒库规则 - 列表
-	smartRouterGroup.POST("/malware/rule/import", rest.MalwareRuleImport) // 病毒库规则 - 导入（.yar / .json）
+	smartRouterGroup.POST("/malware/rule/create", rest.MalwareRuleCreate)  // 病毒库规则 - 新增
+	smartRouterGroup.POST("/malware/rule/update", rest.MalwareRuleUpdate)  // 病毒库规则 - 编辑
+	smartRouterGroup.GET("/malware/rule/delete", rest.MalwareRuleDelete)   // 病毒库规则 - 删除
+	smartRouterGroup.GET("/malware/rule/detail", rest.MalwareRuleDetail)   // 病毒库规则 - 详情
+	smartRouterGroup.GET("/malware/rules", rest.MalwareRuleList)           // 病毒库规则 - 列表
+	smartRouterGroup.POST("/malware/rule/import", rest.MalwareRuleImport)  // 病毒库规则 - 导入（.yar / .json）
+	smartRouterGroup.POST("/malware/rules/reload", rest.MalwareRuleReload) // 病毒库规则 - 重新加载到引擎
 	// 安全检查 - CVE漏洞库查询
 	smartRouterGroup.GET("/cvedb/info", rest.CveDBInfo)   // CVE库 - 统计信息
 	smartRouterGroup.GET("/cvedb/query", rest.CveDBQuery) // CVE库 - 搜索
@@ -494,44 +495,44 @@ func RegisterRoute() *gin.Engine {
 	smartRouterGroup.GET("/baseline/enums", rest.BaselineEnums) // 安全检查通用枚举
 
 	// 应用安全扫描（Web 动态扫描 / 专项应用检测，调用 scanner.exe）
-	smartRouterGroup.POST("/appsec/dynamic/run", rest.AppSecDynamicScanRun)            // 应用安全 - 动态扫描创建
-	smartRouterGroup.GET("/appsec/dynamic/list", rest.AppSecDynamicScanList)           // 应用安全 - 动态扫描列表
-	smartRouterGroup.GET("/appsec/dynamic/detail", rest.AppSecDynamicScanDetail)       // 应用安全 - 动态扫描详情
-	smartRouterGroup.POST("/appsec/appspecific/run", rest.AppSecAppSpecificScanRun)    // 应用安全 - 专项应用检测创建
-	smartRouterGroup.GET("/appsec/appspecific/list", rest.AppSecAppSpecificScanList)   // 应用安全 - 专项应用检测列表
+	smartRouterGroup.POST("/appsec/dynamic/run", rest.AppSecDynamicScanRun)              // 应用安全 - 动态扫描创建
+	smartRouterGroup.GET("/appsec/dynamic/list", rest.AppSecDynamicScanList)             // 应用安全 - 动态扫描列表
+	smartRouterGroup.GET("/appsec/dynamic/detail", rest.AppSecDynamicScanDetail)         // 应用安全 - 动态扫描详情
+	smartRouterGroup.POST("/appsec/appspecific/run", rest.AppSecAppSpecificScanRun)      // 应用安全 - 专项应用检测创建
+	smartRouterGroup.GET("/appsec/appspecific/list", rest.AppSecAppSpecificScanList)     // 应用安全 - 专项应用检测列表
 	smartRouterGroup.GET("/appsec/appspecific/detail", rest.AppSecAppSpecificScanDetail) // 应用安全 - 专项应用检测详情
 
 	// 数据安全（任务化：数据库基线检查 / 敏感数据发现）
-	smartRouterGroup.POST("/datasec/db/test-conn", rest.DataSecDBTestConn)           // 数据安全 - 数据库连接测试
-	smartRouterGroup.POST("/datasec/db/run", rest.DataSecDBCheckRun)                 // 数据安全 - 数据库检查创建
-	smartRouterGroup.GET("/datasec/db/list", rest.DataSecDBCheckList)               // 数据安全 - 数据库检查任务列表
-	smartRouterGroup.GET("/datasec/db/detail", rest.DataSecDBCheckDetail)           // 数据安全 - 数据库检查任务详情
-	smartRouterGroup.POST("/datasec/sensitive/run", rest.DataSecSensitiveScanRun)   // 数据安全 - 敏感数据扫描创建
-	smartRouterGroup.GET("/datasec/sensitive/list", rest.DataSecSensitiveScanList)   // 数据安全 - 敏感数据任务列表
-	smartRouterGroup.GET("/datasec/sensitive/detail", rest.DataSecSensitiveScanDetail) // 数据安全 - 敏感数据任务详情
-	smartRouterGroup.GET("/datasec/task/clone-targets", rest.DataSecTaskCloneTargets)   // 数据安全 - 复制历史任务目标
-	smartRouterGroup.POST("/datasec/task/rerun", rest.DataSecTaskRerun)                 // 数据安全 - 再次检测
-	smartRouterGroup.GET("/datasec/task/delete", rest.DataSecTaskDelete)                 // 数据安全 - 删除任务
-	smartRouterGroup.GET("/datasec/target/list", rest.DataSecDBTargetList)              // 数据安全 - 目标库列表
-	smartRouterGroup.POST("/datasec/target/save", rest.DataSecDBTargetSave)             // 数据安全 - 目标库保存
-	smartRouterGroup.GET("/datasec/target/delete", rest.DataSecDBTargetDelete)          // 数据安全 - 目标库删除
-	smartRouterGroup.POST("/datasec/target/import", rest.DataSecDBTargetImport)         // 数据安全 - 目标库导入
-	smartRouterGroup.GET("/datasec/target/export", rest.DataSecDBTargetExport)          // 数据安全 - 目标库导出
-	smartRouterGroup.POST("/datasec/target/save-from-task", rest.DataSecSaveTargetsToLibrary) // 保存任务目标到库
-	smartRouterGroup.POST("/datasec/target/test-conn", rest.DataSecDBTargetTestConn)         // 目标库单条连接测试
+	smartRouterGroup.POST("/datasec/db/test-conn", rest.DataSecDBTestConn)                      // 数据安全 - 数据库连接测试
+	smartRouterGroup.POST("/datasec/db/run", rest.DataSecDBCheckRun)                            // 数据安全 - 数据库检查创建
+	smartRouterGroup.GET("/datasec/db/list", rest.DataSecDBCheckList)                           // 数据安全 - 数据库检查任务列表
+	smartRouterGroup.GET("/datasec/db/detail", rest.DataSecDBCheckDetail)                       // 数据安全 - 数据库检查任务详情
+	smartRouterGroup.POST("/datasec/sensitive/run", rest.DataSecSensitiveScanRun)               // 数据安全 - 敏感数据扫描创建
+	smartRouterGroup.GET("/datasec/sensitive/list", rest.DataSecSensitiveScanList)              // 数据安全 - 敏感数据任务列表
+	smartRouterGroup.GET("/datasec/sensitive/detail", rest.DataSecSensitiveScanDetail)          // 数据安全 - 敏感数据任务详情
+	smartRouterGroup.GET("/datasec/task/clone-targets", rest.DataSecTaskCloneTargets)           // 数据安全 - 复制历史任务目标
+	smartRouterGroup.POST("/datasec/task/rerun", rest.DataSecTaskRerun)                         // 数据安全 - 再次检测
+	smartRouterGroup.GET("/datasec/task/delete", rest.DataSecTaskDelete)                        // 数据安全 - 删除任务
+	smartRouterGroup.GET("/datasec/target/list", rest.DataSecDBTargetList)                      // 数据安全 - 目标库列表
+	smartRouterGroup.POST("/datasec/target/save", rest.DataSecDBTargetSave)                     // 数据安全 - 目标库保存
+	smartRouterGroup.GET("/datasec/target/delete", rest.DataSecDBTargetDelete)                  // 数据安全 - 目标库删除
+	smartRouterGroup.POST("/datasec/target/import", rest.DataSecDBTargetImport)                 // 数据安全 - 目标库导入
+	smartRouterGroup.GET("/datasec/target/export", rest.DataSecDBTargetExport)                  // 数据安全 - 目标库导出
+	smartRouterGroup.POST("/datasec/target/save-from-task", rest.DataSecSaveTargetsToLibrary)   // 保存任务目标到库
+	smartRouterGroup.POST("/datasec/target/test-conn", rest.DataSecDBTargetTestConn)            // 目标库单条连接测试
 	smartRouterGroup.POST("/datasec/target/batch-test-conn", rest.DataSecDBTargetBatchTestConn) // 目标库批量连接测试
 	// 数据安全 - 检测规则库
-	smartRouterGroup.GET("/datasec/rules", rest.DataSecRulesList)                        // 规则列表与统计
-	smartRouterGroup.GET("/datasec/rules/stats", rest.DataSecRulesStats)                // 规则库统计（轻量）
-	smartRouterGroup.POST("/datasec/rules/reload", rest.DataSecRulesReload)            // 从库重载规则
-	smartRouterGroup.POST("/datasec/rules/import", rest.DataSecRulesImport)             // JSON 导入规则
+	smartRouterGroup.GET("/datasec/rules", rest.DataSecRulesList)                          // 规则列表与统计
+	smartRouterGroup.GET("/datasec/rules/stats", rest.DataSecRulesStats)                   // 规则库统计（轻量）
+	smartRouterGroup.POST("/datasec/rules/reload", rest.DataSecRulesReload)                // 从库重载规则
+	smartRouterGroup.POST("/datasec/rules/import", rest.DataSecRulesImport)                // JSON 导入规则
 	smartRouterGroup.POST("/datasec/rules/import-builtin", rest.DataSecRulesImportBuiltin) // 导入内置规则到库
 	smartRouterGroup.GET("/datasec/rules/cve-preview", rest.DataSecCveImportPreview)       // CVE 库可导入条数预览
-	smartRouterGroup.POST("/datasec/rules/import-cve", rest.DataSecRulesImportFromCve)       // 从 default-cve.db 导入
-	smartRouterGroup.GET("/datasec/rule/detail", rest.DataSecRuleDetail)               // 规则详情
-	smartRouterGroup.POST("/datasec/rule/create", rest.DataSecRuleCreate)              // 新增规则
-	smartRouterGroup.POST("/datasec/rule/update", rest.DataSecRuleUpdate)              // 编辑规则
-	smartRouterGroup.GET("/datasec/rule/delete", rest.DataSecRuleDelete)               // 删除规则
+	smartRouterGroup.POST("/datasec/rules/import-cve", rest.DataSecRulesImportFromCve)     // 从 default-cve.db 导入
+	smartRouterGroup.GET("/datasec/rule/detail", rest.DataSecRuleDetail)                   // 规则详情
+	smartRouterGroup.POST("/datasec/rule/create", rest.DataSecRuleCreate)                  // 新增规则
+	smartRouterGroup.POST("/datasec/rule/update", rest.DataSecRuleUpdate)                  // 编辑规则
+	smartRouterGroup.GET("/datasec/rule/delete", rest.DataSecRuleDelete)                   // 删除规则
 
 	return router
 }

@@ -34,7 +34,7 @@
         class="myTable hub-task-table"
         @selection-change="onSelectionChange"
       >
-        <el-table-column type="selection" width="48" reserve-selection :selectable="row => !row.isRunning" />
+        <el-table-column type="selection" width="48" reserve-selection />
         <el-table-column v-if="listTab === 'all'" prop="kindLabel" label="任务类型" width="130" />
         <el-table-column prop="targetIp" label="目标主机" min-width="110" :show-overflow-tooltip="true" />
         <el-table-column v-if="listTab === 'baseline' || listTab === 'vuln' || listTab === 'all'" prop="osTypeName" label="操作系统" width="108" />
@@ -79,14 +79,11 @@
           </template>
         </el-table-column>
         <el-table-column prop="checkTime" label="时间" width="158" :show-overflow-tooltip="true" />
-        <el-table-column label="操作" width="112">
+        <el-table-column label="操作" width="156">
           <template slot-scope="scope">
-            <template v-if="!scope.row.isRunning">
-              <el-link v-if="scope.row.source === 'baseline' || scope.row.source === 'vuln' || scope.row.source === 'malware'" :underline="false" class="link_primary" @click="openDetailPage(scope.row)">详情</el-link>
-              <el-link v-else :underline="false" class="link_primary" @click="openDetail(scope.row)">详情</el-link>
-              <el-link :underline="false" class="link_danger" style="margin-left: 10px" @click="deleteTask(scope.row)">删除</el-link>
-            </template>
-            <span v-else class="run-hint">{{ scope.row.runMessage || '—' }}</span>
+            <el-link v-if="scope.row.source === 'baseline' || scope.row.source === 'vuln' || scope.row.source === 'malware'" :underline="false" class="link_primary" @click="openDetailPage(scope.row)">详情</el-link>
+            <el-link v-else :underline="false" class="link_primary" @click="openDetail(scope.row)">详情</el-link>
+            <el-link :underline="false" class="link_danger" style="margin-left: 10px" @click="deleteTask(scope.row)">删除</el-link>
           </template>
         </el-table-column>
       </el-table>
@@ -320,6 +317,9 @@ export default {
       taskForm: {
         taskKind: 'baseline'
       },
+      createRules: {
+        taskKind: [{ required: true, message: '请选择任务类型', trigger: 'change' }]
+      },
       targets: [],
       targetRules: {
         host: [{ required: true, message: '请输入目标主机', trigger: 'blur' }],
@@ -532,6 +532,23 @@ export default {
       }
       this.loadData()
     },
+    mergeRowsWithRunningRows(rows, runningRows) {
+      const merged = []
+      const seen = new Set()
+      ;(runningRows || []).forEach(row => {
+        const key = this.taskRowKey(row)
+        if (seen.has(key)) return
+        seen.add(key)
+        merged.push(row)
+      })
+      ;(rows || []).forEach(row => {
+        const key = this.taskRowKey(row)
+        if (seen.has(key)) return
+        seen.add(key)
+        merged.push(row)
+      })
+      return merged
+    },
     async loadData() {
       const runningRows = this.tableRows.filter(r => r.isRunning)
       this.tableLoading = true
@@ -552,6 +569,10 @@ export default {
               taskId: r.taskId,
               targetIp: r.targetIp,
               scanScene: 0,
+              isRunning: r.scanStatus === 0,
+              runStatus: r.scanStatus === 0 ? 'running' : '',
+              runStatusLabel: r.scanStatus === 0 ? (r.scanStatusName || '执行中') : '',
+              progressText: r.scanStatus === 0 ? '进行中' : '—',
               osTypeName: r.osTypeName,
               totalFindings: r.totalFindings,
               critical: r.critical,
@@ -623,7 +644,7 @@ export default {
           }
         }
         if (runningRows.length) {
-          this.tableRows = [...runningRows, ...this.tableRows]
+          this.tableRows = this.mergeRowsWithRunningRows(this.tableRows, runningRows)
         }
       } finally {
         this.tableLoading = false
@@ -1007,6 +1028,8 @@ export default {
         })
         if (res.code === 200) {
           this.$message({ message: `已删除 ${(res.data && res.data.deleted) || rows.length} 条记录`, type: 'success' })
+          const deletedKeys = new Set(rows.map(r => this.taskRowKey(r)))
+          this.tableRows = this.tableRows.filter(r => !deletedKeys.has(this.taskRowKey(r)))
           this.selectedRows = []
           if (this.$refs.taskTable) {
             this.$refs.taskTable.clearSelection()
