@@ -283,6 +283,20 @@ const security = {
   },
   deleteStrategy: (params) => {
     return axios.get('/smart/strategy/delete', params)
+  },
+
+  // 安全检查报告中心
+  generateSecurityReport: (data) => {
+    return axios.postJson('/smart/security/report/generate', data)
+  },
+  getSecurityReportList: (params) => {
+    return axios.get('/smart/security/report/list', params)
+  },
+  getSecurityReportDetail: (params) => {
+    return axios.get('/smart/security/report/detail', params)
+  },
+  deleteSecurityReport: (params) => {
+    return axios.get('/smart/security/report/delete', params)
   }
 }
 

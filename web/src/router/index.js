@@ -630,6 +630,18 @@ const routes = [
     ],
   },
   {
+    path: '/report-center',
+    component: Home,
+    name: 'reportCenter',
+    children: [
+      {
+        path: '/report-center',
+        name: 'reportCenter',
+        component: () => import('@/pages/security/ReportCenter.vue'),
+      },
+    ],
+  },
+  {
     path: '/campaign',
     component: Home,
     name: 'campaign',

@@ -63,6 +63,11 @@
               <span slot="title">用户管理</span>
             </el-menu-item>
 
+            <el-menu-item index="/report-center">
+              <i class="el-icon-document"></i>
+              <span slot="title">报告中心</span>
+            </el-menu-item>
+
             <el-menu-item index="/systemsetting" v-if="role !== 1 && role !== 2 && role !== 3">
               <i class="el-icon-s-tools"></i>
               <span slot="title">系统配置</span>
@@ -191,6 +196,7 @@ export default {
       if (p === '/dynamicscan' || p === '/appspecific') return '/appsec/tasks'
       if (p.startsWith('/datasec')) return p
       if (p === '/dbcheck' || p === '/sensitive') return '/datasec/tasks'
+      if (p.startsWith('/report-center')) return '/report-center'
       return p
     },
     currentPageTitle() {
@@ -240,6 +246,7 @@ export default {
         '/systemsetting': '系统配置',
         '/log': '日志审计',
         '/logconfig': '日志配置',
+        '/report-center': '报告中心',
       };
       return map[this.$route.path] || '仪表盘';
     },

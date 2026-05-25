@@ -12,6 +12,7 @@
       </div>
       <div class="topbar-actions">
         <el-button size="small" :loading="detailLoading" @click="loadAll">刷新</el-button>
+        <el-button size="small" :disabled="!taskId" @click="generateReport">生成报告</el-button>
         <el-dropdown trigger="click" @command="onExportCommand">
           <el-button type="primary" size="small" :disabled="!allItems.length">
             导出 <i class="el-icon-arrow-down el-icon--right"></i>
@@ -623,6 +624,21 @@ export default {
         }
       } finally {
         this.logsLoading = false
+      }
+    },
+    async generateReport() {
+      const module = this.isVulnMode ? 'host' : this.isMalwareMode ? 'host' : 'host'
+      const taskId = this.taskId
+      if (!taskId) return
+      try {
+        const res = await security.generateSecurityReport({ module, taskId })
+        if (res.code === 200 && res.data) {
+          this.$message({ message: '报告已生成，前往报告中心查看', type: 'success' })
+        } else {
+          this.$message({ message: res.msg || '生成报告失败', type: 'error' })
+        }
+      } catch (e) {
+        this.$message({ message: '生成报告失败: ' + (e.message || ''), type: 'error' })
       }
     },
     async loadVulnStat() {

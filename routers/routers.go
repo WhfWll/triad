@@ -534,5 +534,11 @@ func RegisterRoute() *gin.Engine {
 	smartRouterGroup.POST("/datasec/rule/update", rest.DataSecRuleUpdate)                  // 编辑规则
 	smartRouterGroup.GET("/datasec/rule/delete", rest.DataSecRuleDelete)                   // 删除规则
 
+	// 安全检查 - 报告中心
+	smartRouterGroup.POST("/security/report/generate", rest.SecurityReportGenerate) // 安全检查 - 生成报告
+	smartRouterGroup.GET("/security/report/list", rest.SecurityReportList)          // 安全检查 - 报告列表
+	smartRouterGroup.GET("/security/report/detail", rest.SecurityReportDetail)      // 安全检查 - 报告详情（预览）
+	smartRouterGroup.GET("/security/report/delete", rest.SecurityReportDelete)      // 安全检查 - 删除报告
+
 	return router
 }

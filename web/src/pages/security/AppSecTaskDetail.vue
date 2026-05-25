@@ -22,6 +22,7 @@
       </div>
       <div class="topbar-actions">
         <el-button size="small" :loading="loading" @click="loadDetail">刷新</el-button>
+        <el-button size="small" :disabled="!taskId" @click="generateReport">生成报告</el-button>
         <el-dropdown trigger="click" @command="onExportCommand">
           <el-button type="primary" size="small" :disabled="!task">
             导出 <i class="el-icon-arrow-down el-icon--right"></i>
@@ -709,6 +710,19 @@ export default {
         this.$message.success('已复制到剪贴板')
       } catch {
         this.$message.warning('复制失败，请手动选择摘要文本复制')
+      }
+    },
+    async generateReport() {
+      if (!this.taskId) return
+      try {
+        const res = await security.generateSecurityReport({ module: 'app', taskId: this.taskId })
+        if (res.code === 200 && res.data) {
+          this.$message({ message: '报告已生成，前往报告中心查看', type: 'success' })
+        } else {
+          this.$message({ message: res.msg || '生成报告失败', type: 'error' })
+        }
+      } catch (e) {
+        this.$message({ message: '生成报告失败: ' + (e.message || ''), type: 'error' })
       }
     },
     async loadDetail() {
