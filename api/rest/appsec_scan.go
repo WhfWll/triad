@@ -2,12 +2,15 @@ package rest
 
 import (
 	"context"
+	"fmt"
 
 	"smart/api/typespec"
 	"smart/application"
+	"smart/services"
+	"smart/tools/enums"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 	"gitlabee.4dogs.cn/common/server"
 )
 
@@ -42,6 +45,16 @@ func AppSecDynamicScanRun(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	username, _ := c.Get("username")
+	ip := c.ClientIP()
+	var svc services.LogAudit
+	target := req.Target
+	if target == "" {
+		target = req.TargetURL
+	}
+	_ = svc.LogAuditAdd(ctx, enums.LogAuditTypeOperate,
+		fmt.Sprintf("创建了应用安全动态扫描任务，目标: %s", target),
+		fmt.Sprintf("%v", username), ip)
 	server.RespSuccess(c, resp)
 }
 
@@ -75,6 +88,16 @@ func AppSecAppSpecificScanRun(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	username, _ := c.Get("username")
+	ip := c.ClientIP()
+	var svc services.LogAudit
+	target := req.Target
+	if target == "" {
+		target = req.TargetURL
+	}
+	_ = svc.LogAuditAdd(ctx, enums.LogAuditTypeOperate,
+		fmt.Sprintf("创建了应用安全专项检测任务，目标: %s", target),
+		fmt.Sprintf("%v", username), ip)
 	server.RespSuccess(c, resp)
 }
 

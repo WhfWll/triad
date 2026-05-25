@@ -2,8 +2,6 @@ package mysqls
 
 import (
 	"context"
-	"encoding/json"
-	"smart/tools/enums"
 	"time"
 
 	"gitlabee.4dogs.cn/common/mysql"
@@ -51,21 +49,7 @@ func (l *LogAudit) LogAuditList(ctx context.Context, page, limit, logType int, s
 // LogAuditEmpty 清空审计日志
 func (l *LogAudit) LogAuditEmpty(ctx context.Context) error {
 	db := mysql.FromContext(ctx).Model(&LogAudit{})
-
-	expirationDays := 180
-	var mapSetModel MapSet
-	mapSet, err := mapSetModel.GetsByObjKey(ctx, enums.LogExpTimeConfigMapSetObjKey)
-	if err == nil && mapSet.ObjValue != "" {
-		var cfg struct {
-			ExpirationTime int `json:"expirationTime"`
-		}
-		if e := json.Unmarshal([]byte(mapSet.ObjValue), &cfg); e == nil && cfg.ExpirationTime >= 0 {
-			expirationDays = cfg.ExpirationTime
-		}
-	}
-
-	cutoff := time.Now().AddDate(0, 0, -expirationDays).Format(enums.TimeLayout)
-	if err := db.Where("create_time < ?", cutoff).Delete(l).Error; err != nil {
+	if err := db.Where("1 = 1").Delete(l).Error; err != nil {
 		return err
 	}
 	return nil

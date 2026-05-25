@@ -1,11 +1,11 @@
 <template>
-    <div>
+    <div class="security-container">
         <div class="main-title  ">
             <i class="nav_icon"></i>
             <i style="margin: 0 8px; vertical-align: text-top; color: #BCC4D3;">|</i>
             <label class="taskSceneBtn" >日志审计</label>
         </div>
-        <div class="loglist context_box_bg"> 
+        <div class="list_box"> 
             <div class="search-box"  >
                 <div class="operationbutton" > 
 					<el-button type="primary" @click="clearLog"  size="small">清空日志</el-button>
@@ -49,9 +49,9 @@
            
             <el-table
                 ref="multipleTable"
-                :data="tableData" 
-                tooltip-effect="dark"  height="calc(100% - 102px)"
-                v-model="Loading" class="myTable" v-if="typelist.length > 0">
+                :data="tableData"
+                style="width: 100%"
+                class="myTable" v-if="typelist.length > 0">
                 <el-table-column
                     label="日志类型">
                     <template slot-scope="scope" slot="header">
@@ -106,7 +106,8 @@
             :before-close="cancelform" 
             width='1184px' 
             :close-on-click-modal="false" 
-            :show-close="false">
+            :show-close="false"
+            class="theme-dialog">
             <div class="dialog_b_btn">  
                 <el-button size="small" @click="submitform">确定</el-button>
                 <el-button size="small" @click="cancelform">取消</el-button>
@@ -148,76 +149,57 @@
         </el-dialog> 
     </div> 
 </template>
-<style lang="less" scoped >
-    .loglist{
-        padding: 24px; 
-        background: #fff;
-        height: calc(100% - 39px);
-        box-sizing: border-box;
-        box-shadow:0px 2px 4px 0px rgba(76,122,227,0.12);
-    }	
-  
-    .dialog_b_btn{
-        position: absolute;
-        top: 15px;
-        right: 24px;
-        font-size: 14px;
-        button{
-            color: #4C7AE3;
-        } 
-    }
-     @media (max-width: 1440px) {
-         
-        /deep/ .el-dialog{
-            height: calc(100% - 96px);
-        }
-    }
-    @media  (min-width: 1440px) { 
-        /deep/ .el-dialog{
-            height: calc(100% - 176px);
-        }
-    }
-    .dialog_item_label{
-		font-size: 14px;
-		border-left: 3px solid #4C7AE3;
-		padding-left: 8px; 
-        font-weight:500;
-        width: 113px;
-        display: inline-block;
-        // height: 18px;
-        line-height: 16px; 
-        box-sizing: border-box;
-    } 
-    /deep/ .myTable{
-        thead {
-            .cursorPointer{
-                cursor: pointer;
-                &.active{
-                    color:#4C7AE3;
-                    i{
-                        color:#4C7AE3;
-                    }
-                }
-            }
-            .cell{
-                line-height: 15px;
-                >span{
-                    position: absolute;
-                }
-            }
-            .iconfont{
-                color:rgba(72,72,102,0.32);
-                margin-left:5px;
-            }
-            .el-select{
-                height: 0;
-                visibility: hidden;
-                .el-input, .el-input__inner{
-                    height: 0!important;
+<style lang="less" scoped>
+@import '../bas/css/bas-list-page.less';
+
+.dialog_b_btn {
+    position: absolute;
+    top: 15px;
+    right: 24px;
+    font-size: 14px;
+}
+
+.dialog_item_label {
+    font-size: 14px;
+    border-left: 3px solid #00d4aa;
+    padding-left: 8px;
+    font-weight: 500;
+    width: 113px;
+    display: inline-block;
+    line-height: 16px;
+    box-sizing: border-box;
+}
+
+::v-deep .myTable {
+    thead {
+        .cursorPointer {
+            cursor: pointer;
+            &.active {
+                color: #00d4aa;
+                i {
+                    color: #00d4aa;
                 }
             }
         }
+        .cell {
+            line-height: 15px;
+            > span {
+                position: absolute;
+            }
+        }
+        .iconfont {
+            color: rgba(148, 163, 184, 0.5);
+            margin-left: 5px;
+        }
+        .el-select {
+            height: 0;
+            visibility: hidden;
+            .el-input, .el-input__inner {
+                height: 0!important;
+            }
+        }
     }
+}
 </style> 
 <script>  
  import log from '@/api/log.js'

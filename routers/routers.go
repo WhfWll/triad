@@ -140,6 +140,7 @@ func RegisterRoute() *gin.Engine {
 	smartRouterGroup.POST("/tools/vuledit", rest.ToolsVulEdit)                               // 漏洞库 - 编辑
 	smartRouterGroup.POST("/tools/vuleditstatus", rest.ToolsVulEditStatus)                   // 漏洞库 - 修改状态
 	smartRouterGroup.POST("/tools/importvulnvulkit", rest.ImportVulnFromVulKit)              // 漏洞库 - 导入VulKit漏洞脚本
+	smartRouterGroup.POST("/tools/importnuclei", rest.ImportNucleiTemplates)                 // 漏洞库 - 导入Nuclei模板
 	smartRouterGroup.GET("/tools/enum", rest.ToolsDictionaryEnum)                            // 字典库 - 枚举
 	smartRouterGroup.GET("/tools/dictlist", rest.ToolsDictionaryList)                        // 字典库 - 列表
 	smartRouterGroup.GET("/tools/dictinfo", rest.ToolsDictionaryDetail)                      // 字典库 - 详情

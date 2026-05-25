@@ -20,6 +20,17 @@
       </div>
       <div class="topbar-actions">
         <el-button size="small" :loading="loading" @click="loadDetail">刷新</el-button>
+        <el-dropdown trigger="click" @command="onExportCommand">
+          <el-button type="primary" size="small" :disabled="!task">
+            导出 <i class="el-icon-arrow-down el-icon--right"></i>
+          </el-button>
+          <el-dropdown-menu slot="dropdown">
+            <el-dropdown-item v-if="isDb" command="checks">基线检查 CSV</el-dropdown-item>
+            <el-dropdown-item v-if="isDb" command="cve">CVE 列表 CSV</el-dropdown-item>
+            <el-dropdown-item v-if="showSensitiveTabs" command="findings">敏感字段 CSV</el-dropdown-item>
+            <el-dropdown-item command="summary">审查摘要 TXT</el-dropdown-item>
+          </el-dropdown-menu>
+        </el-dropdown>
       </div>
     </div>
 
@@ -354,6 +365,7 @@ import {
   getSensitivityName,
   getSensitivityClass
 } from './datasecTaskLabels.js'
+import { buildDatasecSummaryText, downloadTextFile, exportDatasecRowsCsv } from './utils/datasecTaskExport.js'
 
 const VALID_TABS_SENSITIVE = ['overview', 'targets', 'distribution', 'findings', 'logs']
 
@@ -571,6 +583,22 @@ export default {
         ]
       }
       return []
+    },
+    auditSummaryPreview() {
+      return buildDatasecSummaryText(
+        {
+          task: this.task,
+          kind: this.kind,
+          targetCount: this.targetList.length,
+          timeLabel: this.timeLabel,
+          scanSummary: this.scanSummary,
+          cveFailCount: this.cveFailCount,
+          findingCount: this.findingItems.length
+        },
+        {
+          getDBTypeName: this.getDBTypeName
+        }
+      )
     }
   },
   watch: {
@@ -669,6 +697,60 @@ export default {
       this.detailDialogTitle = '敏感字段详情'
       this.detailDialogRow = row
       this.detailDialogVisible = true
+    },
+    onExportCommand(command) {
+      if (command === 'checks') {
+        this.exportChecksCsv()
+      } else if (command === 'cve') {
+        this.exportCveCsv()
+      } else if (command === 'findings') {
+        this.exportFindingsCsv()
+      } else if (command === 'summary') {
+        this.exportSummary()
+      }
+    },
+    exportChecksCsv() {
+      if (!this.filteredBaselineChecks.length) {
+        this.$message.warning('暂无可导出的基线检查项')
+        return
+      }
+      exportDatasecRowsCsv(this.taskId, 'checks', this.filteredBaselineChecks, {
+        getCategoryName: this.getCategoryName,
+        getRiskName: this.getRiskName,
+        getDataTypeName: this.getDataTypeName,
+        getSensitivityName: this.getSensitivityName
+      })
+      this.$message.success('基线检查项已导出')
+    },
+    exportCveCsv() {
+      if (!this.filteredCveItems.length) {
+        this.$message.warning('暂无可导出的 CVE 结果')
+        return
+      }
+      exportDatasecRowsCsv(this.taskId, 'cve', this.filteredCveItems, {
+        getCategoryName: this.getCategoryName,
+        getRiskName: this.getRiskName,
+        getDataTypeName: this.getDataTypeName,
+        getSensitivityName: this.getSensitivityName
+      })
+      this.$message.success('CVE 列表已导出')
+    },
+    exportFindingsCsv() {
+      if (!this.filteredFindings.length) {
+        this.$message.warning('暂无可导出的敏感字段')
+        return
+      }
+      exportDatasecRowsCsv(this.taskId, 'findings', this.filteredFindings, {
+        getCategoryName: this.getCategoryName,
+        getRiskName: this.getRiskName,
+        getDataTypeName: this.getDataTypeName,
+        getSensitivityName: this.getSensitivityName
+      })
+      this.$message.success('敏感字段已导出')
+    },
+    exportSummary() {
+      downloadTextFile(`datasec-${this.taskId}-summary.txt`, this.auditSummaryPreview)
+      this.$message.success('审查摘要已导出')
     }
   }
 }

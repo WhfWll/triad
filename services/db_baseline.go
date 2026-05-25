@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"smart/models/mysqls"
 	"smart/tools/enums"
 	"strings"
@@ -269,6 +270,95 @@ func redisRequirePassCheck() func(string) bool {
 	}
 }
 
+func mongoAuthorizationEnabledCheck() func(string) bool {
+	return func(actual string) bool {
+		probe, ok := parseMongoProbePayload(actual)
+		if !ok {
+			return false
+		}
+		if isUnauthorizedText(probe.Error) {
+			return true
+		}
+		if probe.Result == nil {
+			return false
+		}
+		mode := strings.ToLower(nestedString(probe.Result, "parsed", "security", "authorization"))
+		return mode == "enabled"
+	}
+}
+
+func mongoBindIPRestrictedCheck() func(string) bool {
+	return func(actual string) bool {
+		probe, ok := parseMongoProbePayload(actual)
+		if !ok {
+			return false
+		}
+		if probe.Result != nil {
+			if bindAll, ok := nestedBool(probe.Result, "parsed", "net", "bindIpAll"); ok && bindAll {
+				return false
+			}
+			bindIP := strings.TrimSpace(nestedString(probe.Result, "parsed", "net", "bindIp"))
+			if bindIP != "" {
+				bindIP = strings.ReplaceAll(bindIP, " ", "")
+				if strings.Contains(bindIP, "0.0.0.0") || strings.Contains(bindIP, "::") {
+					return false
+				}
+				return true
+			}
+		}
+		return isLoopbackHost(probe.Host)
+	}
+}
+
+func mongoNonDefaultPortCheck() func(string) bool {
+	return func(actual string) bool {
+		probe, ok := parseMongoProbePayload(actual)
+		if !ok {
+			return false
+		}
+		if probe.Result != nil {
+			if port, ok := nestedNumber(probe.Result, "parsed", "net", "port"); ok {
+				return int(port) != 27017
+			}
+		}
+		return probe.Port != 27017
+	}
+}
+
+func couchAnonymousAccessBlockedCheck() func(string) bool {
+	return func(actual string) bool {
+		probe, ok := parseHTTPProbePayload(actual)
+		if !ok {
+			return false
+		}
+		return probe.StatusCode == http.StatusUnauthorized || probe.StatusCode == http.StatusForbidden
+	}
+}
+
+func couchNonDefaultPortCheck() func(string) bool {
+	return func(actual string) bool {
+		probe, ok := parseHTTPProbePayload(actual)
+		if !ok {
+			return false
+		}
+		return probe.Port != 5984
+	}
+}
+
+func couchCORSRestrictedCheck() func(string) bool {
+	return func(actual string) bool {
+		probe, ok := parseHTTPProbePayload(actual)
+		if !ok {
+			return false
+		}
+		origin := strings.TrimSpace(probe.Headers["Access-Control-Allow-Origin"])
+		if origin == "" {
+			return true
+		}
+		return origin != "*"
+	}
+}
+
 func getMySQLBaselineRules() []dbRuleDef {
 	return []dbRuleDef{
 		{ID: 1, Name: "检查root空密码", Description: "root 账户不应为空密码", Category: enums.DBCheckCategoryAuthentication, Risk: enums.BaselineRiskHigh, Queries: []string{"SELECT user, host FROM mysql.user WHERE user='root' AND (authentication_string='' OR authentication_string IS NULL)"}, ExpectedValue: "空结果", FixSuggestion: "为 root 账户设置强密码", CheckFunc: emptyResultCheck()},
@@ -308,9 +398,9 @@ func getPostgreSQLBaselineRules() []dbRuleDef {
 
 func getMongoDBBaselineRules() []dbRuleDef {
 	return []dbRuleDef{
-		{ID: 1, Name: "检查认证启用", Description: "MongoDB应开启认证", Category: enums.DBCheckCategoryAuthentication, Risk: enums.BaselineRiskHigh, Queries: []string{"/_isMaster"}, ExpectedValue: "认证配置", FixSuggestion: "在mongod.conf中设置 security.authorization: enabled", CheckFunc: func(s string) bool { return true }},
-		{ID: 2, Name: "检查绑定IP", Description: "不应绑定0.0.0.0", Category: enums.DBCheckCategoryNetwork, Risk: enums.BaselineRiskHigh, Queries: []string{"/_isMaster"}, ExpectedValue: "localhost", FixSuggestion: "设置 bindIp: 127.0.0.1", CheckFunc: func(s string) bool { return true }},
-		{ID: 3, Name: "检查端口", Description: "应使用非默认端口", Category: enums.DBCheckCategoryConfigSecure, Risk: enums.BaselineRiskLow, Queries: []string{"/_isMaster"}, ExpectedValue: "27017", FixSuggestion: "考虑更改默认端口", CheckFunc: func(s string) bool { return true }},
+		{ID: 1, Name: "检查认证启用", Description: "MongoDB 应开启认证，避免匿名访问管理命令", Category: enums.DBCheckCategoryAuthentication, Risk: enums.BaselineRiskHigh, Queries: []string{"/_cmdLineOpts"}, ExpectedValue: "security.authorization = enabled", FixSuggestion: "在 mongod.conf 中设置 security.authorization: enabled", CheckFunc: mongoAuthorizationEnabledCheck()},
+		{ID: 2, Name: "检查绑定IP", Description: "MongoDB 不应监听所有地址", Category: enums.DBCheckCategoryNetwork, Risk: enums.BaselineRiskHigh, Queries: []string{"/_cmdLineOpts"}, ExpectedValue: "bindIp 非 0.0.0.0 且 bindIpAll 未开启", FixSuggestion: "在 mongod.conf 中设置 bindIp 为受控地址，避免 bindIpAll: true", CheckFunc: mongoBindIPRestrictedCheck()},
+		{ID: 3, Name: "检查端口", Description: "MongoDB 建议避免长期暴露默认端口 27017", Category: enums.DBCheckCategoryConfigSecure, Risk: enums.BaselineRiskLow, Queries: []string{"/_cmdLineOpts"}, ExpectedValue: "非 27017 或已完成网络隔离评估", FixSuggestion: "根据环境评估是否调整默认端口，并结合 ACL / 网段限制访问", CheckFunc: mongoNonDefaultPortCheck()},
 	}
 }
 
@@ -329,8 +419,8 @@ func getRedisBaselineRules() []dbRuleDef {
 
 func getCouchDBBaselineRules() []dbRuleDef {
 	return []dbRuleDef{
-		{ID: 1, Name: "检查admin密码", Description: "CouchDB应设置admin密码", Category: enums.DBCheckCategoryAuthentication, Risk: enums.BaselineRiskHigh, Queries: []string{"/_session"}, ExpectedValue: "认证配置", FixSuggestion: "配置admin密码", CheckFunc: func(s string) bool { return true }},
-		{ID: 2, Name: "检查端口", Description: "默认端口应为5984", Category: enums.DBCheckCategoryConfigSecure, Risk: enums.BaselineRiskLow, Queries: []string{"/"}, ExpectedValue: "CouchDB", FixSuggestion: "无需修改", CheckFunc: func(s string) bool { return true }},
-		{ID: 3, Name: "检查CORS配置", Description: "应限制CORS来源", Category: enums.DBCheckCategoryNetwork, Risk: enums.BaselineRiskMiddle, Queries: []string{"/_node/_local/_config/httpd/enable_cors"}, ExpectedValue: "false", FixSuggestion: "禁用CORS或限制来源", CheckFunc: func(s string) bool { return true }},
+		{ID: 1, Name: "检查admin密码", Description: "CouchDB 不应允许匿名枚举数据库列表", Category: enums.DBCheckCategoryAuthentication, Risk: enums.BaselineRiskHigh, Queries: []string{"public:/_all_dbs"}, ExpectedValue: "匿名访问返回 401/403", FixSuggestion: "配置 admin 用户并关闭 admin party，限制匿名访问", CheckFunc: couchAnonymousAccessBlockedCheck()},
+		{ID: 2, Name: "检查端口", Description: "CouchDB 建议避免长期暴露默认端口 5984", Category: enums.DBCheckCategoryConfigSecure, Risk: enums.BaselineRiskLow, Queries: []string{"public:/"}, ExpectedValue: "非 5984 或已完成网络隔离评估", FixSuggestion: "根据环境评估是否调整默认端口，并结合网段访问控制使用", CheckFunc: couchNonDefaultPortCheck()},
+		{ID: 3, Name: "检查CORS配置", Description: "CouchDB 不应对任意来源开放跨域访问", Category: enums.DBCheckCategoryNetwork, Risk: enums.BaselineRiskMiddle, Queries: []string{"public:/"}, ExpectedValue: "未返回 Access-Control-Allow-Origin:*", FixSuggestion: "禁用全局 CORS，或将允许来源收敛到受控域名", CheckFunc: couchCORSRestrictedCheck()},
 	}
 }

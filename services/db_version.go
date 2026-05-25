@@ -69,8 +69,12 @@ func mongoVersionFromHTTP(ctx context.Context, m *DBConnManager, conn *DBConnect
 			return ""
 		}
 	}
-	var payload map[string]interface{}
-	if err := json.Unmarshal([]byte(rows[0]["response"]), &payload); err != nil {
+	probe, ok := parseMongoProbePayload(rows[0]["response"])
+	if !ok || probe.Error != "" {
+		return ""
+	}
+	payload := probe.Result
+	if payload == nil {
 		return ""
 	}
 	for _, key := range []string{"version", "versionArray"} {
@@ -95,8 +99,12 @@ func couchVersionFromHTTP(ctx context.Context, m *DBConnManager, conn *DBConnect
 	if err != nil || len(rows) == 0 {
 		return ""
 	}
+	probe, ok := parseHTTPProbePayload(rows[0]["response"])
+	if !ok || probe.Body == "" {
+		return ""
+	}
 	var payload map[string]interface{}
-	if err := json.Unmarshal([]byte(rows[0]["response"]), &payload); err != nil {
+	if err := json.Unmarshal([]byte(probe.Body), &payload); err != nil {
 		return ""
 	}
 	if v, ok := payload["version"].(string); ok {

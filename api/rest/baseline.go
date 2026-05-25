@@ -2,8 +2,11 @@ package rest
 
 import (
 	"context"
+	"fmt"
 	"smart/api/typespec"
 	"smart/application"
+	"smart/services"
+	"smart/tools/enums"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -26,6 +29,12 @@ func BaselineCheckRun(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	username, _ := c.Get("username")
+	ip := c.ClientIP()
+	var svc services.LogAudit
+	_ = svc.LogAuditAdd(ctx, enums.LogAuditTypeOperate,
+		fmt.Sprintf("创建了安全配置核查任务，目标: %s:%d", req.Host, req.Port),
+		fmt.Sprintf("%v", username), ip)
 	server.RespSuccess(c, resp)
 }
 
@@ -44,6 +53,12 @@ func BaselineBatchCheckRun(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	username, _ := c.Get("username")
+	ip := c.ClientIP()
+	var svc services.LogAudit
+	_ = svc.LogAuditAdd(ctx, enums.LogAuditTypeOperate,
+		fmt.Sprintf("创建了批量安全配置核查任务，目标数量: %d", len(req.Targets)),
+		fmt.Sprintf("%v", username), ip)
 	server.RespSuccess(c, resp)
 }
 

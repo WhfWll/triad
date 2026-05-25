@@ -165,26 +165,15 @@ func (f *SensitiveDataFinder) RunScan(ctx context.Context, task *SensitiveDataTa
 							CreateTime:   time.Now(),
 						}
 
-						sampleQuery := fmt.Sprintf("SELECT `%s` FROM `%s`.`%s` WHERE `%s` IS NOT NULL LIMIT 5",
-							colName, dbName, tableName, colName)
-						if task.DBType == 2 {
-							sampleQuery = fmt.Sprintf("SELECT \"%s\" FROM \"%s\" WHERE \"%s\" IS NOT NULL LIMIT 5",
-								colName, tableName, colName)
-						}
-
-						sampleResult, err := f.connManager.ExecuteQuery(ctx, conn, sampleQuery)
-						if err == nil && len(sampleResult) > 0 {
-							for _, row := range sampleResult {
-								if val, ok := row[colName]; ok {
-									result.SampleData = truncateString(val, 100)
-									if rule.Pattern != nil && !rule.Pattern.MatchString(val) {
-										result.SampleData = ""
-										break
-									}
-									if result.SampleData != "" {
-										break
-									}
-								}
+						samples := f.fetchFieldSamples(ctx, conn, task.DBType, dbName, tableName, colName)
+						for _, sample := range samples {
+							result.SampleData = truncateString(sample, 100)
+							if rule.Pattern != nil && !rule.Pattern.MatchString(sample) {
+								result.SampleData = ""
+								continue
+							}
+							if result.SampleData != "" {
+								break
 							}
 						}
 
@@ -218,7 +207,7 @@ func (f *SensitiveDataFinder) RunScan(ctx context.Context, task *SensitiveDataTa
 }
 
 func (f *SensitiveDataFinder) isTextType(dataType string) bool {
-	textTypes := []string{"char", "varchar", "text", "longtext", "mediumtext", "tinytext", "json", "blob", "mediumblob", "longblob"}
+	textTypes := []string{"char", "varchar", "text", "longtext", "mediumtext", "tinytext", "json", "blob", "mediumblob", "longblob", "string"}
 	dt := strings.ToLower(dataType)
 	for _, t := range textTypes {
 		if strings.Contains(dt, t) {
@@ -236,6 +225,38 @@ func (f *SensitiveDataFinder) matchFieldName(colName string, patterns []string) 
 		}
 	}
 	return false
+}
+
+func (f *SensitiveDataFinder) fetchFieldSamples(ctx context.Context, conn *DBConnection, dbType int, dbName, tableName, colName string) []string {
+	switch dbType {
+	case enums.DBSupportTypeMongoDB, enums.DBSupportTypeCouchDB:
+		samples, err := f.connManager.GetFieldSamples(ctx, conn, dbName, tableName, colName, 5)
+		if err == nil {
+			return samples
+		}
+		return nil
+	default:
+		sampleQuery := fmt.Sprintf("SELECT `%s` FROM `%s`.`%s` WHERE `%s` IS NOT NULL LIMIT 5",
+			colName, dbName, tableName, colName)
+		if dbType == enums.DBSupportTypePostgreSQL {
+			sampleQuery = fmt.Sprintf("SELECT \"%s\" FROM \"%s\" WHERE \"%s\" IS NOT NULL LIMIT 5",
+				colName, tableName, colName)
+		}
+
+		sampleResult, err := f.connManager.ExecuteQuery(ctx, conn, sampleQuery)
+		if err != nil || len(sampleResult) == 0 {
+			return nil
+		}
+		out := make([]string, 0, len(sampleResult))
+		for _, row := range sampleResult {
+			if val, ok := row[colName]; ok {
+				out = append(out, val)
+			} else if val, ok := row[strings.ToLower(colName)]; ok {
+				out = append(out, val)
+			}
+		}
+		return out
+	}
 }
 
 func truncateString(s string, maxLen int) string {

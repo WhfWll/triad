@@ -14,6 +14,10 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	_ "github.com/go-sql-driver/mysql"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 type DBConnConfig struct {
@@ -29,6 +33,7 @@ type DBConnConfig struct {
 type DBConnection struct {
 	Config   *DBConnConfig
 	MySQLDB  *sql.DB
+	MongoDB  *mongo.Client
 	RedisDB  *redis.Client
 	LastUsed time.Time
 }
@@ -85,7 +90,7 @@ func (m *DBConnManager) GetConnection(ctx context.Context, config *DBConnConfig)
 	case 2: // PostgreSQL
 		err = m.connectPostgreSQL(ctx, conn, timeout)
 	case 3: // MongoDB
-		err = m.connectMongoDB(ctx, config, timeout)
+		err = m.connectMongoDB(ctx, conn, timeout)
 	case 4: // Redis
 		err = m.connectRedis(ctx, conn, config, timeout)
 	case 5: // CouchDB
@@ -130,14 +135,30 @@ func (m *DBConnManager) connectPostgreSQL(ctx context.Context, conn *DBConnectio
 	return nil
 }
 
-func (m *DBConnManager) connectMongoDB(ctx context.Context, config *DBConnConfig, timeout time.Duration) error {
-	mongoURL := fmt.Sprintf("http://%s:%d", config.Host, config.Port)
-	client := &http.Client{Timeout: timeout}
-	resp, err := client.Get(mongoURL + "/")
+func (m *DBConnManager) connectMongoDB(ctx context.Context, conn *DBConnection, timeout time.Duration) error {
+	authSource := "admin"
+	if strings.TrimSpace(conn.Config.DBName) != "" {
+		authSource = strings.TrimSpace(conn.Config.DBName)
+	}
+	uri := fmt.Sprintf("mongodb://%s:%d/?directConnection=true&serverSelectionTimeoutMS=%d&connectTimeoutMS=%d",
+		conn.Config.Host, conn.Config.Port, timeout.Milliseconds(), timeout.Milliseconds())
+	clientOpts := options.Client().ApplyURI(uri)
+	if conn.Config.Username != "" {
+		clientOpts.SetAuth(options.Credential{
+			Username:   conn.Config.Username,
+			Password:   conn.Config.Password,
+			AuthSource: authSource,
+		})
+	}
+	client, err := mongo.Connect(ctx, clientOpts)
 	if err != nil {
+		return fmt.Errorf("mongodb connect failed: %v", err)
+	}
+	if err := client.Ping(ctx, readpref.Primary()); err != nil {
+		_ = client.Disconnect(context.Background())
 		return fmt.Errorf("mongodb ping failed: %v", err)
 	}
-	resp.Body.Close()
+	conn.MongoDB = client
 	return nil
 }
 
@@ -181,7 +202,7 @@ func (m *DBConnManager) ExecuteQuery(ctx context.Context, conn *DBConnection, qu
 	case 2:
 		return m.executePostgresQuery(ctx, conn, query)
 	case 3:
-		return m.executeMongoHTTP(ctx, conn, query)
+		return m.executeMongoCommand(ctx, conn, query)
 	case 4:
 		return m.executeRedisCommand(ctx, conn.RedisDB, query)
 	case 5:
@@ -227,19 +248,42 @@ func (m *DBConnManager) executeSQLQuery(ctx context.Context, db *sql.DB, query s
 	return results, nil
 }
 
-func (m *DBConnManager) executeMongoHTTP(ctx context.Context, conn *DBConnection, query string) ([]map[string]string, error) {
-	baseURL := fmt.Sprintf("http://%s:%d", conn.Config.Host, conn.Config.Port)
-	client := &http.Client{Timeout: 30 * time.Second}
-	req, _ := http.NewRequestWithContext(ctx, "GET", baseURL+query, nil)
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
+func (m *DBConnManager) executeMongoCommand(ctx context.Context, conn *DBConnection, query string) ([]map[string]string, error) {
+	if conn.MongoDB == nil {
+		return nil, fmt.Errorf("mongodb connection not established")
 	}
-	defer resp.Body.Close()
-	body, _ := io.ReadAll(resp.Body)
 
-	row := map[string]string{"response": string(body)}
-	return []map[string]string{row}, nil
+	var cmd bson.D
+	switch query {
+	case "/", "/_isMaster", "/hello":
+		cmd = bson.D{{Key: "hello", Value: 1}}
+	case "/buildInfo":
+		cmd = bson.D{{Key: "buildInfo", Value: 1}}
+	case "/_cmdLineOpts":
+		cmd = bson.D{{Key: "getCmdLineOpts", Value: 1}}
+	default:
+		return nil, fmt.Errorf("unsupported mongodb query: %s", query)
+	}
+
+	result := bson.M{}
+	err := conn.MongoDB.Database("admin").RunCommand(ctx, cmd).Decode(&result)
+	if err != nil && query == "/_isMaster" {
+		result = bson.M{}
+		err = conn.MongoDB.Database("admin").RunCommand(ctx, bson.D{{Key: "isMaster", Value: 1}}).Decode(&result)
+	}
+
+	payload := mongoProbePayload{
+		Command: query,
+		Host:    conn.Config.Host,
+		Port:    conn.Config.Port,
+	}
+	if err != nil {
+		payload.Error = err.Error()
+	} else {
+		payload.Result = result
+	}
+	raw, _ := json.Marshal(payload)
+	return []map[string]string{{"response": string(raw)}}, nil
 }
 
 func (m *DBConnManager) executePostgresQuery(ctx context.Context, conn *DBConnection, query string) ([]map[string]string, error) {
@@ -265,10 +309,20 @@ func (m *DBConnManager) executeRedisCommand(ctx context.Context, client *redis.C
 }
 
 func (m *DBConnManager) executeCouchHTTP(ctx context.Context, conn *DBConnection, path string) ([]map[string]string, error) {
+	useAuth := conn.Config.Username != ""
+	switch {
+	case strings.HasPrefix(path, "public:"):
+		useAuth = false
+		path = strings.TrimPrefix(path, "public:")
+	case strings.HasPrefix(path, "admin:"):
+		useAuth = true
+		path = strings.TrimPrefix(path, "admin:")
+	}
+
 	baseURL := fmt.Sprintf("http://%s:%d", conn.Config.Host, conn.Config.Port)
 	client := &http.Client{Timeout: 30 * time.Second}
 	req, _ := http.NewRequestWithContext(ctx, "GET", baseURL+path, nil)
-	if conn.Config.Username != "" {
+	if useAuth && conn.Config.Username != "" {
 		req.SetBasicAuth(conn.Config.Username, conn.Config.Password)
 	}
 	resp, err := client.Do(req)
@@ -278,10 +332,21 @@ func (m *DBConnManager) executeCouchHTTP(ctx context.Context, conn *DBConnection
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
 
-	var result interface{}
-	json.Unmarshal(body, &result)
-
-	row := map[string]string{"response": string(body)}
+	headers := map[string]string{}
+	for _, key := range []string{"Access-Control-Allow-Origin", "Access-Control-Allow-Credentials", "Server", "Content-Type"} {
+		if val := resp.Header.Get(key); val != "" {
+			headers[key] = val
+		}
+	}
+	payload := httpProbePayload{
+		StatusCode: resp.StatusCode,
+		Body:       string(body),
+		Headers:    headers,
+		Host:       conn.Config.Host,
+		Port:       conn.Config.Port,
+	}
+	raw, _ := json.Marshal(payload)
+	row := map[string]string{"response": string(raw)}
 	return []map[string]string{row}, nil
 }
 
@@ -308,7 +373,10 @@ func (m *DBConnManager) GetDatabases(ctx context.Context, conn *DBConnection) ([
 	case 2:
 		return nil, fmt.Errorf("postgresql requires lib/pq driver")
 	case 3:
-		return []string{conn.Config.DBName}, nil
+		if conn.MongoDB == nil {
+			return nil, fmt.Errorf("mongodb connection not established")
+		}
+		return conn.MongoDB.ListDatabaseNames(ctx, bson.D{})
 	case 4:
 		return []string{"0"}, nil
 	case 5:
@@ -342,7 +410,9 @@ func (m *DBConnManager) executeCouchDBList(ctx context.Context, conn *DBConnecti
 	}
 	if len(results) > 0 {
 		var list []string
-		json.Unmarshal([]byte(results[0]["response"]), &list)
+		if payload, ok := parseHTTPProbePayload(results[0]["response"]); ok {
+			_ = json.Unmarshal([]byte(payload.Body), &list)
+		}
 		return list, nil
 	}
 	return nil, nil
@@ -355,28 +425,17 @@ func (m *DBConnManager) GetTables(ctx context.Context, conn *DBConnection, dbNam
 	case 2:
 		return nil, fmt.Errorf("postgresql requires lib/pq driver")
 	case 3:
-		return []string{}, nil
+		if conn.MongoDB == nil {
+			return nil, fmt.Errorf("mongodb connection not established")
+		}
+		return conn.MongoDB.Database(dbName).ListCollectionNames(ctx, bson.D{})
 	case 4:
 		return []string{}, nil
 	case 5:
-		results, err := m.executeCouchHTTP(ctx, conn, "/"+dbName+"/_all_docs")
-		if err != nil {
-			return nil, err
+		if strings.TrimSpace(dbName) == "" {
+			return nil, nil
 		}
-		if len(results) > 0 {
-			var docList struct {
-				Rows []struct {
-					ID string `json:"id"`
-				} `json:"rows"`
-			}
-			json.Unmarshal([]byte(results[0]["response"]), &docList)
-			var names []string
-			for _, row := range docList.Rows {
-				names = append(names, row.ID)
-			}
-			return names, nil
-		}
-		return nil, nil
+		return []string{dbName}, nil
 	}
 	return nil, fmt.Errorf("unsupported db type: %d", conn.Config.DBType)
 }
@@ -388,8 +447,183 @@ func (m *DBConnManager) GetColumns(ctx context.Context, conn *DBConnection, dbNa
 			fmt.Sprintf("SELECT COLUMN_NAME, DATA_TYPE, COLUMN_COMMENT FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='%s' AND TABLE_NAME='%s'", dbName, tableName))
 	case 2:
 		return nil, fmt.Errorf("postgresql requires lib/pq driver")
+	case 3:
+		return m.inspectMongoColumns(ctx, conn, dbName, tableName)
+	case 5:
+		return m.inspectCouchColumns(ctx, conn, dbName)
 	default:
 		return nil, nil
+	}
+}
+
+func (m *DBConnManager) GetFieldSamples(ctx context.Context, conn *DBConnection, dbName, tableName, fieldName string, limit int64) ([]string, error) {
+	switch conn.Config.DBType {
+	case 3:
+		return m.mongoFieldSamples(ctx, conn, dbName, tableName, fieldName, limit)
+	case 5:
+		return m.couchFieldSamples(ctx, conn, dbName, fieldName, limit)
+	default:
+		return nil, fmt.Errorf("field sample fetch unsupported for db type: %d", conn.Config.DBType)
+	}
+}
+
+func (m *DBConnManager) inspectMongoColumns(ctx context.Context, conn *DBConnection, dbName, tableName string) ([]map[string]string, error) {
+	if conn.MongoDB == nil {
+		return nil, fmt.Errorf("mongodb connection not established")
+	}
+	coll := conn.MongoDB.Database(dbName).Collection(tableName)
+	cursor, err := coll.Find(ctx, bson.D{}, options.Find().SetLimit(20))
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	fields := map[string]string{}
+	for cursor.Next(ctx) {
+		var doc bson.M
+		if err := cursor.Decode(&doc); err != nil {
+			continue
+		}
+		for key, val := range doc {
+			if key == "_id" {
+				continue
+			}
+			if _, exists := fields[key]; exists {
+				continue
+			}
+			fields[key] = nosqlValueType(val)
+		}
+	}
+	return formatNoSQLColumns(fields), nil
+}
+
+func (m *DBConnManager) inspectCouchColumns(ctx context.Context, conn *DBConnection, dbName string) ([]map[string]string, error) {
+	rows, err := m.fetchCouchDocs(ctx, conn, dbName, 20)
+	if err != nil {
+		return nil, err
+	}
+	fields := map[string]string{}
+	for _, row := range rows {
+		for key, val := range row.Doc {
+			if strings.HasPrefix(key, "_") {
+				continue
+			}
+			if _, exists := fields[key]; exists {
+				continue
+			}
+			fields[key] = nosqlValueType(val)
+		}
+	}
+	return formatNoSQLColumns(fields), nil
+}
+
+func (m *DBConnManager) mongoFieldSamples(ctx context.Context, conn *DBConnection, dbName, tableName, fieldName string, limit int64) ([]string, error) {
+	if conn.MongoDB == nil {
+		return nil, fmt.Errorf("mongodb connection not established")
+	}
+	coll := conn.MongoDB.Database(dbName).Collection(tableName)
+	cursor, err := coll.Find(ctx, bson.D{}, options.Find().SetLimit(limit).SetProjection(bson.D{{Key: fieldName, Value: 1}}))
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var out []string
+	for cursor.Next(ctx) {
+		var doc bson.M
+		if err := cursor.Decode(&doc); err != nil {
+			continue
+		}
+		if val, ok := doc[fieldName]; ok {
+			if text := nosqlValueString(val); text != "" {
+				out = append(out, text)
+			}
+		}
+	}
+	return out, nil
+}
+
+func (m *DBConnManager) couchFieldSamples(ctx context.Context, conn *DBConnection, dbName, fieldName string, limit int64) ([]string, error) {
+	rows, err := m.fetchCouchDocs(ctx, conn, dbName, limit)
+	if err != nil {
+		return nil, err
+	}
+	var out []string
+	for _, row := range rows {
+		if val, ok := row.Doc[fieldName]; ok {
+			if text := nosqlValueString(val); text != "" {
+				out = append(out, text)
+			}
+		}
+	}
+	return out, nil
+}
+
+func (m *DBConnManager) fetchCouchDocs(ctx context.Context, conn *DBConnection, dbName string, limit int64) ([]struct {
+	Doc map[string]interface{} `json:"doc"`
+}, error) {
+	path := fmt.Sprintf("/%s/_all_docs?include_docs=true&limit=%d", dbName, limit)
+	results, err := m.executeCouchHTTP(ctx, conn, path)
+	if err != nil {
+		return nil, err
+	}
+	if len(results) == 0 {
+		return nil, nil
+	}
+	payload, ok := parseHTTPProbePayload(results[0]["response"])
+	if !ok {
+		return nil, fmt.Errorf("parse couchdb docs response failed")
+	}
+	var docList struct {
+		Rows []struct {
+			Doc map[string]interface{} `json:"doc"`
+		} `json:"rows"`
+	}
+	if err := json.Unmarshal([]byte(payload.Body), &docList); err != nil {
+		return nil, err
+	}
+	return docList.Rows, nil
+}
+
+func formatNoSQLColumns(fields map[string]string) []map[string]string {
+	out := make([]map[string]string, 0, len(fields))
+	for name, dataType := range fields {
+		out = append(out, map[string]string{
+			"COLUMN_NAME": name,
+			"DATA_TYPE":   dataType,
+		})
+	}
+	return out
+}
+
+func nosqlValueType(v interface{}) string {
+	switch v.(type) {
+	case string:
+		return "text"
+	case map[string]interface{}, []interface{}, bson.M, bson.A:
+		return "json"
+	case bool:
+		return "bool"
+	case int32, int64, int, float32, float64:
+		return "number"
+	default:
+		return "text"
+	}
+}
+
+func nosqlValueString(v interface{}) string {
+	switch t := v.(type) {
+	case nil:
+		return ""
+	case string:
+		return t
+	case []byte:
+		return string(t)
+	case map[string]interface{}, []interface{}, bson.M, bson.A:
+		raw, _ := json.Marshal(t)
+		return string(raw)
+	default:
+		return fmt.Sprintf("%v", t)
 	}
 }
 
@@ -400,6 +634,9 @@ func (m *DBConnManager) Close(key string) {
 	if conn, exists := m.connPool[key]; exists {
 		if conn.MySQLDB != nil {
 			conn.MySQLDB.Close()
+		}
+		if conn.MongoDB != nil {
+			_ = conn.MongoDB.Disconnect(context.Background())
 		}
 		if conn.RedisDB != nil {
 			conn.RedisDB.Close()
@@ -415,6 +652,9 @@ func (m *DBConnManager) CloseAll() {
 	for key, conn := range m.connPool {
 		if conn.MySQLDB != nil {
 			conn.MySQLDB.Close()
+		}
+		if conn.MongoDB != nil {
+			_ = conn.MongoDB.Disconnect(context.Background())
 		}
 		if conn.RedisDB != nil {
 			conn.RedisDB.Close()

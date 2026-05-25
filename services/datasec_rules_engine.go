@@ -82,7 +82,7 @@ func ReloadDatasecRulesFromDB(ctx context.Context) error {
 			}
 		}
 		for _, dt := range types {
-			byDB[dt] = append(byDB[dt], def)
+			byDB[dt] = append(byDB[dt], applyDatasecBuiltinRuleOverride(dt, def))
 		}
 	}
 
@@ -111,6 +111,36 @@ func buildDBRuleCheckFunc(matchType, expected string) func(string) bool {
 	default:
 		return containsCheck(expected)
 	}
+}
+
+func applyDatasecBuiltinRuleOverride(dbType int, def dbRuleDef) dbRuleDef {
+	var builtin dbRuleDef
+	switch dbType {
+	case enums.DBSupportTypeMongoDB:
+		builtin = findBuiltinRuleByName(getMongoDBBaselineRules(), def.Name)
+	case enums.DBSupportTypeCouchDB:
+		builtin = findBuiltinRuleByName(getCouchDBBaselineRules(), def.Name)
+	default:
+		return def
+	}
+	if builtin.Name == "" {
+		return def
+	}
+	def.Description = builtin.Description
+	def.Queries = builtin.Queries
+	def.ExpectedValue = builtin.ExpectedValue
+	def.FixSuggestion = builtin.FixSuggestion
+	def.CheckFunc = builtin.CheckFunc
+	return def
+}
+
+func findBuiltinRuleByName(rules []dbRuleDef, name string) dbRuleDef {
+	for _, rule := range rules {
+		if strings.TrimSpace(rule.Name) == strings.TrimSpace(name) {
+			return rule
+		}
+	}
+	return dbRuleDef{}
 }
 
 func getDBBaselineRules(dbType int) []dbRuleDef {

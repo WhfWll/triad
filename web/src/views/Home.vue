@@ -67,6 +67,11 @@
               <i class="el-icon-s-tools"></i>
               <span slot="title">系统配置</span>
             </el-menu-item>
+
+            <el-menu-item index="/log">
+              <i class="el-icon-document-copy"></i>
+              <span slot="title">日志审计</span>
+            </el-menu-item>
           </el-menu>
         </el-scrollbar>
       </div>

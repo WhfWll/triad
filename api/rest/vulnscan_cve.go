@@ -2,10 +2,13 @@ package rest
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	"smart/api/typespec"
 	"smart/application"
+	"smart/services"
+	"smart/tools/enums"
 
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
@@ -28,6 +31,12 @@ func VulnScanCveRun(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	username, _ := c.Get("username")
+	ip := c.ClientIP()
+	var svc services.LogAudit
+	_ = svc.LogAuditAdd(ctx, enums.LogAuditTypeOperate,
+		fmt.Sprintf("创建了CVE漏洞扫描任务，目标: %s", req.Host),
+		fmt.Sprintf("%v", username), ip)
 	server.RespSuccess(c, resp)
 }
 
@@ -47,6 +56,12 @@ func VulnScanCveBatchRun(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	username, _ := c.Get("username")
+	ip := c.ClientIP()
+	var svc services.LogAudit
+	_ = svc.LogAuditAdd(ctx, enums.LogAuditTypeOperate,
+		fmt.Sprintf("创建了批量CVE漏洞扫描任务，目标数量: %d", len(req.Targets)),
+		fmt.Sprintf("%v", username), ip)
 	server.RespSuccess(c, resp)
 }
 

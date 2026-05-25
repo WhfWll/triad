@@ -10,6 +10,18 @@
           <span class="title-sub">#{{ taskId }}</span>
         </h1>
       </div>
+      <div class="topbar-actions">
+        <el-button size="small" :loading="detailLoading" @click="loadAll">刷新</el-button>
+        <el-dropdown trigger="click" @command="onExportCommand">
+          <el-button type="primary" size="small" :disabled="!allItems.length">
+            导出 <i class="el-icon-arrow-down el-icon--right"></i>
+          </el-button>
+          <el-dropdown-menu slot="dropdown">
+            <el-dropdown-item command="csv">结果列表 CSV</el-dropdown-item>
+            <el-dropdown-item command="summary">审查摘要 TXT</el-dropdown-item>
+          </el-dropdown-menu>
+        </el-dropdown>
+      </div>
     </div>
 
     <el-tabs v-model="activeTab" class="detail-tabs list_box">
@@ -417,6 +429,7 @@
 
 <script>
 import security from '@/api/security.js'
+import { buildHostSummaryText, downloadTextFile, exportHostItemsCsv } from './utils/hostTaskExport.js'
 
 export default {
   name: 'HostTaskDetail',
@@ -493,6 +506,9 @@ export default {
       if (this.isMalwareMode) return '恶意发现详情'
       return '核查项详情'
     },
+    detailLoading() {
+      return this.statLoading || this.targetsLoading || this.itemsLoading || this.logsLoading
+    },
     targetLogRows() {
       return this.targets.map(target => ({
         ...target,
@@ -546,6 +562,24 @@ export default {
     pagedItems() {
       const start = (this.itemPage - 1) * this.itemPageSize
       return this.filteredItems.slice(start, start + this.itemPageSize)
+    },
+    taskModeLabel() {
+      if (this.isVulnMode) return 'vuln'
+      if (this.isMalwareMode) return 'malware'
+      return 'baseline'
+    },
+    auditSummaryPreview() {
+      return buildHostSummaryText({
+        taskId: this.taskId,
+        kindLabel: this.kindLabel,
+        mode: this.taskModeLabel,
+        checkTime: this.checkTime,
+        targetCount: this.targets.length,
+        itemCount: this.allItems.length,
+        statData: this.statData,
+        vulnStat: this.vulnStat,
+        malwareStat: this.malwareStat
+      })
     }
   },
   created() {
@@ -856,6 +890,25 @@ export default {
       } finally {
         this.itemsLoading = false
       }
+    },
+    onExportCommand(cmd) {
+      if (cmd === 'csv') {
+        this.exportCsv()
+      } else if (cmd === 'summary') {
+        this.exportSummary()
+      }
+    },
+    exportCsv() {
+      if (!this.allItems.length) {
+        this.$message.warning('暂无可导出的结果')
+        return
+      }
+      exportHostItemsCsv(this.taskId, this.taskModeLabel, this.filteredItems)
+      this.$message.success('结果列表已导出')
+    },
+    exportSummary() {
+      downloadTextFile(`hostsec-${this.taskId}-summary.txt`, this.auditSummaryPreview)
+      this.$message.success('审查摘要已导出')
     },
     filterByTarget(row) {
       this.itemFilter.targetIp = row.targetIp

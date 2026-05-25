@@ -2,12 +2,15 @@ package rest
 
 import (
 	"context"
+	"fmt"
 
 	"smart/api/typespec"
 	"smart/application"
+	"smart/services"
+	"smart/tools/enums"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 	"gitlabee.4dogs.cn/common/server"
 )
 
@@ -41,6 +44,16 @@ func DataSecDBCheckRun(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	username, _ := c.Get("username")
+	ip := c.ClientIP()
+	var svc services.LogAudit
+	targetInfo := fmt.Sprintf("%s:%v", req.DBHost, req.DBPort)
+	if len(req.Targets) > 0 {
+		targetInfo = fmt.Sprintf("%s:%v", req.Targets[0].DBHost, req.Targets[0].DBPort)
+	}
+	_ = svc.LogAuditAdd(ctx, enums.LogAuditTypeOperate,
+		fmt.Sprintf("创建了数据库安全检查任务 %s，目标: %s", req.Name, targetInfo),
+		fmt.Sprintf("%v", username), ip)
 	server.RespSuccess(c, resp)
 }
 
@@ -90,6 +103,16 @@ func DataSecSensitiveScanRun(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	username, _ := c.Get("username")
+	ip := c.ClientIP()
+	var svc services.LogAudit
+	targetInfo := fmt.Sprintf("%s:%v", req.DBHost, req.DBPort)
+	if len(req.Targets) > 0 {
+		targetInfo = fmt.Sprintf("%s:%v", req.Targets[0].DBHost, req.Targets[0].DBPort)
+	}
+	_ = svc.LogAuditAdd(ctx, enums.LogAuditTypeOperate,
+		fmt.Sprintf("创建了敏感数据扫描任务 %s，目标: %s", req.Name, targetInfo),
+		fmt.Sprintf("%v", username), ip)
 	server.RespSuccess(c, resp)
 }
 

@@ -51,7 +51,11 @@ export const APP_TYPE_NAMES = {
   8: 'WordPress',
   9: 'ThinkPHP',
   10: 'Spring Boot',
-  11: '通用 CMS'
+  11: '通用 CMS',
+  12: '泛微 OA',
+  13: '致远 OA',
+  14: '金蝶云星空',
+  15: 'Apache Struts'
 }
 
 export function getRiskName(risk) {
