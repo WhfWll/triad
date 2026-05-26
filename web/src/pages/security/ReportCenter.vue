@@ -59,7 +59,7 @@
     <el-dialog
       title="报告预览"
       :visible.sync="previewVisible"
-      width="960px"
+      width="86vw"
       custom-class="theme-dialog"
       top="5vh"
       @closed="onPreviewClosed"
@@ -130,7 +130,7 @@ export default {
       try {
         const res = await security.getSecurityReportDetail({ id: row.id })
         if (res.code === 200 && res.data) {
-          this.previewHtml = res.data.content
+          this.previewHtml = this.decoratePreviewHtml(res.data.content)
         } else {
           this.$message.warning('加载报告内容失败')
         }
@@ -166,6 +166,92 @@ export default {
       a.click()
       URL.revokeObjectURL(a.href)
       this.$message.success('报告已下载')
+    },
+    decoratePreviewHtml(html) {
+      if (!html) return ''
+      const previewStyle = `
+<style id="report-preview-theme">
+  html {
+    background: #111827;
+    scrollbar-width: thin;
+    scrollbar-color: #4c566c #1b2230;
+  }
+  body {
+    margin: 0;
+    background: #111827;
+  }
+  table {
+    width: 100%;
+  }
+  th,
+  td {
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+  table:has(> thead > tr > th:nth-child(6):last-child) {
+    table-layout: fixed;
+  }
+  table:has(> thead > tr > th:nth-child(6):last-child) > thead > tr > th:nth-child(1),
+  table:has(> thead > tr > th:nth-child(6):last-child) > tbody > tr > td:nth-child(1) {
+    width: 14%;
+  }
+  table:has(> thead > tr > th:nth-child(6):last-child) > thead > tr > th:nth-child(2),
+  table:has(> thead > tr > th:nth-child(6):last-child) > tbody > tr > td:nth-child(2) {
+    width: 42%;
+  }
+  table:has(> thead > tr > th:nth-child(6):last-child) > thead > tr > th:nth-child(3),
+  table:has(> thead > tr > th:nth-child(6):last-child) > tbody > tr > td:nth-child(3) {
+    width: 8%;
+  }
+  table:has(> thead > tr > th:nth-child(6):last-child) > thead > tr > th:nth-child(4),
+  table:has(> thead > tr > th:nth-child(6):last-child) > tbody > tr > td:nth-child(4) {
+    width: 8%;
+  }
+  table:has(> thead > tr > th:nth-child(6):last-child) > thead > tr > th:nth-child(5),
+  table:has(> thead > tr > th:nth-child(6):last-child) > tbody > tr > td:nth-child(5) {
+    width: 13%;
+  }
+  table:has(> thead > tr > th:nth-child(6):last-child) > thead > tr > th:nth-child(6),
+  table:has(> thead > tr > th:nth-child(6):last-child) > tbody > tr > td:nth-child(6) {
+    width: 15%;
+  }
+  table:has(> thead > tr > th:nth-child(6):last-child) > thead > tr > th:nth-child(3),
+  table:has(> thead > tr > th:nth-child(6):last-child) > thead > tr > th:nth-child(4),
+  table:has(> thead > tr > th:nth-child(6):last-child) > thead > tr > th:nth-child(5),
+  table:has(> thead > tr > th:nth-child(6):last-child) > thead > tr > th:nth-child(6),
+  table:has(> thead > tr > th:nth-child(6):last-child) > tbody > tr > td:nth-child(3),
+  table:has(> thead > tr > th:nth-child(6):last-child) > tbody > tr > td:nth-child(4),
+  table:has(> thead > tr > th:nth-child(6):last-child) > tbody > tr > td:nth-child(5),
+  table:has(> thead > tr > th:nth-child(6):last-child) > tbody > tr > td:nth-child(6) {
+    white-space: nowrap;
+    word-break: keep-all;
+    overflow-wrap: normal;
+  }
+  body::-webkit-scrollbar,
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  body::-webkit-scrollbar-track,
+  *::-webkit-scrollbar-track {
+    background: #1b2230;
+  }
+  body::-webkit-scrollbar-thumb,
+  *::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #5b667c 0%, #394455 100%);
+    border: 2px solid #1b2230;
+    border-radius: 999px;
+  }
+  body::-webkit-scrollbar-thumb:hover,
+  *::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #6c7890 0%, #475468 100%);
+  }
+</style>`
+      if (/<head[^>]*>/i.test(html)) {
+        return html.replace(/<head[^>]*>/i, match => `${match}${previewStyle}`)
+      }
+      return `${previewStyle}${html}`
     },
     closeDelPopover(id) {
       const ref = this.$refs[`del-${id}`]
@@ -223,9 +309,11 @@ export default {
 
   .preview-iframe {
     width: 100%;
-    height: 70vh;
-    border: 1px solid #e2e8f0;
-    border-radius: 4px;
+    height: 74vh;
+    border: 1px solid rgba(71, 85, 105, 0.75);
+    border-radius: 6px;
+    background: #111827;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.55);
   }
 }
 </style>

@@ -225,36 +225,47 @@ func docHeader(title, moduleName string) string {
 <title>%s</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#f5f7fa;color:#1e293b;padding:40px 24px}
-.report-wrap{max-width:960px;margin:0 auto;background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08);padding:40px 48px}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#1f2937;color:#e5e7eb;padding:32px 20px}
+.report-wrap{width:min(1200px,100%%);margin:0 auto;background:#111827;border-radius:12px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.3);padding:32px 40px}
 .report-header{border-bottom:2px solid #00d4aa;padding-bottom:20px;margin-bottom:28px}
-.report-header h1{font-size:22px;font-weight:700;color:#0f172a}
-.report-header .meta{font-size:13px;color:#64748b;margin-top:6px}
+.report-header h1{font-size:22px;font-weight:700;color:#f9fafb}
+.report-header .meta{font-size:13px;color:#9ca3af;margin-top:6px}
 .report-header .meta span{margin-right:16px}
-.section-title{font-size:16px;font-weight:600;color:#0f172a;margin:28px 0 14px;padding-left:12px;border-left:3px solid #00d4aa}
+.section-title{font-size:16px;font-weight:600;color:#f9fafb;margin:28px 0 14px;padding-left:12px;border-left:3px solid #00d4aa}
 .stat-row{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
-.stat-card{flex:1;min-width:100px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px 20px;text-align:center}
-.stat-card .stat-value{font-size:26px;font-weight:700;line-height:1.3}
-.stat-card .stat-label{font-size:12px;color:#64748b;margin-top:4px}
-.stat-card.critical .stat-value{color:#dc2626}
-.stat-card.high .stat-value{color:#ea580c}
-.stat-card.medium .stat-value{color:#ca8a04}
-.stat-card.low .stat-value{color:#16a34a}
-.stat-card.pass .stat-value{color:#16a34a}
-.stat-card.fail .stat-value{color:#dc2626}
-.stat-card.rate .stat-value{color:#0284c7}
-.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px 20px;margin-bottom:20px}
-.info-item .label{font-size:12px;color:#64748b}
-.info-item .value{font-size:14px;color:#1e293b;font-weight:500;word-break:break-all}
+.stat-card{flex:1;min-width:100px;background:#1f2937;border:1px solid #374151;border-radius:8px;padding:16px 20px;text-align:center}
+.stat-card .stat-value{font-size:26px;font-weight:700;line-height:1.3;color:#f9fafb}
+.stat-card .stat-label{font-size:12px;color:#9ca3af;margin-top:4px}
+.stat-card.critical .stat-value{color:#ef4444}
+.stat-card.high .stat-value{color:#f97316}
+.stat-card.medium .stat-value{color:#eab308}
+.stat-card.low .stat-value{color:#22c55e}
+.stat-card.pass .stat-value{color:#22c55e}
+.stat-card.fail .stat-value{color:#ef4444}
+.stat-card.rate .stat-value{color:#3b82f6}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;background:#1f2937;border:1px solid #374151;border-radius:8px;padding:16px 20px;margin-bottom:20px}
+.info-item .label{font-size:12px;color:#9ca3af}
+.info-item .value{font-size:14px;color:#e5e7eb;font-weight:500;word-break:break-all}
 table{width:100%%;border-collapse:collapse;margin-bottom:20px;font-size:13px}
-th{background:#f1f5f9;color:#475569;font-weight:600;padding:10px 12px;text-align:left;border-bottom:2px solid #e2e8f0}
-td{padding:10px 12px;border-bottom:1px solid #f1f5f9;color:#334155;vertical-align:top}
-tr:hover td{background:#f8fafc}
-.report-footer{text-align:center;font-size:12px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:16px;margin-top:28px}
-.risk-critical{color:#dc2626;font-weight:600}
-.risk-high{color:#ea580c;font-weight:600}
-.risk-medium{color:#ca8a04;font-weight:600}
-.risk-low{color:#16a34a}
+th{background:#1f2937;color:#9ca3af;font-weight:600;padding:10px 12px;text-align:left;border-bottom:2px solid #374151;white-space:normal;word-break:break-word}
+td{padding:10px 12px;border-bottom:1px solid #374151;color:#d1d5db;vertical-align:top;white-space:normal;word-break:break-word;overflow-wrap:anywhere}
+tr:hover td{background:#1f2937}
+.report-table-findings-six{table-layout:fixed}
+.report-table-findings-six th:nth-child(1),.report-table-findings-six td:nth-child(1){width:14%%}
+.report-table-findings-six th:nth-child(2),.report-table-findings-six td:nth-child(2){width:42%%}
+.report-table-findings-six th:nth-child(3),.report-table-findings-six td:nth-child(3){width:8%%;white-space:nowrap;word-break:keep-all;overflow-wrap:normal}
+.report-table-findings-six th:nth-child(4),.report-table-findings-six td:nth-child(4){width:8%%;white-space:nowrap;word-break:keep-all;overflow-wrap:normal}
+.report-table-findings-six th:nth-child(5),.report-table-findings-six td:nth-child(5){width:13%%;white-space:nowrap;word-break:keep-all;overflow-wrap:normal}
+.report-table-findings-six th:nth-child(6),.report-table-findings-six td:nth-child(6){width:15%%;white-space:nowrap;word-break:keep-all;overflow-wrap:normal}
+.report-table-targets td:nth-child(1),.report-table-targets th:nth-child(1){width:12%%}
+.report-table-targets td:nth-child(2),.report-table-targets th:nth-child(2){width:50%%}
+.report-table-targets td:nth-child(3),.report-table-targets th:nth-child(3){width:38%%}
+@media (max-width: 960px){.report-wrap{padding:24px 20px}.report-table-findings-six{table-layout:auto}.report-table-findings-six th,.report-table-findings-six td{white-space:normal;word-break:break-word;overflow-wrap:anywhere}}
+.report-footer{text-align:center;font-size:12px;color:#6b7280;border-top:1px solid #374151;padding-top:16px;margin-top:28px}
+.risk-critical{color:#ef4444;font-weight:600}
+.risk-high{color:#f97316;font-weight:600}
+.risk-medium{color:#eab308;font-weight:600}
+.risk-low{color:#22c55e}
 </style>
 </head>
 <body>
@@ -380,7 +391,12 @@ func writeTable(b *strings.Builder, headers []string, rows []services.ReportTabl
 	if len(headers) == 0 || len(rows) == 0 {
 		return
 	}
-	b.WriteString(`<table><thead><tr>`)
+	tableClass := reportTableClass(headers)
+	if tableClass == "" {
+		b.WriteString(`<table><thead><tr>`)
+	} else {
+		b.WriteString(fmt.Sprintf(`<table class="%s"><thead><tr>`, tableClass))
+	}
 	for _, h := range headers {
 		b.WriteString(fmt.Sprintf(`<th>%s</th>`, h))
 	}
@@ -393,4 +409,11 @@ func writeTable(b *strings.Builder, headers []string, rows []services.ReportTabl
 		b.WriteString(`</tr>`)
 	}
 	b.WriteString(`</tbody></table>`)
+}
+
+func reportTableClass(headers []string) string {
+	if len(headers) == 6 {
+		return "report-table-findings-six"
+	}
+	return ""
 }
