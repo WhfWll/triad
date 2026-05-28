@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"smart/models/mysqls"
 	"smart/tools/enums"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -270,6 +271,82 @@ func redisRequirePassCheck() func(string) bool {
 	}
 }
 
+func redisConfigValue(actual string) string {
+	s := strings.TrimSpace(actual)
+	if idx := strings.Index(s, "result="); idx >= 0 {
+		s = strings.TrimSpace(s[idx+len("result="):])
+	}
+	s = strings.TrimSpace(strings.Trim(s, "[]"))
+	parts := strings.Fields(s)
+	if len(parts) >= 2 {
+		return strings.TrimSpace(strings.Join(parts[1:], " "))
+	}
+	return s
+}
+
+func redisConfigEqualsCheck(expected string) func(string) bool {
+	expected = strings.ToLower(strings.TrimSpace(expected))
+	return func(actual string) bool {
+		return strings.ToLower(redisConfigValue(actual)) == expected
+	}
+}
+
+func redisConfigPositiveIntCheck() func(string) bool {
+	return func(actual string) bool {
+		val := redisConfigValue(actual)
+		n, err := strconv.Atoi(strings.TrimSpace(val))
+		return err == nil && n > 0
+	}
+}
+
+func redisConfigNonEmptyCheck() func(string) bool {
+	return func(actual string) bool {
+		val := strings.Trim(redisConfigValue(actual), "\"")
+		return strings.TrimSpace(val) != ""
+	}
+}
+
+func postgresNotDisabledCheck(disabledValues ...string) func(string) bool {
+	disabled := make(map[string]struct{}, len(disabledValues))
+	for _, v := range disabledValues {
+		disabled[strings.ToLower(strings.TrimSpace(v))] = struct{}{}
+	}
+	return func(actual string) bool {
+		value := strings.TrimSpace(strings.ToLower(actual))
+		for bad := range disabled {
+			if value == bad || strings.Contains(value, "="+bad) {
+				return false
+			}
+		}
+		return value != ""
+	}
+}
+
+func fieldIntAtMostCheck(field string, max int) func(string) bool {
+	field = strings.ToLower(strings.TrimSpace(field))
+	return func(actual string) bool {
+		tokens := strings.Fields(strings.ReplaceAll(strings.ToLower(actual), "\n", " "))
+		prefix := field + "="
+		for _, token := range tokens {
+			if strings.HasPrefix(token, prefix) {
+				val := strings.TrimPrefix(token, prefix)
+				n, err := strconv.Atoi(strings.TrimSpace(val))
+				if err == nil {
+					return n <= max
+				}
+			}
+		}
+		return false
+	}
+}
+
+func postgresTLSMinVersionCheck() func(string) bool {
+	return func(actual string) bool {
+		lower := strings.ToLower(actual)
+		return strings.Contains(lower, "tlsv1.2") || strings.Contains(lower, "tlsv1.3")
+	}
+}
+
 func mongoAuthorizationEnabledCheck() func(string) bool {
 	return func(actual string) bool {
 		probe, ok := parseMongoProbePayload(actual)
@@ -393,6 +470,15 @@ func getPostgreSQLBaselineRules() []dbRuleDef {
 		{ID: 3, Name: "检查日志记录", Description: "应开启日志记录", Category: enums.DBCheckCategoryAuditLog, Risk: enums.BaselineRiskMiddle, Queries: []string{"SHOW logging_collector"}, ExpectedValue: "on", FixSuggestion: "设置 logging_collector = on", CheckFunc: containsCheck("on")},
 		{ID: 4, Name: "检查SSL", Description: "建议开启SSL", Category: enums.DBCheckCategoryEncryption, Risk: enums.BaselineRiskMiddle, Queries: []string{"SHOW ssl"}, ExpectedValue: "on", FixSuggestion: "配置SSL证书", CheckFunc: containsCheck("on")},
 		{ID: 5, Name: "检查log_statement", Description: "应记录所有DDL操作", Category: enums.DBCheckCategoryAuditLog, Risk: enums.BaselineRiskLow, Queries: []string{"SHOW log_statement"}, ExpectedValue: "ddl", FixSuggestion: "设置 log_statement = 'ddl'", CheckFunc: func(s string) bool { return !containsCheck("none")(s) }},
+		{ID: 6, Name: "检查trust认证", Description: "pg_hba.conf 不应使用 trust 认证方式", Category: enums.DBCheckCategoryAuthentication, Risk: enums.BaselineRiskCritical, Queries: []string{"SELECT type, database, user_name, address, auth_method FROM pg_hba_file_rules WHERE error IS NULL AND auth_method='trust'"}, ExpectedValue: "空结果", FixSuggestion: "将 pg_hba.conf 中的 trust 调整为 scram-sha-256 或其他受控认证方式", CheckFunc: emptyResultCheck()},
+		{ID: 7, Name: "检查连接登录审计", Description: "应记录连接登录事件，便于审计追踪", Category: enums.DBCheckCategoryAuditLog, Risk: enums.BaselineRiskMiddle, Queries: []string{"SHOW log_connections"}, ExpectedValue: "on", FixSuggestion: "设置 log_connections = on", CheckFunc: containsCheck("on")},
+		{ID: 8, Name: "检查连接断开审计", Description: "应记录连接断开事件，便于复盘异常会话", Category: enums.DBCheckCategoryAuditLog, Risk: enums.BaselineRiskLow, Queries: []string{"SHOW log_disconnections"}, ExpectedValue: "on", FixSuggestion: "设置 log_disconnections = on", CheckFunc: containsCheck("on")},
+		{ID: 9, Name: "检查TLS最低版本", Description: "SSL 开启时，最低协议版本建议不低于 TLSv1.2", Category: enums.DBCheckCategoryEncryption, Risk: enums.BaselineRiskMiddle, Queries: []string{"SHOW ssl_min_protocol_version"}, ExpectedValue: "TLSv1.2 或 TLSv1.3", FixSuggestion: "设置 ssl_min_protocol_version = 'TLSv1.2' 或更高版本", CheckFunc: postgresTLSMinVersionCheck()},
+		{ID: 10, Name: "检查fsync", Description: "应开启 fsync 以保障事务与数据落盘一致性", Category: enums.DBCheckCategoryConfigSecure, Risk: enums.BaselineRiskHigh, Queries: []string{"SHOW fsync"}, ExpectedValue: "on", FixSuggestion: "设置 fsync = on，避免异常掉电导致数据不一致", CheckFunc: containsCheck("on")},
+		{ID: 11, Name: "检查超级用户数量", Description: "超级用户数量应最小化，避免过多高权限账户", Category: enums.DBCheckCategoryAuthorization, Risk: enums.BaselineRiskHigh, Queries: []string{"SELECT count(*) AS count FROM pg_roles WHERE rolsuper"}, ExpectedValue: "count <= 1", FixSuggestion: "梳理 pg_roles 中的 rolsuper 账户，仅保留必要超级用户", CheckFunc: fieldIntAtMostCheck("count", 1)},
+		{ID: 12, Name: "检查statement_timeout", Description: "应设置语句超时，降低异常慢查询或长事务拖垮实例的风险", Category: enums.DBCheckCategoryConfigSecure, Risk: enums.BaselineRiskMiddle, Queries: []string{"SHOW statement_timeout"}, ExpectedValue: "非 0", FixSuggestion: "设置 statement_timeout 为合理值，例如 30s 或 60s", CheckFunc: postgresNotDisabledCheck("0", "0ms")},
+		{ID: 13, Name: "检查idle_in_transaction_session_timeout", Description: "应限制事务空闲超时，避免长时间占锁影响业务", Category: enums.DBCheckCategoryConfigSecure, Risk: enums.BaselineRiskMiddle, Queries: []string{"SHOW idle_in_transaction_session_timeout"}, ExpectedValue: "非 0", FixSuggestion: "设置 idle_in_transaction_session_timeout 为合理值，例如 60s", CheckFunc: postgresNotDisabledCheck("0", "0ms")},
+		{ID: 14, Name: "检查慢查询审计", Description: "建议记录慢查询，便于发现异常 SQL 与潜在风险", Category: enums.DBCheckCategoryAuditLog, Risk: enums.BaselineRiskLow, Queries: []string{"SHOW log_min_duration_statement"}, ExpectedValue: "非 -1", FixSuggestion: "设置 log_min_duration_statement 为合理阈值，例如 500ms 或 1000ms", CheckFunc: postgresNotDisabledCheck("-1")},
 	}
 }
 
@@ -414,6 +500,11 @@ func getRedisBaselineRules() []dbRuleDef {
 			return s != "" && (strings.Contains(s, "rename-command") || !strings.HasSuffix(s, "result="))
 		}},
 		{ID: 5, Name: "检查最大内存策略", Description: "应配置 maxmemory 防止内存耗尽", Category: enums.DBCheckCategoryConfigSecure, Risk: enums.BaselineRiskMiddle, Queries: []string{"CONFIG GET maxmemory"}, ExpectedValue: "非 0", FixSuggestion: "设置 maxmemory 与 maxmemory-policy", CheckFunc: func(s string) bool { return !strings.Contains(s, "result=0") && strings.TrimSpace(s) != "" }},
+		{ID: 6, Name: "检查AOF持久化", Description: "建议开启 appendonly，降低实例异常退出后的数据丢失风险", Category: enums.DBCheckCategoryAuditLog, Risk: enums.BaselineRiskMiddle, Queries: []string{"CONFIG GET appendonly"}, ExpectedValue: "yes", FixSuggestion: "设置 appendonly yes，并结合 appendfsync 制定持久化策略", CheckFunc: redisConfigEqualsCheck("yes")},
+		{ID: 7, Name: "检查快照策略", Description: "建议保留 RDB 快照策略，便于恢复与回溯", Category: enums.DBCheckCategoryAuditLog, Risk: enums.BaselineRiskLow, Queries: []string{"CONFIG GET save"}, ExpectedValue: "非空", FixSuggestion: "设置 save 规则，例如 save 900 1 / 300 10 / 60 10000", CheckFunc: redisConfigNonEmptyCheck()},
+		{ID: 8, Name: "检查bgsave异常保护", Description: "应在持久化失败时停止写入，避免继续接受不可落盘的数据", Category: enums.DBCheckCategoryConfigSecure, Risk: enums.BaselineRiskMiddle, Queries: []string{"CONFIG GET stop-writes-on-bgsave-error"}, ExpectedValue: "yes", FixSuggestion: "设置 stop-writes-on-bgsave-error yes", CheckFunc: redisConfigEqualsCheck("yes")},
+		{ID: 9, Name: "检查空闲连接超时", Description: "应设置 timeout，避免长时间空闲连接占用资源", Category: enums.DBCheckCategoryConfigSecure, Risk: enums.BaselineRiskLow, Queries: []string{"CONFIG GET timeout"}, ExpectedValue: "大于 0", FixSuggestion: "设置 timeout 为合理值，例如 300", CheckFunc: redisConfigPositiveIntCheck()},
+		{ID: 10, Name: "检查TCP保活", Description: "建议开启 tcp-keepalive，便于及时回收失效连接", Category: enums.DBCheckCategoryNetwork, Risk: enums.BaselineRiskLow, Queries: []string{"CONFIG GET tcp-keepalive"}, ExpectedValue: "大于 0", FixSuggestion: "设置 tcp-keepalive 为合理值，例如 60 或 300", CheckFunc: redisConfigPositiveIntCheck()},
 	}
 }
 

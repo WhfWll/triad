@@ -97,6 +97,7 @@ func BaselineCheckResultList(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAuditf(c, ctx, "查看了配置核查结果，任务ID: %d，目标ID: %d", req.TaskID, req.TargetID)
 	server.RespSuccess(c, resp)
 }
 
@@ -149,6 +150,7 @@ func HostSecTaskDelete(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAuditf(c, ctx, "删除了主机安全任务，条目数: %d", len(req.Items))
 	server.RespSuccess(c, resp)
 }
 
@@ -166,6 +168,7 @@ func BaselineTaskTargets(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAuditf(c, ctx, "查看了配置核查任务目标，任务ID: %d", taskID)
 	server.RespSuccess(c, map[string]interface{}{
 		"list":  items,
 		"total": len(items),
@@ -187,6 +190,7 @@ func BaselineRulesReload(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAudit(c, ctx, "重载了配置核查规则")
 	server.RespSuccess(c, map[string]bool{"ok": true})
 }
 
@@ -200,6 +204,7 @@ func BaselineRulesImport(c *gin.Context) {
 	ctx := server.NewContext(context.Background(), c)
 	var app application.BaselineApp
 	resp := app.ImportBaselineRules(ctx, &req)
+	addOperateAuditf(c, ctx, "导入了配置核查规则，导入条数: %d", len(req.Rules))
 	server.RespSuccess(c, resp)
 }
 
@@ -240,6 +245,7 @@ func BaselineRuleDetail(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAuditf(c, ctx, "查看了配置核查规则详情，规则ID: %d", req.ID)
 	server.RespSuccess(c, resp)
 }
 
@@ -258,6 +264,7 @@ func BaselineRuleCreate(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAuditf(c, ctx, "新增了配置核查规则，名称: %s", req.Name)
 	server.RespSuccess(c, map[string]bool{"ok": true})
 }
 
@@ -276,6 +283,7 @@ func BaselineRuleUpdate(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAuditf(c, ctx, "编辑了配置核查规则，规则ID: %d", req.ID)
 	server.RespSuccess(c, map[string]bool{"ok": true})
 }
 
@@ -295,6 +303,7 @@ func BaselineRuleDelete(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAuditf(c, ctx, "删除了配置核查规则，规则ID: %d", req.ID)
 	server.RespSuccess(c, map[string]bool{"ok": true})
 }
 

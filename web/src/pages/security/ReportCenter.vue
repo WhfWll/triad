@@ -210,23 +210,27 @@ export default {
   }
   table:has(> thead > tr > th:nth-child(6):last-child) > thead > tr > th:nth-child(5),
   table:has(> thead > tr > th:nth-child(6):last-child) > tbody > tr > td:nth-child(5) {
-    width: 13%;
+    width: 11%;
   }
   table:has(> thead > tr > th:nth-child(6):last-child) > thead > tr > th:nth-child(6),
   table:has(> thead > tr > th:nth-child(6):last-child) > tbody > tr > td:nth-child(6) {
-    width: 15%;
+    width: 17%;
   }
   table:has(> thead > tr > th:nth-child(6):last-child) > thead > tr > th:nth-child(3),
   table:has(> thead > tr > th:nth-child(6):last-child) > thead > tr > th:nth-child(4),
-  table:has(> thead > tr > th:nth-child(6):last-child) > thead > tr > th:nth-child(5),
-  table:has(> thead > tr > th:nth-child(6):last-child) > thead > tr > th:nth-child(6),
   table:has(> thead > tr > th:nth-child(6):last-child) > tbody > tr > td:nth-child(3),
-  table:has(> thead > tr > th:nth-child(6):last-child) > tbody > tr > td:nth-child(4),
-  table:has(> thead > tr > th:nth-child(6):last-child) > tbody > tr > td:nth-child(5),
-  table:has(> thead > tr > th:nth-child(6):last-child) > tbody > tr > td:nth-child(6) {
+  table:has(> thead > tr > th:nth-child(6):last-child) > tbody > tr > td:nth-child(4) {
     white-space: nowrap;
     word-break: keep-all;
     overflow-wrap: normal;
+  }
+  table:has(> thead > tr > th:nth-child(6):last-child) > thead > tr > th:nth-child(5),
+  table:has(> thead > tr > th:nth-child(6):last-child) > thead > tr > th:nth-child(6),
+  table:has(> thead > tr > th:nth-child(6):last-child) > tbody > tr > td:nth-child(5),
+  table:has(> thead > tr > th:nth-child(6):last-child) > tbody > tr > td:nth-child(6) {
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
   }
   body::-webkit-scrollbar,
   *::-webkit-scrollbar {

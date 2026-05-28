@@ -28,6 +28,7 @@ func SecurityReportGenerate(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAuditf(c, ctx, "生成了安全检查报告，模块: %s，任务ID: %d，报告ID: %d", req.Module, req.TaskID, resp.ID)
 	server.RespSuccess(c, resp)
 }
 
@@ -62,6 +63,7 @@ func SecurityReportDetail(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAuditf(c, ctx, "查看了安全检查报告详情，报告ID: %d", req.ID)
 	server.RespSuccess(c, resp)
 }
 
@@ -78,5 +80,6 @@ func SecurityReportDelete(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAuditf(c, ctx, "删除了安全检查报告，报告ID: %d", req.ID)
 	server.RespSuccess(c, gin.H{})
 }

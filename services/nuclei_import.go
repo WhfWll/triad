@@ -47,6 +47,50 @@ type nucleiTemplateDoc struct {
 	} `yaml:"info"`
 }
 
+type nucleiSkipError struct {
+	Reason string
+}
+
+func (e *nucleiSkipError) Error() string {
+	return e.Reason
+}
+
+func ensureImportStats(result *VulkitImportResult) *ImportRuleStats {
+	if result.Stats == nil {
+		result.Stats = &ImportRuleStats{
+			BySeverity: map[string]int{},
+			ByType:     map[string]int{},
+			SkipReason: map[string]int{},
+		}
+	}
+	if result.Stats.BySeverity == nil {
+		result.Stats.BySeverity = map[string]int{}
+	}
+	if result.Stats.ByType == nil {
+		result.Stats.ByType = map[string]int{}
+	}
+	if result.Stats.SkipReason == nil {
+		result.Stats.SkipReason = map[string]int{}
+	}
+	return result.Stats
+}
+
+func addSkipReasonStat(result *VulkitImportResult, reason string) {
+	stats := ensureImportStats(result)
+	reason = strings.TrimSpace(reason)
+	if reason == "" {
+		reason = "其他"
+	}
+	stats.SkipReason[reason]++
+}
+
+func addImportedTemplateStat(result *VulkitImportResult, doc nucleiTemplateDoc, relativePath, name string, tags, refs []string) {
+	stats := ensureImportStats(result)
+	severity := normalizeNucleiSeverityLabel(doc.Info.Severity)
+	stats.BySeverity[severity]++
+	stats.ByType[nucleiTypeLabel(mapNucleiTemplateToType(relativePath, tags, name, refs))]++
+}
+
 func ImportNucleiTemplatesFromUpload(src io.Reader, filename string) (*VulkitImportResult, error) {
 	data, err := io.ReadAll(src)
 	if err != nil {
@@ -59,9 +103,18 @@ func ImportNucleiTemplatesFromUpload(src io.Reader, filename string) (*VulkitImp
 		return importNucleiTemplatesFromZip(data)
 	case strings.HasSuffix(lowerName, ".yaml"), strings.HasSuffix(lowerName, ".yml"):
 		if err := importSingleNucleiTemplate(data, filepath.Base(filename)); err != nil {
+			if skipErr, ok := err.(*nucleiSkipError); ok {
+				result := &VulkitImportResult{Total: 1, Skip: 1, Errors: []string{skipErr.Error()}}
+				addSkipReasonStat(result, skipErr.Error())
+				return result, nil
+			}
 			return nil, err
 		}
-		return &VulkitImportResult{Total: 1, Success: 1}, nil
+		result := &VulkitImportResult{Total: 1, Success: 1}
+		if doc, ok := parseNucleiTemplateDoc(data); ok {
+			addImportedTemplateStat(result, doc, filepath.Base(filename), firstNonEmpty(doc.Info.Name, doc.ID, filepath.Base(filename)), normalizeNucleiStrings(doc.Info.Tags), normalizeNucleiStrings(doc.Info.Reference))
+		}
+		return result, nil
 	default:
 		return nil, fmt.Errorf("不支持的 nuclei 模板格式: %s，请上传 .zip、.yaml 或 .yml 文件", filename)
 	}
@@ -113,11 +166,21 @@ func ImportNucleiTemplatesFromPath(rootPath string) (*VulkitImportResult, error)
 			relPath = filepath.Base(path)
 		}
 		if err := importSingleNucleiTemplate(content, relPath); err != nil {
+			if skipErr, ok := err.(*nucleiSkipError); ok {
+				result.Total++
+				result.Skip++
+				result.Errors = append(result.Errors, fmt.Sprintf("%s: %s", relPath, skipErr.Error()))
+				addSkipReasonStat(result, skipErr.Error())
+				return nil
+			}
 			result.Errors = append(result.Errors, fmt.Sprintf("%s: %v", relPath, err))
 			return nil
 		}
 		result.Total++
 		result.Success++
+		if doc, ok := parseNucleiTemplateDoc(content); ok {
+			addImportedTemplateStat(result, doc, relPath, firstNonEmpty(doc.Info.Name, doc.ID, filepath.Base(relPath)), normalizeNucleiStrings(doc.Info.Tags), normalizeNucleiStrings(doc.Info.Reference))
+		}
 		return nil
 	})
 	if err != nil {
@@ -156,11 +219,21 @@ func importNucleiTemplatesFromZip(data []byte) (*VulkitImportResult, error) {
 			continue
 		}
 		if err := importSingleNucleiTemplate(content, f.Name); err != nil {
+			if skipErr, ok := err.(*nucleiSkipError); ok {
+				result.Total++
+				result.Skip++
+				result.Errors = append(result.Errors, fmt.Sprintf("%s: %s", f.Name, skipErr.Error()))
+				addSkipReasonStat(result, skipErr.Error())
+				continue
+			}
 			result.Errors = append(result.Errors, fmt.Sprintf("%s: %v", f.Name, err))
 			continue
 		}
 		result.Total++
 		result.Success++
+		if doc, ok := parseNucleiTemplateDoc(content); ok {
+			addImportedTemplateStat(result, doc, f.Name, firstNonEmpty(doc.Info.Name, doc.ID, filepath.Base(f.Name)), normalizeNucleiStrings(doc.Info.Tags), normalizeNucleiStrings(doc.Info.Reference))
+		}
 	}
 
 	if result.Total == 0 {
@@ -170,11 +243,16 @@ func importNucleiTemplatesFromZip(data []byte) (*VulkitImportResult, error) {
 }
 
 func looksLikeNucleiTemplate(content []byte) bool {
+	doc, ok := parseNucleiTemplateDoc(content)
+	return ok && strings.TrimSpace(doc.ID) != "" && strings.TrimSpace(doc.Info.Name) != ""
+}
+
+func parseNucleiTemplateDoc(content []byte) (nucleiTemplateDoc, bool) {
 	var doc nucleiTemplateDoc
 	if err := yaml.Unmarshal(content, &doc); err != nil {
-		return false
+		return doc, false
 	}
-	return strings.TrimSpace(doc.ID) != "" && strings.TrimSpace(doc.Info.Name) != ""
+	return doc, true
 }
 
 func importSingleNucleiTemplate(content []byte, relativePath string) error {
@@ -190,6 +268,9 @@ func importSingleNucleiTemplate(content []byte, relativePath string) error {
 	name := firstNonEmpty(doc.Info.Name, doc.ID, filepath.Base(pocname))
 	tags := normalizeNucleiStrings(doc.Info.Tags)
 	refs := normalizeNucleiStrings(doc.Info.Reference)
+	if reason, skip := shouldSkipNucleiTemplate(doc, relativePath, name, tags, refs); skip {
+		return &nucleiSkipError{Reason: reason}
+	}
 	cve := firstNonEmpty(normalizeNucleiStrings(doc.Info.Classification.CVEID)...)
 	if cve == "" {
 		cve = nucleiCveRegexp.FindString(string(content))
@@ -294,6 +375,82 @@ func mapNucleiSeverity(severity string) int {
 		return risk
 	}
 	return enums.VulLibrariesRiskInfo
+}
+
+func normalizeNucleiSeverityLabel(severity string) string {
+	switch strings.ToLower(strings.TrimSpace(severity)) {
+	case "critical":
+		return "critical"
+	case "high":
+		return "high"
+	case "medium":
+		return "medium"
+	case "low":
+		return "low"
+	case "info":
+		return "info"
+	default:
+		return "unknown"
+	}
+}
+
+func nucleiTypeLabel(vulType int) string {
+	switch vulType {
+	case enums.VulLibrariesTypeSqlInj:
+		return "sql-injection"
+	case enums.VulLibrariesTypeXss:
+		return "xss"
+	case enums.VulLibrariesTypeCsrf:
+		return "csrf"
+	case enums.VulLibrariesTypeCodeExec:
+		return "rce"
+	case enums.VulLibrariesTypeSsrf:
+		return "ssrf"
+	case enums.VulLibrariesTypeLfi:
+		return "lfi"
+	case enums.VulLibrariesTypeRfi:
+		return "rfi"
+	case enums.VulLibrariesTypeFileRead:
+		return "file-read"
+	case enums.VulLibrariesTypeFileUpload:
+		return "file-upload"
+	case enums.VulLibrariesTypePathTraversal:
+		return "path-traversal"
+	case enums.VulLibrariesTypeWeakPass:
+		return "weak-password"
+	case enums.VulLibrariesTypeUnauthAccess:
+		return "unauthorized"
+	case enums.VulLibrariesTypeInfoDisclosure:
+		return "info-disclosure"
+	case enums.VulLibrariesTypeDos:
+		return "dos"
+	default:
+		return "other"
+	}
+}
+
+func shouldSkipNucleiTemplate(doc nucleiTemplateDoc, relativePath, name string, tags, refs []string) (string, bool) {
+	severity := strings.ToLower(strings.TrimSpace(doc.Info.Severity))
+	pathLower := strings.ToLower(filepath.ToSlash(strings.TrimSpace(relativePath)))
+	joined := strings.ToLower(strings.Join(append([]string{doc.ID, name, pathLower}, append(tags, refs...)...), ","))
+	vulType := mapNucleiTemplateToType(relativePath, tags, name, refs)
+
+	if severity == "" || severity == "info" || severity == "unknown" {
+		return "已跳过：信息收集/未知严重级别模板", true
+	}
+	if strings.Contains(pathLower, "/workflows/") || strings.Contains(pathLower, "/helpers/") || containsAny(joined, "workflow", "helper") {
+		return "已跳过：工作流/辅助模板", true
+	}
+	if strings.Contains(pathLower, "/http/technologies/") || strings.Contains(pathLower, "/network/detection/") {
+		return "已跳过：指纹识别/信息收集模板", true
+	}
+	if containsAny(joined, "fingerprint", "favicon", "wappalyzer", "technology", "technologies", "detect", "detection", "probe", "enum", "enumeration", "osint", "whois") {
+		return "已跳过：信息收集模板", true
+	}
+	if vulType == enums.VulLibrariesTypeOther && !strings.Contains(strings.ToUpper(joined), "CVE-") {
+		return "已跳过：未识别为漏洞检测模板", true
+	}
+	return "", false
 }
 
 func mapNucleiTemplateToClass(pocname string, tags []string, name string) int {

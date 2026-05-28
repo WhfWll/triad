@@ -106,8 +106,10 @@ const vulnerability = {
     importVulnVulKit(data) {
         // 直接传FormData，不要手动设置Content-Type，让浏览器自动处理boundary
         return $ajax.post('/smart/tools/importvulnvulkit', data)
+    },
+    importNucleiTemplates(data) {
+        return $ajax.post('/smart/tools/importnuclei', data)
     }
-  
 }
 const dictionary = {
     // 目标删除

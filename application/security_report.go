@@ -255,8 +255,8 @@ tr:hover td{background:#1f2937}
 .report-table-findings-six th:nth-child(2),.report-table-findings-six td:nth-child(2){width:42%%}
 .report-table-findings-six th:nth-child(3),.report-table-findings-six td:nth-child(3){width:8%%;white-space:nowrap;word-break:keep-all;overflow-wrap:normal}
 .report-table-findings-six th:nth-child(4),.report-table-findings-six td:nth-child(4){width:8%%;white-space:nowrap;word-break:keep-all;overflow-wrap:normal}
-.report-table-findings-six th:nth-child(5),.report-table-findings-six td:nth-child(5){width:13%%;white-space:nowrap;word-break:keep-all;overflow-wrap:normal}
-.report-table-findings-six th:nth-child(6),.report-table-findings-six td:nth-child(6){width:15%%;white-space:nowrap;word-break:keep-all;overflow-wrap:normal}
+.report-table-findings-six th:nth-child(5),.report-table-findings-six td:nth-child(5){width:11%%;white-space:normal;word-break:break-word;overflow-wrap:anywhere}
+.report-table-findings-six th:nth-child(6),.report-table-findings-six td:nth-child(6){width:17%%;white-space:normal;word-break:break-word;overflow-wrap:anywhere}
 .report-table-targets td:nth-child(1),.report-table-targets th:nth-child(1){width:12%%}
 .report-table-targets td:nth-child(2),.report-table-targets th:nth-child(2){width:50%%}
 .report-table-targets td:nth-child(3),.report-table-targets th:nth-child(3){width:38%%}

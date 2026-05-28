@@ -20,6 +20,7 @@ require (
 	github.com/h2non/filetype v1.1.3
 	github.com/hyperjumptech/beda v1.1.0
 	github.com/klauspost/compress v1.16.7
+	github.com/lib/pq v1.1.0
 	github.com/mackerelio/go-osstat v0.2.4
 	github.com/masterzen/winrm v0.0.0-20260407182533-5570be7f80cf
 	github.com/mattn/go-sqlite3 v1.14.16

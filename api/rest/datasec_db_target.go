@@ -40,6 +40,11 @@ func DataSecDBTargetSave(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	if req.ID > 0 {
+		addOperateAuditf(c, ctx, "编辑了数据安全目标库，目标ID: %d，名称: %s", req.ID, req.Name)
+	} else {
+		addOperateAuditf(c, ctx, "新增了数据安全目标库，名称: %s，目标: %s:%v/%s", req.Name, req.DBHost, req.DBPort, req.DBName)
+	}
 	server.RespSuccess(c, nil)
 }
 
@@ -55,6 +60,7 @@ func DataSecDBTargetDelete(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAuditf(c, ctx, "删除了数据安全目标库，目标ID: %d", req.ID)
 	server.RespSuccess(c, nil)
 }
 
@@ -71,6 +77,7 @@ func DataSecDBTargetImport(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAuditf(c, ctx, "导入了数据安全目标库，导入数量: %d", n)
 	server.RespSuccess(c, gin.H{"imported": n})
 }
 
@@ -92,6 +99,7 @@ func DataSecDBTargetExport(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAuditf(c, ctx, "导出了数据安全目标库，指定ID数量: %d，包含密码: %t，导出数量: %d", len(ids), includePassword, len(resp.Items))
 	server.RespSuccess(c, resp)
 }
 
@@ -108,6 +116,7 @@ func DataSecTaskCloneTargets(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAuditf(c, ctx, "复制了数据安全历史任务目标，任务ID: %s，类型: %s，目标数量: %d", req.ID, req.Kind, len(resp.Targets))
 	server.RespSuccess(c, resp)
 }
 
@@ -124,6 +133,7 @@ func DataSecTaskRerun(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAuditf(c, ctx, "发起了数据安全再次检测，原任务ID: %s，类型: %s，新任务ID: %s", req.ID, req.Kind, resp.ID)
 	server.RespSuccess(c, resp)
 }
 
@@ -139,6 +149,7 @@ func DataSecTaskDelete(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAuditf(c, ctx, "删除了数据安全任务，任务ID: %s，类型: %s", req.ID, req.Kind)
 	server.RespSuccess(c, nil)
 }
 
@@ -159,6 +170,7 @@ func DataSecSaveTargetsToLibrary(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAuditf(c, ctx, "将任务目标保存到了数据安全目标库，分组: %s，保存数量: %d", req.GroupName, n)
 	server.RespSuccess(c, gin.H{"saved": n})
 }
 
@@ -175,6 +187,7 @@ func DataSecDBTargetTestConn(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAuditf(c, ctx, "测试了数据安全目标库连接，目标ID: %d，目标: %s:%v/%s，结果: %t", req.ID, req.DBHost, req.DBPort, req.DBName, resp.OK)
 	server.RespSuccess(c, resp)
 }
 
@@ -191,5 +204,6 @@ func DataSecDBTargetBatchTestConn(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAuditf(c, ctx, "批量测试了数据安全目标库连接，目标数量: %d，成功: %d，失败: %d", len(req.IDs), resp.OK, resp.Fail)
 	server.RespSuccess(c, resp)
 }

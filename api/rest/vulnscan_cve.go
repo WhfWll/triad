@@ -132,6 +132,7 @@ func VulnScanCveTargets(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAuditf(c, ctx, "查看了CVE漏洞扫描任务目标，任务ID: %d", taskID)
 	server.RespSuccess(c, gin.H{"list": list})
 }
 
@@ -149,5 +150,6 @@ func VulnScanCveFindings(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAuditf(c, ctx, "查看了CVE漏洞扫描发现列表，任务ID: %d，目标: %s", req.TaskID, req.TargetIP)
 	server.RespSuccess(c, resp)
 }

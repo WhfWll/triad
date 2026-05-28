@@ -8,6 +8,7 @@ import (
 	"smart/api/typespec"
 	"smart/services"
 	"smart/tools/enums"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -48,7 +49,17 @@ func (l *Logs) LogAuditList(ctx context.Context, req *typespec.LogAuditListReq, 
 // LogAuditEmpty 审计日志-清空
 func (l *Logs) LogAuditEmpty(ctx context.Context) error {
 	var logAuditService services.LogAudit
-	return logAuditService.LogAuditEmpty(ctx)
+	logs, err := logAuditService.LogAuditAll(ctx)
+	if err != nil {
+		return err
+	}
+	cleared := len(logs)
+	currentUsername, _ := ctx.Value("username").(string)
+	currentIP, _ := ctx.Value("ip").(string)
+	if err := logAuditService.LogAuditEmpty(ctx); err != nil {
+		return err
+	}
+	return logAuditService.LogAuditAdd(ctx, enums.LogAuditTypeOperate, "清空了审计日志，清空前日志条数: "+strconv.Itoa(cleared), currentUsername, currentIP)
 }
 
 // LogBackupConfig 日志管理-日志备份-配置

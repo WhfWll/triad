@@ -703,7 +703,7 @@ func (a *DataSecScan) buildDBListItem(ctx context.Context, task mysqls.TaskTask,
 		if item.ScanSensitive || sTotal > 0 {
 			results, _ := (&mysqls.SensitiveDataResult{}).GetByTaskID(ctx, task.ID)
 			item.TypeStats = buildSensitiveTypeStats(results)
-			item.SensitiveItems = buildSensitiveDetailItems(results)
+			item.SensitiveItems = buildSensitiveDetailItems(results, buildSensitiveTargetLabelMap(targets))
 		}
 	}
 	return item, nil
@@ -779,7 +779,7 @@ func (a *DataSecScan) buildSensitiveListItem(ctx context.Context, task mysqls.Ta
 		item.Targets = buildDataSecSensitiveTargetItems(ctx, targets)
 		results, _ := (&mysqls.SensitiveDataResult{}).GetByTaskID(ctx, task.ID)
 		item.TypeStats = buildSensitiveTypeStats(results)
-		item.Items = buildSensitiveDetailItems(results)
+		item.Items = buildSensitiveDetailItems(results, buildSensitiveTargetLabelMap(targets))
 	}
 	return item, nil
 }
@@ -829,17 +829,17 @@ func buildDataSecSensitiveTargetItems(ctx context.Context, targets []mysqls.Task
 		ext := parseDatasecExtend(t.ExtendField)
 		high, mid, low, total := countSensitiveByTarget(ctx, t.ID)
 		out = append(out, typespec.DataSecTargetItem{
-			ID:          t.ID,
-			TargetURL:   t.TargetURL,
-			DBType:      cfg.DBType,
-			DBHost:      cfg.DBHost,
-			DBPort:      cfg.DBPort,
-			DBName:      cfg.DBName,
-			Status:      mapTargetStatusToAppSecOrDefault(t.Status),
-			TotalCount:  total,
-			HighCount:   high,
-			MediumCount: mid,
-			LowCount:    low,
+			ID:           t.ID,
+			TargetURL:    t.TargetURL,
+			DBType:       cfg.DBType,
+			DBHost:       cfg.DBHost,
+			DBPort:       cfg.DBPort,
+			DBName:       cfg.DBName,
+			Status:       mapTargetStatusToAppSecOrDefault(t.Status),
+			TotalCount:   total,
+			HighCount:    high,
+			MediumCount:  mid,
+			LowCount:     low,
 			ErrorMessage: ext.ErrorMessage,
 		})
 	}
@@ -858,12 +858,12 @@ func loadDBCheckDetailItems(ctx context.Context, taskID int, targetID int) []typ
 			risk = enums.BaselineRiskInfo
 		}
 		out = append(out, typespec.DataSecDBDetailItem{
-			TargetID:    r.TargetID,
-			Category:    r.CheckCategory,
-			RiskLevel:   risk,
-			Result:      enums.BaselineEnum.GetCheckResultName(r.CheckResult),
-			Description: firstNonEmpty(r.RiskDescription, r.RuleName),
-			Suggestion:  r.FixSuggestion,
+			TargetID:      r.TargetID,
+			Category:      r.CheckCategory,
+			RiskLevel:     risk,
+			Result:        enums.BaselineEnum.GetCheckResultName(r.CheckResult),
+			Description:   firstNonEmpty(r.RiskDescription, r.RuleName),
+			Suggestion:    r.FixSuggestion,
 			RuleName:      r.RuleName,
 			ActualValue:   r.ActualValue,
 			ExpectedValue: r.ExpectedValue,
@@ -1057,17 +1057,48 @@ func buildSensitiveTypeStats(results []mysqls.SensitiveDataResult) []typespec.Da
 	return out
 }
 
-func buildSensitiveDetailItems(results []mysqls.SensitiveDataResult) []typespec.DataSecSensitiveDetailItem {
+func buildSensitiveTargetLabelMap(targets []mysqls.TaskTarget) map[int]string {
+	out := make(map[int]string, len(targets))
+	for _, t := range targets {
+		label := strings.TrimSpace(t.TargetURL)
+		if label == "" {
+			cfg := parseDatasecConfig(t.TaskTemplateJSON)
+			label = formatDataSecTargetURL(cfg.DBHost, cfg.DBPort, cfg.DBName)
+		}
+		out[t.ID] = label
+	}
+	return out
+}
+
+func buildSensitiveLocation(dbName, tableName, columnName string) string {
+	parts := make([]string, 0, 3)
+	if strings.TrimSpace(dbName) != "" {
+		parts = append(parts, strings.TrimSpace(dbName))
+	}
+	if strings.TrimSpace(tableName) != "" {
+		parts = append(parts, strings.TrimSpace(tableName))
+	}
+	if strings.TrimSpace(columnName) != "" {
+		parts = append(parts, strings.TrimSpace(columnName))
+	}
+	return strings.Join(parts, " / ")
+}
+
+func buildSensitiveDetailItems(results []mysqls.SensitiveDataResult, targetLabels map[int]string) []typespec.DataSecSensitiveDetailItem {
 	out := make([]typespec.DataSecSensitiveDetailItem, 0, len(results))
 	for _, r := range results {
 		cnt := 1
 		if r.TotalRows > 0 {
 			cnt = int(r.TotalRows)
 		}
+		location := buildSensitiveLocation(r.DBName, r.TableNameStr, r.ColumnName)
 		out = append(out, typespec.DataSecSensitiveDetailItem{
 			TargetID:         r.TargetID,
+			TargetLabel:      targetLabels[r.TargetID],
+			DBName:           r.DBName,
 			TableName:        r.TableNameStr,
 			ColumnName:       r.ColumnName,
+			Location:         location,
 			DataType:         r.DataType,
 			SensitivityLevel: r.DataLevel,
 			SampleData:       r.SampleData,

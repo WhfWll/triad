@@ -30,16 +30,16 @@ func (l *LogAudit) LogAuditList(ctx context.Context, page, limit, logType int, s
 		db           = mysql.FromContext(ctx).Model(&LogAudit{})
 	)
 	if search != "" {
-		db.Where("content like ?", "%"+search+"%")
+		db = db.Where("content like ?", "%"+search+"%")
 	}
 	if logType != 0 {
-		db.Where("log_type = ?", logType)
+		db = db.Where("log_type = ?", logType)
 	}
 	if startTime != "" {
-		db.Where("update_time >= ?", startTime)
+		db = db.Where("update_time >= ?", startTime)
 	}
 	if endTime != "" {
-		db.Where("update_time <= ?", endTime)
+		db = db.Where("update_time <= ?", endTime)
 	}
 	db.Count(&count)
 	db.Limit(limit).Offset(limit * (page - 1)).Order("id desc").Find(&logAuditList)

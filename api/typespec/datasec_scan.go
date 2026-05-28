@@ -100,43 +100,43 @@ type DataSecTargetItem struct {
 }
 
 type DataSecDBListItem struct {
-	ID              string                `json:"id"`
-	Name            string                `json:"name"`
-	DBType          int                   `json:"dbType"`
-	DBHost          string                `json:"dbHost"`
-	DBPort          int                   `json:"dbPort"`
-	DBName          string                `json:"dbName"`
-	TargetSummary   string                `json:"targetSummary,omitempty"`
-	TargetCount     int                   `json:"targetCount,omitempty"`
-	Targets         []DataSecTargetItem   `json:"targets,omitempty"`
-	RiskLevel       int                   `json:"riskLevel"`
-	Status          int                   `json:"status"`
-	CreateTime      string                `json:"createTime"`
-	CheckTime       string                `json:"checkTime"`
-	CriticalCount   int                   `json:"criticalCount,omitempty"`
-	HighRiskCount   int                   `json:"highRiskCount,omitempty"`
-	MiddleRiskCount int                   `json:"middleRiskCount,omitempty"`
-	LowRiskCount    int                   `json:"lowRiskCount,omitempty"`
-	BaselineTotal   int                   `json:"baselineTotal"`
-	BaselineFail    int                   `json:"baselineFail"`
-	CveMatchCount   int                   `json:"cveMatchCount"`
-	ScanSensitive   bool                  `json:"scanSensitive,omitempty"`
-	TotalCount      int                   `json:"totalCount,omitempty"`
-	HighCount       int                   `json:"highCount,omitempty"`
-	MediumCount     int                   `json:"mediumCount,omitempty"`
-	LowCount        int                   `json:"lowCount,omitempty"`
-	Items           []DataSecDBDetailItem `json:"items,omitempty"`
+	ID              string                         `json:"id"`
+	Name            string                         `json:"name"`
+	DBType          int                            `json:"dbType"`
+	DBHost          string                         `json:"dbHost"`
+	DBPort          int                            `json:"dbPort"`
+	DBName          string                         `json:"dbName"`
+	TargetSummary   string                         `json:"targetSummary,omitempty"`
+	TargetCount     int                            `json:"targetCount,omitempty"`
+	Targets         []DataSecTargetItem            `json:"targets,omitempty"`
+	RiskLevel       int                            `json:"riskLevel"`
+	Status          int                            `json:"status"`
+	CreateTime      string                         `json:"createTime"`
+	CheckTime       string                         `json:"checkTime"`
+	CriticalCount   int                            `json:"criticalCount,omitempty"`
+	HighRiskCount   int                            `json:"highRiskCount,omitempty"`
+	MiddleRiskCount int                            `json:"middleRiskCount,omitempty"`
+	LowRiskCount    int                            `json:"lowRiskCount,omitempty"`
+	BaselineTotal   int                            `json:"baselineTotal"`
+	BaselineFail    int                            `json:"baselineFail"`
+	CveMatchCount   int                            `json:"cveMatchCount"`
+	ScanSensitive   bool                           `json:"scanSensitive,omitempty"`
+	TotalCount      int                            `json:"totalCount,omitempty"`
+	HighCount       int                            `json:"highCount,omitempty"`
+	MediumCount     int                            `json:"mediumCount,omitempty"`
+	LowCount        int                            `json:"lowCount,omitempty"`
+	Items           []DataSecDBDetailItem          `json:"items,omitempty"`
 	TypeStats       []DataSecSensitiveTypeStatItem `json:"typeStats,omitempty"`
 	SensitiveItems  []DataSecSensitiveDetailItem   `json:"sensitiveItems,omitempty"`
 }
 
 type DataSecDBDetailItem struct {
-	TargetID    int    `json:"targetId,omitempty"`
-	Category    int    `json:"category"`
-	RiskLevel   int    `json:"riskLevel"`
-	Result      string `json:"result"`
-	Description string `json:"description"`
-	Suggestion  string `json:"suggestion"`
+	TargetID      int    `json:"targetId,omitempty"`
+	Category      int    `json:"category"`
+	RiskLevel     int    `json:"riskLevel"`
+	Result        string `json:"result"`
+	Description   string `json:"description"`
+	Suggestion    string `json:"suggestion"`
 	RuleName      string `json:"ruleName,omitempty"`
 	ActualValue   string `json:"actualValue,omitempty"`
 	ExpectedValue string `json:"expectedValue,omitempty"`
@@ -159,14 +159,14 @@ type DataSecSensitiveListItem struct {
 	TargetCount   int                            `json:"targetCount,omitempty"`
 	Targets       []DataSecTargetItem            `json:"targets,omitempty"`
 	TotalCount    int                            `json:"totalCount"`
-	HighCount    int                            `json:"highCount"`
-	MediumCount  int                            `json:"mediumCount"`
-	LowCount     int                            `json:"lowCount"`
-	Status       int                            `json:"status"`
-	CreateTime   string                         `json:"createTime"`
-	ScanTime     string                         `json:"scanTime"`
-	TypeStats    []DataSecSensitiveTypeStatItem `json:"typeStats,omitempty"`
-	Items        []DataSecSensitiveDetailItem   `json:"items,omitempty"`
+	HighCount     int                            `json:"highCount"`
+	MediumCount   int                            `json:"mediumCount"`
+	LowCount      int                            `json:"lowCount"`
+	Status        int                            `json:"status"`
+	CreateTime    string                         `json:"createTime"`
+	ScanTime      string                         `json:"scanTime"`
+	TypeStats     []DataSecSensitiveTypeStatItem `json:"typeStats,omitempty"`
+	Items         []DataSecSensitiveDetailItem   `json:"items,omitempty"`
 }
 
 type DataSecSensitiveTypeStatItem struct {
@@ -176,8 +176,11 @@ type DataSecSensitiveTypeStatItem struct {
 
 type DataSecSensitiveDetailItem struct {
 	TargetID         int    `json:"targetId,omitempty"`
+	TargetLabel      string `json:"targetLabel,omitempty"`
+	DBName           string `json:"dbName,omitempty"`
 	TableName        string `json:"tableName"`
 	ColumnName       string `json:"columnName"`
+	Location         string `json:"location,omitempty"`
 	DataType         int    `json:"dataType"`
 	SensitivityLevel int    `json:"sensitivityLevel"`
 	SampleData       string `json:"sampleData"`

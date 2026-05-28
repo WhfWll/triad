@@ -7,8 +7,8 @@ import (
 	"smart/api/typespec"
 	"smart/application"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 	"gitlabee.4dogs.cn/common/server"
 )
 
@@ -32,6 +32,7 @@ func DataSecRulesReload(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAudit(c, ctx, "重载了数据安全检测规则")
 	server.RespSuccess(c, nil)
 }
 
@@ -43,13 +44,17 @@ func DataSecRulesImport(c *gin.Context) {
 	}
 	ctx := server.NewContext(context.Background(), c)
 	var app application.DataSecRuleApp
-	server.RespSuccess(c, app.ImportRules(ctx, &req))
+	resp := app.ImportRules(ctx, &req)
+	addOperateAuditf(c, ctx, "导入了数据安全检测规则，导入条数: %d", len(req.Rules))
+	server.RespSuccess(c, resp)
 }
 
 func DataSecRulesImportBuiltin(c *gin.Context) {
 	ctx := server.NewContext(context.Background(), c)
 	var app application.DataSecRuleApp
-	server.RespSuccess(c, app.ImportBuiltinRules(ctx))
+	resp := app.ImportBuiltinRules(ctx)
+	addOperateAudit(c, ctx, "导入了内置数据安全检测规则")
+	server.RespSuccess(c, resp)
 }
 
 func DataSecRuleCreate(c *gin.Context) {
@@ -64,6 +69,7 @@ func DataSecRuleCreate(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAuditf(c, ctx, "新增了数据安全检测规则，名称: %s", req.Name)
 	server.RespSuccess(c, nil)
 }
 
@@ -79,6 +85,7 @@ func DataSecRuleUpdate(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAuditf(c, ctx, "编辑了数据安全检测规则，规则ID: %d", req.ID)
 	server.RespSuccess(c, nil)
 }
 
@@ -94,6 +101,7 @@ func DataSecRuleDelete(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAuditf(c, ctx, "删除了数据安全检测规则，规则ID: %d", id)
 	server.RespSuccess(c, nil)
 }
 
@@ -123,6 +131,7 @@ func DataSecRulesImportFromCve(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAuditf(c, ctx, "从CVE库导入了数据安全检测规则，限制条数: %d", req.Limit)
 	server.RespSuccess(c, resp)
 }
 
@@ -139,5 +148,6 @@ func DataSecRuleDetail(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAuditf(c, ctx, "查看了数据安全检测规则详情，规则ID: %d", id)
 	server.RespSuccess(c, resp)
 }

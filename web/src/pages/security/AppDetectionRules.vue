@@ -1,14 +1,14 @@
 <template>
   <div class="security-container">
     <p class="page-intro">
-      应用安全检测规则统一从漏洞库读取，支持按分类、类型、风险、状态筛选，并可导入规则包。
+      应用安全检测规则统一从漏洞库读取，支持按分类、类型、风险、状态筛选，并可导入 VulKit 规则包和 Nuclei 模板。
     </p>
 
     <div class="list_box">
       <div class="search-box">
         <div class="operationbutton">
           <span class="db-stat">共 <strong>{{ totalRecords }}</strong> 条应用检测规则</span>
-          <el-button type="primary" size="small" icon="el-icon-upload2" @click="importVisible = true">导入规则包</el-button>
+          <el-button type="primary" size="small" icon="el-icon-upload2" @click="importVisible = true">导入规则</el-button>
         </div>
         <div class="serach-condition">
           <div class="search-text">
@@ -111,19 +111,48 @@
       </span>
     </el-dialog>
 
-    <el-dialog title="导入应用检测规则包" :visible.sync="importVisible" width="500px" custom-class="theme-dialog" @closed="resetImport">
-      <div class="custom-upload" @click="triggerFileInput" @drop.prevent="handleDrop" @dragover.prevent>
-        <input ref="fileInput" type="file" accept=".zip,.json,.yak" style="display:none" @change="onNativeFileChange">
+    <el-dialog title="导入应用检测规则" :visible.sync="importVisible" width="500px" custom-class="theme-dialog" @closed="resetImport">
+      <div class="import-mode-row">
+        <el-radio-group v-model="importSource" size="small">
+          <el-radio-button label="vulkit">VulKit 规则包</el-radio-button>
+          <el-radio-button label="nuclei">Nuclei 模板</el-radio-button>
+        </el-radio-group>
+      </div>
+      <div class="custom-upload" @click="triggerFileInput" @drop.prevent="handleDrop" @dragover.prevent="dragOver = true" @dragleave.prevent="dragOver = false">
+        <input ref="fileInput" type="file" :accept="currentImportAccept" style="display:none" @change="onNativeFileChange">
         <div class="custom-upload-dragger" :class="{ 'is-dragover': dragOver }">
           <i class="el-icon-upload"></i>
-          <div class="el-upload__text" v-if="!selectedFile">将规则包拖到此处，或<em>点击选择</em></div>
+          <div class="el-upload__text" v-if="!selectedFile">将规则文件拖到此处，或<em>点击选择</em></div>
           <div class="el-upload__text" v-else>已选择文件：<em>{{ selectedFile.name }}</em></div>
         </div>
-        <div class="el-upload__tip">支持 .zip、.json、.yak 格式</div>
+        <div class="el-upload__tip">
+          支持 {{ currentImportAcceptText }}
+          <span v-if="importSource === 'nuclei'">，仅导入漏洞检测模板，信息收集 / 指纹识别 / 工作流模板会自动跳过</span>
+        </div>
       </div>
       <span slot="footer">
         <el-button @click="importVisible = false">取消</el-button>
         <el-button type="primary" :loading="importing" @click="submitImport">开始导入</el-button>
+      </span>
+    </el-dialog>
+
+    <el-dialog title="Nuclei 导入结果" :visible.sync="importStatsDialogVisible" width="560px" custom-class="theme-dialog">
+      <div class="import-stats-panel" v-if="lastImportStats">
+        <div class="import-stats-item">
+          <div class="stats-label">成功模板严重级别</div>
+          <div class="stats-value">{{ formatStatsPairs(lastImportStats.bySeverity) }}</div>
+        </div>
+        <div class="import-stats-item">
+          <div class="stats-label">成功模板漏洞类型</div>
+          <div class="stats-value">{{ formatStatsPairs(lastImportStats.byType) }}</div>
+        </div>
+        <div class="import-stats-item">
+          <div class="stats-label">跳过原因分布</div>
+          <div class="stats-value">{{ formatStatsPairs(lastImportStats.skipReason) }}</div>
+        </div>
+      </div>
+      <span slot="footer">
+        <el-button type="primary" @click="importStatsDialogVisible = false">知道了</el-button>
       </span>
     </el-dialog>
   </div>
@@ -157,9 +186,20 @@ export default {
       detailVisible: false,
       currentRule: null,
       importVisible: false,
+      importSource: 'vulkit',
       importing: false,
       selectedFile: null,
-      dragOver: false
+      dragOver: false,
+      importStatsDialogVisible: false,
+      lastImportStats: null
+    }
+  },
+  computed: {
+    currentImportAccept() {
+      return this.importSource === 'nuclei' ? '.zip,.yaml,.yml' : '.zip,.json,.yak'
+    },
+    currentImportAcceptText() {
+      return this.importSource === 'nuclei' ? '.zip、.yaml、.yml 文件' : '.zip、.json、.yak 文件'
     }
   },
   mounted() {
@@ -250,17 +290,20 @@ export default {
       return 'risk-info'
     },
     triggerFileInput() {
-      this.$refs.fileInput && this.$refs.fileInput.click()
+      if (this.$refs.fileInput) this.$refs.fileInput.click()
     },
     isImportFile(name) {
       const lower = (name || '').toLowerCase()
+      if (this.importSource === 'nuclei') {
+        return lower.endsWith('.zip') || lower.endsWith('.yaml') || lower.endsWith('.yml')
+      }
       return lower.endsWith('.zip') || lower.endsWith('.json') || lower.endsWith('.yak')
     },
     onNativeFileChange(e) {
       const file = e.target.files && e.target.files[0]
       if (!file) return
       if (!this.isImportFile(file.name)) {
-        this.$message({ message: '仅支持 .zip、.json、.yak 格式', type: 'warning' })
+        this.$message({ message: `仅支持 ${this.currentImportAcceptText}`, type: 'warning' })
         return
       }
       this.selectedFile = file
@@ -270,12 +313,13 @@ export default {
       const file = e.dataTransfer.files && e.dataTransfer.files[0]
       if (!file) return
       if (!this.isImportFile(file.name)) {
-        this.$message({ message: '仅支持 .zip、.json、.yak 格式', type: 'warning' })
+        this.$message({ message: `仅支持 ${this.currentImportAcceptText}`, type: 'warning' })
         return
       }
       this.selectedFile = file
     },
     resetImport() {
+      this.importSource = 'vulkit'
       this.selectedFile = null
       this.dragOver = false
       this.importing = false
@@ -283,17 +327,42 @@ export default {
     },
     async submitImport() {
       if (!this.selectedFile) {
-        this.$message({ message: '请先选择要导入的规则包文件', type: 'warning' })
+        this.$message({ message: '请先选择要导入的规则文件', type: 'warning' })
         return
       }
       this.importing = true
       try {
         const formData = new FormData()
         formData.append('file', this.selectedFile)
-        const res = await vulnerability.importVulnVulKit(formData)
+        const res = this.importSource === 'nuclei'
+          ? await vulnerability.importNucleiTemplates(formData)
+          : await vulnerability.importVulnVulKit(formData)
         const data = res.data || res
         if (data.code === 200) {
-          this.$message({ message: '导入完成', type: 'success' })
+          const payload = data.data || {}
+          this.lastImportStats = payload.stats || null
+          let msg = `导入完成：共 ${payload.total || 0} 条，成功 ${payload.success || 0} 条`
+          if (payload.skip) {
+            msg += `，跳过 ${payload.skip} 条`
+          }
+          if (payload.errors && payload.errors.length) {
+            const level = payload.skip && payload.errors.length === payload.skip ? 'info' : 'warning'
+            console.warn('规则导入处理明细', payload.errors)
+            this.$message({
+              message: msg,
+              type: level,
+              duration: 6000
+            })
+          } else {
+            this.$message({
+              message: msg,
+              type: 'success',
+              duration: 6000
+            })
+          }
+          if (this.importSource === 'nuclei' && payload.stats) {
+            this.importStatsDialogVisible = true
+          }
           this.importVisible = false
           this.loadData()
         } else {
@@ -304,6 +373,11 @@ export default {
       } finally {
         this.importing = false
       }
+    },
+    formatStatsPairs(obj) {
+      const entries = Object.entries(obj || {}).filter(([, n]) => Number(n) > 0)
+      if (!entries.length) return '无'
+      return entries.map(([k, v]) => `${k} ${v}`).join(' / ')
     }
   }
 }
@@ -399,6 +473,35 @@ export default {
   line-height: 1.7;
   font-size: 14px;
   margin: 0;
+}
+
+.import-mode-row {
+  margin-bottom: 14px;
+}
+
+.import-stats-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.import-stats-item {
+  padding: 12px 14px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.45);
+  border-radius: 6px;
+}
+
+.stats-label {
+  color: #94a3b8;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.stats-value {
+  color: #e2e8f0;
+  line-height: 1.7;
+  word-break: break-word;
 }
 
 .custom-upload {

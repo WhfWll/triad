@@ -36,10 +36,17 @@ var (
 )
 
 type VulkitImportResult struct {
-	Total   int      `json:"total"`
-	Success int      `json:"success"`
-	Skip    int      `json:"skip"`
-	Errors  []string `json:"errors"`
+	Total   int              `json:"total"`
+	Success int              `json:"success"`
+	Skip    int              `json:"skip"`
+	Errors  []string         `json:"errors"`
+	Stats   *ImportRuleStats `json:"stats,omitempty"`
+}
+
+type ImportRuleStats struct {
+	BySeverity map[string]int `json:"bySeverity,omitempty"`
+	ByType     map[string]int `json:"byType,omitempty"`
+	SkipReason map[string]int `json:"skipReason,omitempty"`
 }
 
 func ImportVulnerabilitiesFromUpload(src io.Reader, filename string) (*VulkitImportResult, error) {
@@ -67,23 +74,23 @@ func ImportVulnerabilitiesFromUpload(src io.Reader, filename string) (*VulkitImp
 
 // VulnExportItem 对应 webScanner 导出的 vulns_export.json 单条记录
 type VulnExportItem struct {
-	Pocname          string `json:"pocname"`
-	Name             string `json:"name"`
-	VulId            string `json:"VulId"`
-	VulIdLower       string `json:"vulId"`
-	Risk             int    `json:"risk"`
-	Type             int    `json:"type"`
-	Class            int    `json:"class"`
-	OperatingSystem  int    `json:"operatingSystem"`
-	Description      string `json:"description"`
-	FixSuggest       string `json:"fixSuggest"`
-	AffectRange      string `json:"affectRange"`
-	CVE              string `json:"cve"`
-	CNVD             string `json:"cnvd"`
-	CNNVD            string `json:"cnnvd"`
-	VerifyType       string `json:"verifyType"`
-	ExploitImpact    int    `json:"exploitImpact"`
-	ScriptType       string `json:"scriptType"`
+	Pocname         string `json:"pocname"`
+	Name            string `json:"name"`
+	VulId           string `json:"VulId"`
+	VulIdLower      string `json:"vulId"`
+	Risk            int    `json:"risk"`
+	Type            int    `json:"type"`
+	Class           int    `json:"class"`
+	OperatingSystem int    `json:"operatingSystem"`
+	Description     string `json:"description"`
+	FixSuggest      string `json:"fixSuggest"`
+	AffectRange     string `json:"affectRange"`
+	CVE             string `json:"cve"`
+	CNVD            string `json:"cnvd"`
+	CNNVD           string `json:"cnnvd"`
+	VerifyType      string `json:"verifyType"`
+	ExploitImpact   int    `json:"exploitImpact"`
+	ScriptType      string `json:"scriptType"`
 }
 
 func importVulnsFromJson(data []byte) (*VulkitImportResult, error) {

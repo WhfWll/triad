@@ -292,7 +292,7 @@
                 <el-option label="全部目标" :value="null" />
                 <el-option v-for="t in targetList" :key="t.id" :label="t.targetUrl || t.dbHost" :value="t.id" />
               </el-select>
-              <el-input v-model="findingFilter.keyword" placeholder="搜索表名/字段" size="small" clearable class="filter-input" />
+              <el-input v-model="findingFilter.keyword" placeholder="搜索目标/库名/位置/样例" size="small" clearable class="filter-input" />
               <el-select v-model="findingFilter.dataType" placeholder="数据类型" size="small" clearable class="filter-select">
                 <el-option v-for="d in dataTypeOptions" :key="d.value" :label="d.label" :value="d.value" />
               </el-select>
@@ -304,8 +304,9 @@
               <el-button size="small" @click="resetFindingFilter">重置</el-button>
             </div>
             <el-table :data="filteredFindings" class="myTable" max-height="560" size="small">
-              <el-table-column prop="tableName" label="表名" min-width="140" :show-overflow-tooltip="true" />
-              <el-table-column prop="columnName" label="字段名" min-width="140" :show-overflow-tooltip="true" />
+              <el-table-column v-if="targetList.length > 1" prop="targetLabel" label="目标" min-width="180" :show-overflow-tooltip="true" />
+              <el-table-column prop="dbName" label="库名" min-width="120" :show-overflow-tooltip="true" />
+              <el-table-column prop="location" label="位置" min-width="220" :show-overflow-tooltip="true" />
               <el-table-column prop="dataType" label="数据类型" width="110">
                 <template slot-scope="scope">{{ getDataTypeName(scope.row.dataType) }}</template>
               </el-table-column>
@@ -316,7 +317,7 @@
                   </span>
                 </template>
               </el-table-column>
-              <el-table-column prop="sampleData" label="样例" min-width="160" :show-overflow-tooltip="true" />
+              <el-table-column prop="sampleData" label="样例" min-width="180" :show-overflow-tooltip="true" />
               <el-table-column prop="count" label="数量" width="72" />
               <el-table-column label="操作" width="72" fixed="right">
                 <template slot-scope="scope">
@@ -544,7 +545,7 @@ export default {
           return false
         }
         if (!kw) return true
-        const blob = [row.tableName, row.columnName, row.sampleData, getDataTypeName(row.dataType)].join(' ').toLowerCase()
+        const blob = [row.targetLabel, row.dbName, row.location, row.tableName, row.columnName, row.sampleData, getDataTypeName(row.dataType)].join(' ').toLowerCase()
         return blob.includes(kw)
       })
     },
@@ -575,6 +576,9 @@ export default {
       }
       if (this.detailDialogKind === 'finding') {
         return [
+          { label: '目标', value: row.targetLabel, mono: true },
+          { label: '库名', value: row.dbName, mono: true },
+          { label: '位置', value: row.location, mono: true },
           { label: '表名', value: row.tableName, mono: true },
           { label: '字段名', value: row.columnName, mono: true },
           { label: '数据类型', value: getDataTypeName(row.dataType) },

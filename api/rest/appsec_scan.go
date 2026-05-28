@@ -130,6 +130,7 @@ func AppSecDynamicScanDetail(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAuditf(c, ctx, "查看了应用安全动态扫描详情，任务ID: %s", req.ID)
 	server.RespSuccess(c, resp)
 }
 
@@ -146,5 +147,6 @@ func AppSecAppSpecificScanDetail(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAuditf(c, ctx, "查看了应用安全专项检测详情，任务ID: %s", req.ID)
 	server.RespSuccess(c, resp)
 }

@@ -119,7 +119,36 @@ func (f *SensitiveDataFinder) RunScan(ctx context.Context, task *SensitiveDataTa
 		default:
 		}
 
-		tables, err := f.connManager.GetTables(ctx, conn, dbName)
+		activeConn := conn
+		if task.DBType == enums.DBSupportTypePostgreSQL {
+			activeConn, err = f.connManager.GetConnection(ctx, &DBConnConfig{
+				DBType:   task.DBType,
+				Host:     task.Host,
+				Port:     task.Port,
+				Username: task.Username,
+				Password: task.Password,
+				DBName:   dbName,
+				Timeout:  60 * time.Second,
+			})
+			if err != nil {
+				continue
+			}
+		} else if task.DBType == enums.DBSupportTypeRedis {
+			activeConn = &DBConnection{
+				Config: &DBConnConfig{
+					DBType:   task.DBType,
+					Host:     task.Host,
+					Port:     task.Port,
+					Username: task.Username,
+					Password: task.Password,
+					DBName:   dbName,
+					Timeout:  60 * time.Second,
+				},
+				RedisDB: conn.RedisDB,
+			}
+		}
+
+		tables, err := f.connManager.GetTables(ctx, activeConn, dbName)
 		if err != nil {
 			continue
 		}
@@ -129,7 +158,7 @@ func (f *SensitiveDataFinder) RunScan(ctx context.Context, task *SensitiveDataTa
 				continue
 			}
 
-			columns, err := f.connManager.GetColumns(ctx, conn, dbName, tableName)
+			columns, err := f.connManager.GetColumns(ctx, activeConn, dbName, tableName)
 			if err != nil || columns == nil {
 				continue
 			}
@@ -165,7 +194,7 @@ func (f *SensitiveDataFinder) RunScan(ctx context.Context, task *SensitiveDataTa
 							CreateTime:   time.Now(),
 						}
 
-						samples := f.fetchFieldSamples(ctx, conn, task.DBType, dbName, tableName, colName)
+						samples := f.fetchFieldSamples(ctx, activeConn, task.DBType, dbName, tableName, colName)
 						for _, sample := range samples {
 							result.SampleData = truncateString(sample, 100)
 							if rule.Pattern != nil && !rule.Pattern.MatchString(sample) {
@@ -229,6 +258,12 @@ func (f *SensitiveDataFinder) matchFieldName(colName string, patterns []string) 
 
 func (f *SensitiveDataFinder) fetchFieldSamples(ctx context.Context, conn *DBConnection, dbType int, dbName, tableName, colName string) []string {
 	switch dbType {
+	case enums.DBSupportTypePostgreSQL:
+		samples, err := f.connManager.GetFieldSamples(ctx, conn, dbName, tableName, colName, 5)
+		if err == nil {
+			return samples
+		}
+		return nil
 	case enums.DBSupportTypeMongoDB, enums.DBSupportTypeCouchDB:
 		samples, err := f.connManager.GetFieldSamples(ctx, conn, dbName, tableName, colName, 5)
 		if err == nil {

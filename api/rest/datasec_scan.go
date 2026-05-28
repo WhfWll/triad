@@ -86,6 +86,7 @@ func DataSecDBCheckDetail(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAuditf(c, ctx, "查看了数据库安全检查详情，任务ID: %s，目标ID: %d", req.ID, req.TargetID)
 	server.RespSuccess(c, resp)
 }
 
@@ -145,5 +146,6 @@ func DataSecSensitiveScanDetail(c *gin.Context) {
 		server.RespFail(c, 4000, err.Error())
 		return
 	}
+	addOperateAuditf(c, ctx, "查看了敏感数据扫描详情，任务ID: %s，目标ID: %d", req.ID, req.TargetID)
 	server.RespSuccess(c, resp)
 }

@@ -42,8 +42,11 @@ export function exportDatasecRowsCsv(taskId, exportType, rows, labels) {
       row.suggestion || ''
     ])
   } else {
-    headers = ['表名', '字段名', '数据类型', '敏感等级', '样例数据', '数量']
+    headers = ['目标', '库名', '位置', '表名', '字段名', '数据类型', '敏感等级', '样例数据', '数量']
     dataRows = (rows || []).map(row => [
+      row.targetLabel || '',
+      row.dbName || '',
+      row.location || '',
       row.tableName || '',
       row.columnName || '',
       labels.getDataTypeName(row.dataType),
