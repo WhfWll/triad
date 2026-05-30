@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"smart/models/mysqls"
+	"smart/tools/enums"
+	"strings"
 )
 
 // ReportStatCard is a single stat card in the report
@@ -216,18 +218,90 @@ func (s *HostSecReportService) buildHostMalwareMeta(ctx context.Context, taskID 
 func (s *HostSecReportService) GetAppReportMeta(ctx context.Context, taskID int) *AppReportMeta {
 	meta := &AppReportMeta{
 		TaskID:        taskID,
-		TaskName:      fmt.Sprintf("应用安全检查 #%d", taskID),
 		TaskKind:      "应用安全检查",
 		TargetSummary: "-",
 		CheckTime:     "-",
-		StatCards: []ReportStatCard{
-			{Label: "严重", Value: "0", Class: "critical"},
-			{Label: "高危", Value: "0", Class: "high"},
-			{Label: "中危", Value: "0", Class: "medium"},
-			{Label: "低危", Value: "0", Class: "low"},
-			{Label: "漏洞合计", Value: "0", Class: ""},
-		},
 	}
+
+	// 1. 任务基本信息
+	var taskDao mysqls.TaskTask
+	task, err := taskDao.GetTaskCheckTask(ctx, taskID)
+	if err == nil {
+		meta.TaskName = task.TaskName
+		if !task.CreateTime.IsZero() {
+			meta.CheckTime = task.CreateTime.Format("2006-01-02 15:04:05")
+		}
+	} else {
+		meta.TaskName = fmt.Sprintf("应用安全检查 #%d", taskID)
+	}
+
+	// 2. 目标信息
+	var targetDao mysqls.TaskTarget
+	targets := targetDao.GetTargetsByTaskId(ctx, taskID)
+	meta.TargetCount = len(targets)
+	urls := make([]string, 0, len(targets))
+	for _, t := range targets {
+		if t.TargetURL != "" {
+			urls = append(urls, t.TargetURL)
+		}
+	}
+	if len(urls) > 0 {
+		meta.TargetSummary = strings.Join(urls, ", ")
+	}
+
+	// 3. 漏洞统计数据
+	var vulnDao mysqls.TaskVul
+	stats := vulnDao.GetVulStatsByTaskId(ctx, taskID, enums.VulDataTypOne)
+	critical, high, mid, low := 0, 0, 0, 0
+	for _, s := range stats {
+		switch s.Risk {
+		case enums.VulLibrariesRiskDead:
+			critical += s.Count
+		case enums.VulLibrariesRiskHigh:
+			high += s.Count
+		case enums.VulLibrariesRiskMiddle:
+			mid += s.Count
+		case enums.VulLibrariesRiskLow:
+			low += s.Count
+		}
+	}
+	total := critical + high + mid + low
+	meta.StatCards = []ReportStatCard{
+		{Label: "严重", Value: fmt.Sprintf("%d", critical), Class: "critical"},
+		{Label: "高危", Value: fmt.Sprintf("%d", high), Class: "high"},
+		{Label: "中危", Value: fmt.Sprintf("%d", mid), Class: "medium"},
+		{Label: "低危", Value: fmt.Sprintf("%d", low), Class: "low"},
+		{Label: "漏洞合计", Value: fmt.Sprintf("%d", total), Class: ""},
+	}
+
+	// 4. 漏洞详情列表
+	if total > 0 {
+		vulns := vulnDao.GetsByTaskId(ctx, taskID, enums.VulDataTypOne)
+		meta.Vulns = make([]ReportTableRow, 0, len(vulns))
+		for _, v := range vulns {
+			riskName := "低危"
+			switch v.Risk {
+			case enums.VulLibrariesRiskDead:
+				riskName = "严重"
+			case enums.VulLibrariesRiskHigh:
+				riskName = "高危"
+			case enums.VulLibrariesRiskMiddle:
+				riskName = "中危"
+			}
+			typeName := enums.ToolsVulnerabilityEnum.GetTypeEnum(v.Type)
+			url := v.Location
+			if url == "" {
+				url = v.VulAddress
+			}
+			if url == "" {
+				url = v.TargetUrl
+			}
+			meta.Vulns = append(meta.Vulns, ReportTableRow{
+				Cells: []string{v.Name, typeName, riskName, url},
+			})
+		}
+	}
+
 	return meta
 }
 

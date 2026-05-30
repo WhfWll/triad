@@ -381,6 +381,7 @@ func loadTaskVulns(ctx context.Context, taskID int, scanType string) []typespec.
 			TargetURL:   v.TargetUrl,
 			Name:        v.Name,
 			Type:        v.Type,
+			TypeName:    enums.ToolsVulnerabilityEnum.GetTypeEnum(v.Type),
 			RiskLevel:   vulLibRiskToFrontend(v.Risk),
 			URL:         firstNonEmpty(v.Location, v.VulAddress, v.TargetUrl),
 			Description: v.Description,

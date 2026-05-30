@@ -52,7 +52,6 @@
             <span :class="getStatusClass(scope.row.status)">{{ getStatusName(scope.row.status, 'app') }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" />
         <el-table-column prop="scanTime" label="扫描时间" />
         <el-table-column label="操作" width="100">
           <template slot-scope="scope">

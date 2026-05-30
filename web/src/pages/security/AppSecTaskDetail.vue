@@ -200,7 +200,7 @@
             <div class="vuln-layout">
               <div class="vuln-list-pane">
                 <el-table
-                  :data="filteredVulns"
+                  :data="pagedVulns"
                   class="myTable"
                   highlight-current-row
                   :current-row-key="selectedVulnKey"
@@ -209,9 +209,8 @@
                   @current-change="onVulnSelect"
                 >
                   <el-table-column prop="name" label="漏洞名称" min-width="180" :show-overflow-tooltip="true" />
-                  <el-table-column prop="type" label="类型" width="110">
-                    <template slot-scope="scope">{{ getVulnTypeName(scope.row.type, scanType) }}</template>
-                  </el-table-column>
+                  <el-table-column prop="typeName" label="类型" width="110" :show-overflow-tooltip="true" />
+
                   <el-table-column prop="riskLevel" label="风险" width="88">
                     <template slot-scope="scope">
                       <span :class="getRiskClass(scope.row.riskLevel)">{{ getRiskName(scope.row.riskLevel) }}</span>
@@ -226,13 +225,25 @@
                   />
                   <el-table-column prop="url" label="URL" min-width="200" :show-overflow-tooltip="true" />
                 </el-table>
+                <el-pagination
+                  v-if="filteredVulns.length > 0"
+                  background
+                  class="items-pager"
+                  layout="total, prev, pager, next, sizes, jumper"
+                  :total="filteredVulns.length"
+                  :page-size="vulnPageSize"
+                  :current-page="vulnPage"
+                  :page-sizes="[20, 50, 100, 200]"
+                  @current-change="onVulnPageChange"
+                  @size-change="onVulnPageSizeChange"
+                />
                 <p v-if="!filteredVulns.length" class="empty-hint">暂无匹配的漏洞记录。</p>
               </div>
               <div class="vuln-detail-pane">
                 <template v-if="selectedVuln">
                   <h3 class="vuln-detail-title">{{ selectedVuln.name }}</h3>
                   <el-descriptions :column="1" border size="small" class="vuln-desc">
-                    <el-descriptions-item label="漏洞类型">{{ getVulnTypeName(selectedVuln.type, scanType) }}</el-descriptions-item>
+                    <el-descriptions-item label="漏洞类型">{{ selectedVuln.typeName || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="风险等级">
                       <span :class="getRiskClass(selectedVuln.riskLevel)">{{ getRiskName(selectedVuln.riskLevel) }}</span>
                     </el-descriptions-item>
@@ -375,7 +386,6 @@ import {
   getRiskClass,
   getStatusName,
   getStatusClass,
-  getVulnTypeName,
   getAppTypeName,
   getTestModeLabel,
   buildSiteMapTree,
@@ -401,7 +411,9 @@ export default {
         keyword: '',
         risk: null
       },
-      selectedTargetId: null
+      selectedTargetId: null,
+      vulnPage: 1,
+      vulnPageSize: 20
     }
   },
   computed: {
@@ -523,6 +535,12 @@ export default {
       const raw = this.selectedVuln.request
       if (!raw) return '暂无'
       return this.formatHttpText(raw)
+    },
+    pagedVulns() {
+      const list = this.filteredVulns
+      const start = (this.vulnPage - 1) * this.vulnPageSize
+      const end = start + this.vulnPageSize
+      return list.slice(start, end)
     }
   },
   watch: {
@@ -539,6 +557,7 @@ export default {
       this.rebuildSiteMap()
     },
     filteredVulns(list) {
+      this.vulnPage = 1
       if (!list.length) {
         this.selectedVuln = null
         this.selectedVulnKey = null
@@ -562,7 +581,6 @@ export default {
     getRiskClass,
     getStatusName,
     getStatusClass,
-    getVulnTypeName,
     getAppTypeName,
     parseVerMsg(raw) {
       if (raw == null || raw === '') return []
@@ -694,7 +712,6 @@ export default {
     exportCsv() {
       if (!this.task) return
       exportVulnsToCsv(this.task, this.scanType, {
-        getVulnTypeName: this.getVulnTypeName,
         getRiskName: this.getRiskName
       })
       this.$message.success('漏洞列表已导出')
@@ -715,7 +732,7 @@ export default {
     async generateReport() {
       if (!this.taskId) return
       try {
-        const res = await security.generateSecurityReport({ module: 'app', taskId: this.taskId })
+        const res = await security.generateSecurityReport({ module: 'app', taskId: Number(this.taskId) })
         if (res.code === 200 && res.data) {
           this.$message({ message: '报告已生成，前往报告中心查看', type: 'success' })
         } else {
@@ -801,6 +818,13 @@ export default {
         clearInterval(this.pollTimer)
         this.pollTimer = null
       }
+    },
+    onVulnPageChange(page) {
+      this.vulnPage = page
+    },
+    onVulnPageSizeChange(size) {
+      this.vulnPageSize = size
+      this.vulnPage = 1
     }
   }
 }

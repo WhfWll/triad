@@ -8,12 +8,12 @@ function escapeCsvCell(val) {
   return s
 }
 
-export function exportVulnsToCsv(task, scanType, { getVulnTypeName, getRiskName }) {
+export function exportVulnsToCsv(task, scanType, { getRiskName }) {
   const vulns = (task && task.vulns) || []
   const headers = ['漏洞名称', '类型', '风险等级', 'URL', '描述', '修复建议']
   const rows = vulns.map(v => [
     v.name,
-    getVulnTypeName(v.type, scanType),
+    v.typeName || '-',
     getRiskName(v.riskLevel),
     v.url || '',
     (v.description || '').replace(/\s+/g, ' ').slice(0, 500),

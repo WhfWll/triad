@@ -48,6 +48,7 @@ type AppSecVulnItem struct {
 	TargetURL   string `json:"targetUrl,omitempty"`
 	Name        string `json:"name"`
 	Type        int    `json:"type"`
+	TypeName    string `json:"typeName"`
 	RiskLevel   int    `json:"riskLevel"`
 	URL         string `json:"url"`
 	Description string `json:"description"`

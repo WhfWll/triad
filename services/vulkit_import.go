@@ -59,10 +59,15 @@ func ImportVulnerabilitiesFromUpload(src io.Reader, filename string) (*VulkitImp
 	lowerName := strings.ToLower(filename)
 	switch {
 	case strings.HasSuffix(lowerName, ".zip"):
-		if shouldTreatZipAsNuclei(data) {
+		cls := classifyZipContents(data)
+		switch {
+		case cls.NucleiYaml > 0 && cls.YakCount == 0 && cls.VulkitYaml == 0:
 			return ImportNucleiTemplatesFromUpload(bytes.NewReader(data), filename)
+		case cls.YakCount > 0 && cls.NucleiYaml == 0 && cls.VulkitYaml == 0:
+			return importVulnsFromZip(data)
+		default:
+			return importMixedZip(data)
 		}
-		return importVulnsFromZip(data)
 	case strings.HasSuffix(lowerName, ".json"):
 		return importVulnsFromJson(data)
 	case strings.HasSuffix(lowerName, ".yak"):
@@ -74,6 +79,119 @@ func ImportVulnerabilitiesFromUpload(src io.Reader, filename string) (*VulkitImp
 	default:
 		return nil, fmt.Errorf("不支持的文件格式: %s，请上传 .zip、.json 或 .yak 文件", filename)
 	}
+}
+
+type zipClassification struct {
+	YakCount   int
+	VulkitYaml int
+	NucleiYaml int
+}
+
+func classifyZipContents(data []byte) zipClassification {
+	var cls zipClassification
+	zipReader, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		return cls
+	}
+	for _, f := range zipReader.File {
+		if f.FileInfo().IsDir() {
+			continue
+		}
+		name := strings.ToLower(filepath.ToSlash(f.Name))
+		ext := strings.ToLower(filepath.Ext(f.Name))
+		switch ext {
+		case ".yak":
+			cls.YakCount++
+		case ".yaml", ".yml":
+			if strings.Contains(name, "/workflows/") || strings.HasPrefix(name, "workflows/") ||
+				strings.Contains(name, "/helpers/") || strings.HasPrefix(name, "helpers/") {
+				cls.NucleiYaml++
+				continue
+			}
+			rc, err := f.Open()
+			if err != nil {
+				cls.VulkitYaml++
+				continue
+			}
+			content, readErr := io.ReadAll(rc)
+			rc.Close()
+			if readErr != nil {
+				cls.VulkitYaml++
+				continue
+			}
+			if looksLikeNucleiTemplate(content) {
+				cls.NucleiYaml++
+			} else {
+				cls.VulkitYaml++
+			}
+		}
+	}
+	return cls
+}
+
+func importMixedZip(data []byte) (*VulkitImportResult, error) {
+	zipReader, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		return nil, fmt.Errorf("解压zip失败: %v", err)
+	}
+
+	result := &VulkitImportResult{}
+	for _, f := range zipReader.File {
+		if f.FileInfo().IsDir() {
+			continue
+		}
+		ext := strings.ToLower(filepath.Ext(f.Name))
+
+		rc, err := f.Open()
+		if err != nil {
+			continue
+		}
+		content, readErr := io.ReadAll(rc)
+		rc.Close()
+		if readErr != nil {
+			continue
+		}
+
+		switch ext {
+		case ".yak":
+			scriptName := strings.TrimSuffix(filepath.Base(f.Name), ext)
+			err = importSingleVuln(content, scriptName, f.Name)
+			if err != nil {
+				result.Errors = append(result.Errors, fmt.Sprintf("%s: %v", scriptName, err))
+				continue
+			}
+			result.Success++
+			result.Total++
+		case ".yaml", ".yml":
+			if strings.HasSuffix(f.Name, "-workflow.yaml") || strings.HasSuffix(f.Name, "-workflow.yml") {
+				continue
+			}
+			if err := importSingleNucleiTemplate(content, f.Name); err != nil {
+				if skipErr, ok := err.(*nucleiSkipError); ok {
+					result.Total++
+					result.Skip++
+					result.Errors = append(result.Errors, fmt.Sprintf("%s: %s", f.Name, skipErr.Error()))
+					addSkipReasonStat(result, skipErr.Error())
+					continue
+				}
+				result.Errors = append(result.Errors, fmt.Sprintf("%s: %v", f.Name, err))
+				continue
+			}
+			result.Total++
+			result.Success++
+			if doc, ok := parseNucleiTemplateDoc(content); ok {
+				addImportedTemplateStat(result, doc, f.Name, firstNonEmpty(doc.Info.Name, doc.ID, filepath.Base(f.Name)), normalizeNucleiStrings(doc.Info.Tags), normalizeNucleiStrings(doc.Info.Reference))
+			}
+		}
+	}
+
+	if result.Total == 0 {
+		if len(result.Errors) > 0 {
+			return nil, fmt.Errorf("导入失败: %s", result.Errors[0])
+		}
+		return nil, fmt.Errorf("zip中未找到可导入的脚本")
+	}
+	return result, nil
 }
 
 func shouldTreatZipAsNuclei(data []byte) bool {
