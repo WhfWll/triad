@@ -28,7 +28,7 @@
       <el-table :data="tableData" style="width: 100%" class="myTable" @selection-change="handleSelectionChange">
         <el-table-column width="55" type="selection" />
         <el-table-column prop="name" label="任务名称" :show-overflow-tooltip="true" />
-        <el-table-column label="扫描目标" min-width="220" :show-overflow-tooltip="true">
+        <el-table-column label="扫描目标" width="220" :show-overflow-tooltip="true">
           <template slot-scope="scope">
             <span>{{ scope.row.targetSummary || scope.row.targetUrl }}</span>
             <el-tag v-if="scope.row.targetCount > 1" size="mini" type="info" class="target-count-tag">
@@ -36,8 +36,8 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="pageCount" label="爬取页面数" />
-        <el-table-column prop="vulnCount" label="发现漏洞数" />
+        <el-table-column prop="pageCount" label="爬取页面数" width="100" />
+        <el-table-column prop="vulnCount" label="发现漏洞数" width="100" />
         <el-table-column prop="riskLevel" label="风险等级">
           <template slot-scope="scope">
             <span :class="getRiskClass(scope.row.riskLevel)">{{ getRiskName(scope.row.riskLevel) }}</span>
@@ -48,7 +48,6 @@
             <span :class="getStatusClass(scope.row.status)">{{ getStatusName(scope.row.status, 'dyn') }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" />
         <el-table-column prop="scanTime" label="扫描时间" />
         <el-table-column label="操作" width="100">
           <template slot-scope="scope">

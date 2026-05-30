@@ -3,11 +3,12 @@ package mysqls
 import (
 	"context"
 	"fmt"
-	"gitlabee.4dogs.cn/common/mysql"
-	"gorm.io/gorm"
 	"smart/tools/enums"
 	"strings"
 	"time"
+
+	"gitlabee.4dogs.cn/common/mysql"
+	"gorm.io/gorm"
 )
 
 type VulLibraries struct {
@@ -362,6 +363,12 @@ func (v *VulLibraries) GetVulLibList(ctx context.Context, page, limit, verifyTyp
 		db = db.Order("published_time DESC")
 	case "published_time":
 		db = db.Order("published_time ASC")
+	case "-update_time":
+		db = db.Order("update_time DESC")
+	case "update_time":
+		db = db.Order("update_time ASC")
+	default:
+		db = db.Order("update_time DESC")
 	}
 
 	db.Count(&count)
@@ -476,6 +483,12 @@ func (v *VulLibraries) GetVulIdList(ctx context.Context, libIds []int, vulIds []
 		db = db.Order("published_time DESC")
 	case "published_time":
 		db = db.Order("published_time ASC")
+	case "-update_time":
+		db = db.Order("update_time DESC")
+	case "update_time":
+		db = db.Order("update_time ASC")
+	default:
+		db = db.Order("update_time DESC")
 	}
 
 	var vulIdList []int
