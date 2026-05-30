@@ -1,0 +1,12 @@
+{
+  "file/audit/iis/iis-directory-browsing.yaml": {
+    "name_zh": "IIS 目录浏览检测",
+    "description_zh": "检测 IIS 是否开启目录浏览，避免暴露目录结构和文件列表。",
+    "fix_zh": "请关闭 IIS 目录浏览功能，仅允许必要目录访问，并按最小暴露原则配置站点。"
+  },
+  "iis-directory-browsing": {
+    "name_zh": "IIS 目录浏览检测",
+    "description_zh": "检测 IIS 是否开启目录浏览，避免暴露目录结构和文件列表。",
+    "fix_zh": "请关闭 IIS 目录浏览功能，仅允许必要目录访问，并按最小暴露原则配置站点。"
+  }
+}

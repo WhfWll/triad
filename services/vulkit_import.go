@@ -39,6 +39,7 @@ type VulkitImportResult struct {
 	Total   int              `json:"total"`
 	Success int              `json:"success"`
 	Skip    int              `json:"skip"`
+	Cleaned int              `json:"cleaned,omitempty"`
 	Errors  []string         `json:"errors"`
 	Stats   *ImportRuleStats `json:"stats,omitempty"`
 }
@@ -58,6 +59,9 @@ func ImportVulnerabilitiesFromUpload(src io.Reader, filename string) (*VulkitImp
 	lowerName := strings.ToLower(filename)
 	switch {
 	case strings.HasSuffix(lowerName, ".zip"):
+		if shouldTreatZipAsNuclei(data) {
+			return ImportNucleiTemplatesFromUpload(bytes.NewReader(data), filename)
+		}
 		return importVulnsFromZip(data)
 	case strings.HasSuffix(lowerName, ".json"):
 		return importVulnsFromJson(data)
@@ -70,6 +74,44 @@ func ImportVulnerabilitiesFromUpload(src io.Reader, filename string) (*VulkitImp
 	default:
 		return nil, fmt.Errorf("不支持的文件格式: %s，请上传 .zip、.json 或 .yak 文件", filename)
 	}
+}
+
+func shouldTreatZipAsNuclei(data []byte) bool {
+	zipReader, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		return false
+	}
+
+	yakCount := 0
+	nucleiTemplateCount := 0
+	for _, f := range zipReader.File {
+		if f.FileInfo().IsDir() {
+			continue
+		}
+		name := strings.ToLower(filepath.ToSlash(f.Name))
+		switch filepath.Ext(name) {
+		case ".yak":
+			yakCount++
+		case ".yaml", ".yml":
+			if strings.Contains(name, "/workflows/") || strings.HasPrefix(name, "workflows/") || strings.HasSuffix(name, "-workflow.yaml") || strings.HasSuffix(name, "-workflow.yml") {
+				return true
+			}
+			rc, err := f.Open()
+			if err != nil {
+				continue
+			}
+			content, readErr := io.ReadAll(rc)
+			_ = rc.Close()
+			if readErr != nil {
+				continue
+			}
+			if looksLikeNucleiTemplate(content) {
+				nucleiTemplateCount++
+			}
+		}
+	}
+
+	return yakCount == 0 && nucleiTemplateCount > 0
 }
 
 // VulnExportItem 对应 webScanner 导出的 vulns_export.json 单条记录

@@ -3,6 +3,8 @@ package services
 import (
 	"archive/zip"
 	"bytes"
+	"crypto/sha1"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,6 +12,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	sqlitemodel "smart/models/sqlite"
 	"smart/tools/enums"
 	"strings"
 	"time"
@@ -30,8 +33,10 @@ var nucleiSeverityToRisk = map[string]int{
 var nucleiCveRegexp = regexp.MustCompile(`CVE-\d{4}-\d+`)
 
 type nucleiTemplateDoc struct {
-	ID   string `yaml:"id"`
-	Info struct {
+	ID        string      `yaml:"id"`
+	Workflows interface{} `yaml:"workflows"`
+	Flow      interface{} `yaml:"flow"`
+	Info      struct {
 		Name           string      `yaml:"name"`
 		Severity       string      `yaml:"severity"`
 		Description    string      `yaml:"description"`
@@ -79,7 +84,7 @@ func addSkipReasonStat(result *VulkitImportResult, reason string) {
 	stats := ensureImportStats(result)
 	reason = strings.TrimSpace(reason)
 	if reason == "" {
-		reason = "其他"
+		reason = "鍏朵粬"
 	}
 	stats.SkipReason[reason]++
 }
@@ -94,23 +99,31 @@ func addImportedTemplateStat(result *VulkitImportResult, doc nucleiTemplateDoc, 
 func ImportNucleiTemplatesFromUpload(src io.Reader, filename string) (*VulkitImportResult, error) {
 	data, err := io.ReadAll(src)
 	if err != nil {
-		return nil, fmt.Errorf("读取上传文件失败: %v", err)
+		return nil, fmt.Errorf("璇诲彇涓婁紶鏂囦欢澶辫触: %v", err)
+	}
+	cleaned, err := cleanupLegacyNucleiWorkflowRows()
+	if err != nil {
+		return nil, fmt.Errorf("娓呯悊鍘嗗彶 workflow 妯℃澘澶辫触: %v", err)
 	}
 
 	lowerName := strings.ToLower(strings.TrimSpace(filename))
 	switch {
 	case strings.HasSuffix(lowerName, ".zip"):
-		return importNucleiTemplatesFromZip(data)
+		result, err := importNucleiTemplatesFromZip(data)
+		if result != nil {
+			result.Cleaned = cleaned
+		}
+		return result, err
 	case strings.HasSuffix(lowerName, ".yaml"), strings.HasSuffix(lowerName, ".yml"):
 		if err := importSingleNucleiTemplate(data, filepath.Base(filename)); err != nil {
 			if skipErr, ok := err.(*nucleiSkipError); ok {
-				result := &VulkitImportResult{Total: 1, Skip: 1, Errors: []string{skipErr.Error()}}
+				result := &VulkitImportResult{Total: 1, Skip: 1, Cleaned: cleaned, Errors: []string{skipErr.Error()}}
 				addSkipReasonStat(result, skipErr.Error())
 				return result, nil
 			}
 			return nil, err
 		}
-		result := &VulkitImportResult{Total: 1, Success: 1}
+		result := &VulkitImportResult{Total: 1, Success: 1, Cleaned: cleaned}
 		if doc, ok := parseNucleiTemplateDoc(data); ok {
 			addImportedTemplateStat(result, doc, filepath.Base(filename), firstNonEmpty(doc.Info.Name, doc.ID, filepath.Base(filename)), normalizeNucleiStrings(doc.Info.Tags), normalizeNucleiStrings(doc.Info.Reference))
 		}
@@ -120,21 +133,88 @@ func ImportNucleiTemplatesFromUpload(src io.Reader, filename string) (*VulkitImp
 	}
 }
 
+func cleanupLegacyNucleiWorkflowRows() (int, error) {
+	workflowPathPatterns := []string{
+		"%/workflows/%",
+		"workflows/%",
+		"%-workflow.yaml",
+		"%-workflow.yml",
+	}
+	var cleaned int64
+
+	libArgs := make([]interface{}, 0, 6+len(workflowPathPatterns))
+	libArgs = append(libArgs, enums.VulScriptTypeNuclei, enums.VulScriptTypeYak)
+	for _, pattern := range workflowPathPatterns {
+		libArgs = append(libArgs, pattern)
+	}
+	libArgs = append(libArgs, "%-workflow", "VULKIT-%-WORKFLOW")
+	libResult := mysql.DB.Exec(`DELETE FROM vul_libraries
+		WHERE script_type IN (?, ?)
+		  AND (
+			LOWER(pocname) LIKE ?
+			OR LOWER(pocname) LIKE ?
+			OR LOWER(pocname) LIKE ?
+			OR LOWER(pocname) LIKE ?
+			OR LOWER(name) LIKE ?
+			OR UPPER(vul_id) LIKE ?
+		  )`, libArgs...)
+	if libResult.Error != nil {
+		return 0, libResult.Error
+	}
+	cleaned += libResult.RowsAffected
+
+	sqliteCleaned, err := cleanupLegacyWorkflowScriptsFromScannerDB()
+	if err != nil {
+		return 0, err
+	}
+	cleaned += int64(sqliteCleaned)
+
+	return int(cleaned), nil
+}
+
+func cleanupLegacyWorkflowScriptsFromScannerDB() (int, error) {
+	db, err := sqlitemodel.GetScannerDB()
+	if err != nil {
+		return 0, err
+	}
+	result := db.Exec(`DELETE FROM vul_scripts
+		WHERE type IN (?, ?)
+		  AND (
+			LOWER(script_name) LIKE ?
+			OR LOWER(script_name) LIKE ?
+			OR LOWER(script_name) LIKE ?
+			OR LOWER(script_name) LIKE ?
+			OR LOWER(script_name) LIKE ?
+		  )`,
+		enums.VulScriptTypeNuclei,
+		enums.VulScriptTypeYak,
+		"%/workflows/%",
+		"workflows/%",
+		"%-workflow.yaml",
+		"%-workflow.yml",
+		"%-workflow",
+	)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return int(result.RowsAffected), nil
+}
+
 func ImportNucleiTemplatesFromPath(rootPath string) (*VulkitImportResult, error) {
 	rootPath = strings.TrimSpace(rootPath)
 	if rootPath == "" {
-		return nil, fmt.Errorf("导入路径不能为空")
+		return nil, fmt.Errorf("瀵煎叆璺緞涓嶈兘涓虹┖")
 	}
 
 	info, err := os.Stat(rootPath)
 	if err != nil {
-		return nil, fmt.Errorf("读取导入路径失败: %v", err)
+		return nil, fmt.Errorf("璇诲彇瀵煎叆璺緞澶辫触: %v", err)
 	}
 
 	if !info.IsDir() {
 		f, err := os.Open(rootPath)
 		if err != nil {
-			return nil, fmt.Errorf("打开导入文件失败: %v", err)
+			return nil, fmt.Errorf("鎵撳紑瀵煎叆鏂囦欢澶辫触: %v", err)
 		}
 		defer f.Close()
 		return ImportNucleiTemplatesFromUpload(f, filepath.Base(rootPath))
@@ -187,7 +267,7 @@ func ImportNucleiTemplatesFromPath(rootPath string) (*VulkitImportResult, error)
 		return nil, err
 	}
 	if result.Total == 0 {
-		return nil, fmt.Errorf("目录中未找到可导入的 .yaml/.yml nuclei 模板")
+		return nil, fmt.Errorf("鐩綍涓湭鎵惧埌鍙鍏ョ殑 .yaml/.yml nuclei 妯℃澘")
 	}
 	return result, nil
 }
@@ -195,7 +275,7 @@ func ImportNucleiTemplatesFromPath(rootPath string) (*VulkitImportResult, error)
 func importNucleiTemplatesFromZip(data []byte) (*VulkitImportResult, error) {
 	reader, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
 	if err != nil {
-		return nil, fmt.Errorf("解压 nuclei zip 失败: %v", err)
+		return nil, fmt.Errorf("瑙ｅ帇 nuclei zip 澶辫触: %v", err)
 	}
 
 	result := &VulkitImportResult{}
@@ -237,7 +317,7 @@ func importNucleiTemplatesFromZip(data []byte) (*VulkitImportResult, error) {
 	}
 
 	if result.Total == 0 {
-		return nil, fmt.Errorf("zip 中未找到可导入的 .yaml/.yml nuclei 模板")
+		return nil, fmt.Errorf("zip 涓湭鎵惧埌鍙鍏ョ殑 .yaml/.yml nuclei 妯℃澘")
 	}
 	return result, nil
 }
@@ -275,13 +355,8 @@ func importSingleNucleiTemplate(content []byte, relativePath string) error {
 	if cve == "" {
 		cve = nucleiCveRegexp.FindString(string(content))
 	}
-	vulID := cve
-	if vulID == "" {
-		vulID = "NUCLEI-" + strings.ToUpper(strings.ReplaceAll(sanitizeForPocname(pocname), ".", "-"))
-	}
-	if len(vulID) > 120 {
-		vulID = vulID[:120]
-	}
+	vulID := buildNucleiVulID(pocname, cve)
+	localizedName, localizedDescription, localizedFix := localizeNucleiTemplateFields(pocname, doc, tags, refs)
 
 	risk := mapNucleiSeverity(strings.TrimSpace(doc.Info.Severity))
 	vulType := mapNucleiTemplateToType(pocname, tags, name, refs)
@@ -294,27 +369,71 @@ func importSingleNucleiTemplate(content []byte, relativePath string) error {
 		description=VALUES(description), affect_range=VALUES(affect_range), fix_suggest=VALUES(fix_suggest), component=VALUES(component),
 		status=VALUES(status), verify_type=VALUES(verify_type), exploit_impact=VALUES(exploit_impact), script_type=VALUES(script_type),
 		poc_or_exp=VALUES(poc_or_exp), cnvd=VALUES(cnvd), cnnvd=VALUES(cnnvd), cvss_score=VALUES(cvss_score), update_time=VALUES(update_time)`,
-		1, vulID, name, cve, risk, vulType, vulClass, strings.TrimSpace(doc.Info.Description),
-		deriveNucleiAffectRange(pocname, tags), strings.TrimSpace(doc.Info.Remediation), strings.Join(tags, ","),
+		1, vulID, localizedName, cve, risk, vulType, vulClass, localizedDescription,
+		deriveNucleiAffectRange(pocname, tags), localizedFix, strings.Join(tags, ","),
 		enums.VulLibrariesStatusSucess, pocname, 1, mapNucleiExploitImpact(vulType, tags), enums.VulScriptTypeNuclei,
 		enums.VulScriptVerifyTypePoc, strings.TrimSpace(doc.Info.Classification.CNVD), strings.TrimSpace(doc.Info.Classification.CNNVD),
 		strings.TrimSpace(doc.Info.Classification.CVSSScore), now, now,
 	)
 	if result.Error != nil {
-		return fmt.Errorf("写入 vul_libraries 失败: %v", result.Error)
+		return fmt.Errorf("鍐欏叆 vul_libraries 澶辫触: %v", result.Error)
 	}
 
-	contentStr := string(content)
-	vulScriptResult := mysql.DB.Exec(`INSERT INTO vul_scripts (data_type, user_id, script_name, type, lib_name, content, vul_id, verify_type, create_time, update_time)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		ON DUPLICATE KEY UPDATE script_name=VALUES(script_name), lib_name=VALUES(lib_name), content=VALUES(content), verify_type=VALUES(verify_type), update_time=VALUES(update_time)`,
-		1, 0, pocname, enums.VulScriptTypeNuclei, name, contentStr, vulID, enums.VulScriptVerifyTypePoc, now, now,
-	)
-	if vulScriptResult.Error != nil {
-		return fmt.Errorf("写入 vul_scripts 失败: %v", vulScriptResult.Error)
+	if err := saveNucleiScriptToScannerDB(pocname, localizedName, string(content), vulID, now); err != nil {
+		return fmt.Errorf("写入 scanner.db 的 vul_scripts 失败: %v", err)
 	}
 
 	return nil
+}
+
+func buildNucleiVulID(pocname, cve string) string {
+	cve = strings.TrimSpace(cve)
+	if cve != "" && len(cve) <= 50 {
+		return cve
+	}
+
+	base := strings.ToUpper(strings.ReplaceAll(sanitizeForPocname(pocname), ".", "-"))
+	if base == "" {
+		base = "TEMPLATE"
+	}
+	candidate := "NUCLEI-" + base
+	if len(candidate) <= 50 {
+		return candidate
+	}
+
+	sum := sha1.Sum([]byte(pocname))
+	hashSuffix := strings.ToUpper(hex.EncodeToString(sum[:4]))
+	maxBaseLen := 50 - len("NUCLEI-") - 1 - len(hashSuffix)
+	if maxBaseLen < 1 {
+		maxBaseLen = 1
+	}
+	if len(base) > maxBaseLen {
+		base = base[:maxBaseLen]
+	}
+	return "NUCLEI-" + base + "-" + hashSuffix
+}
+
+func saveNucleiScriptToScannerDB(scriptName, libName, content, vulID string, now time.Time) error {
+	db, err := sqlitemodel.GetScannerDB()
+	if err != nil {
+		return err
+	}
+	if err := db.Where("script_name = ?", scriptName).Delete(&sqlitemodel.VulScript{}).Error; err != nil {
+		return err
+	}
+	record := sqlitemodel.VulScript{
+		UserID:       0,
+		ScriptName:   scriptName,
+		Type:         enums.VulScriptTypeNuclei,
+		LibName:      libName,
+		Content:      content,
+		VulID:        vulID,
+		VerifyType:   enums.VulScriptVerifyTypePoc,
+		CreateTime:   now.Format("2006-01-02 15:04:05"),
+		UpdateTime:   now.Format("2006-01-02 15:04:05"),
+		EvidenceType: "0",
+	}
+	return db.Create(&record).Error
 }
 
 func normalizeNucleiStrings(v interface{}) []string {
@@ -432,25 +551,33 @@ func nucleiTypeLabel(vulType int) string {
 func shouldSkipNucleiTemplate(doc nucleiTemplateDoc, relativePath, name string, tags, refs []string) (string, bool) {
 	severity := strings.ToLower(strings.TrimSpace(doc.Info.Severity))
 	pathLower := strings.ToLower(filepath.ToSlash(strings.TrimSpace(relativePath)))
-	joined := strings.ToLower(strings.Join(append([]string{doc.ID, name, pathLower}, append(tags, refs...)...), ","))
-	vulType := mapNucleiTemplateToType(relativePath, tags, name, refs)
 
 	if severity == "" || severity == "info" || severity == "unknown" {
 		return "已跳过：信息收集/未知严重级别模板", true
 	}
-	if strings.Contains(pathLower, "/workflows/") || strings.Contains(pathLower, "/helpers/") || containsAny(joined, "workflow", "helper") {
+	if isNucleiWorkflowTemplate(doc, pathLower) {
 		return "已跳过：工作流/辅助模板", true
 	}
-	if strings.Contains(pathLower, "/http/technologies/") || strings.Contains(pathLower, "/network/detection/") {
-		return "已跳过：指纹识别/信息收集模板", true
-	}
-	if containsAny(joined, "fingerprint", "favicon", "wappalyzer", "technology", "technologies", "detect", "detection", "probe", "enum", "enumeration", "osint", "whois") {
-		return "已跳过：信息收集模板", true
-	}
-	if vulType == enums.VulLibrariesTypeOther && !strings.Contains(strings.ToUpper(joined), "CVE-") {
-		return "已跳过：未识别为漏洞检测模板", true
+	if strings.Contains(pathLower, "/helpers/") || strings.HasPrefix(pathLower, "helpers/") || pathLower == "helpers" ||
+		strings.HasSuffix(pathLower, "-helper.yaml") || strings.HasSuffix(pathLower, "-helper.yml") ||
+		strings.HasSuffix(strings.ToLower(strings.TrimSpace(doc.ID)), "-helper") {
+		return "已跳过：工作流/辅助模板", true
 	}
 	return "", false
+}
+
+func isNucleiWorkflowTemplate(doc nucleiTemplateDoc, pathLower string) bool {
+	idLower := strings.ToLower(strings.TrimSpace(doc.ID))
+	if doc.Workflows != nil || doc.Flow != nil {
+		return true
+	}
+	if strings.Contains(pathLower, "/workflows/") || strings.HasPrefix(pathLower, "workflows/") || pathLower == "workflows" {
+		return true
+	}
+	if strings.HasSuffix(pathLower, "-workflow.yaml") || strings.HasSuffix(pathLower, "-workflow.yml") {
+		return true
+	}
+	return strings.HasSuffix(idLower, "-workflow")
 }
 
 func mapNucleiTemplateToClass(pocname string, tags []string, name string) int {
