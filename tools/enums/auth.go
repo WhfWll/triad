@@ -34,9 +34,53 @@ const (
 )
 
 // AuthStatusUri 需要校验授权状态的uri
+// 当系统未授权时，访问以下接口将被拦截并提示"系统未授权"
+// 注意: 授权系统自身的接口(/smart/system/authsave, /smart/system/authinfo)不在此列，
+//
+//	以便用户可以在未授权状态下完成授权操作
 var AuthStatusUri = map[string]bool{
-	"/secops/auth/save": true,
-	"/secops/auth/info": true,
+	// 渗透任务
+	"/smart/task/save":              true,
+	"/smart/task/apisave":           true,
+	"/smart/task/copy":              true,
+	"/smart/task/addtarget":         true,
+	"/smart/task/addattackface":     true,
+	"/smart/task/addvul":            true,
+	"/smart/task/flowtaskadd":       true,
+	"/smart/task/vultest":           true,
+	"/smart/task/vulverify":         true,
+	"/smart/task/asyncvulverify":    true,
+	// 任务组
+	"/smart/taskgroup/create":       true,
+	"/smart/taskgroup/groupbind":    true,
+	// 场景管理
+	"/smart/scene/save":             true,
+	"/smart/scene/copy":             true,
+	// 安全配置核查
+	"/smart/baseline/check":         true,
+	"/smart/baseline/check/batch":   true,
+	// 数据安全
+	"/smart/datasec/db/run":         true,
+	"/smart/datasec/sensitive/run":  true,
+	"/smart/datasec/task/rerun":     true,
+	// 应用安全
+	"/smart/appsec/dynamic/save":    true,
+	"/smart/appsec/appspecific/run": true,
+	// 漏洞扫描
+	"/smart/vulscan/tasksave":       true,
+	// 逻辑漏洞
+	"/smart/logic/taskcreate":       true,
+	// BAS
+	"/smart/bas/taskcreate":         true,
+	// 第三方工具
+	"/smart/tripartite/xraysave":        true,
+	"/smart/tripartite/burpsuitesave":   true,
+	"/smart/tripartite/wificreate":      true,
+	// 安全报告
+	"/smart/security/report/generate": true,
+	// 资产中心
+	"/smart/asset/add":              true,
+	"/smart/asset/import":           true,
 }
 
 const (

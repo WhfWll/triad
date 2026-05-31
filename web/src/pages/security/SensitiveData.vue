@@ -1,20 +1,22 @@
-<template>
+﻿<template>
   <div class="security-container">
-    <div class="main-title" v-if="!embedded">敏感数据发现</div>
+    <div class="main-title" v-if="!embedded">鏁忔劅鏁版嵁鍙戠幇</div>
     
     <div class="list_box">
       <div class="search-box">
         <div class="operationbutton">
-          <el-button type="primary" size="small" @click="btnCreate">新建扫描任务</el-button>
-          <router-link to="/datasec/targets"><el-button size="small">目标库管理</el-button></router-link>
+          <el-tooltip :content="$store.state.systemAuthorized ? '' : '系统未授权，请前往「系统配置 → 系统授权」页面完成授权'" :disabled="$store.state.systemAuthorized" placement="bottom">
+            <el-button type="primary" size="small" :disabled="!$store.state.systemAuthorized" @click="btnCreate">鏂板缓鎵弿浠诲姟</el-button>
+          </el-tooltip>
+          <router-link to="/datasec/targets"><el-button size="small">鐩爣搴撶鐞?/el-button></router-link>
         </div>
         <div class="serach-condition">
           <div class="search-text">
-            <el-input placeholder="搜索任务名称" @keydown.enter.native="handlesearch" v-model="formData.search" class="input-with-select" size="small" clearable></el-input>
-            <el-button type="primary" size="small" @click="handlesearch">搜索</el-button>
+            <el-input placeholder="鎼滅储浠诲姟鍚嶇О" @keydown.enter.native="handlesearch" v-model="formData.search" class="input-with-select" size="small" clearable></el-input>
+            <el-button type="primary" size="small" @click="handlesearch">鎼滅储</el-button>
           </div>
           <div>
-            <el-button type="primary" size="small" @click="handleReset">重置</el-button>
+            <el-button type="primary" size="small" @click="handleReset">閲嶇疆</el-button>
           </div>
         </div>
       </div>
@@ -22,39 +24,39 @@
       <el-table :data="tableData" style="width: 100%" class="myTable" @selection-change="handleSelectionChange">
         <el-table-column width="55" type="selection">
         </el-table-column>
-        <el-table-column prop="name" label="任务名称" :show-overflow-tooltip="true">
+        <el-table-column prop="name" label="浠诲姟鍚嶇О" :show-overflow-tooltip="true">
         </el-table-column>
-        <el-table-column prop="dbType" label="数据库类型">
+        <el-table-column prop="dbType" label="鏁版嵁搴撶被鍨?>
           <template slot-scope="scope">
             <span :class="getDBTypeClass(scope.row.dbType)">{{ getDBTypeName(scope.row.dbType) }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="dbHost" label="扫描目标" :show-overflow-tooltip="true">
+        <el-table-column prop="dbHost" label="鎵弿鐩爣" :show-overflow-tooltip="true">
           <template slot-scope="scope">
             <span>{{ scope.row.targetSummary || scope.row.dbHost }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="totalCount" label="发现数据条数">
+        <el-table-column prop="totalCount" label="鍙戠幇鏁版嵁鏉℃暟">
         </el-table-column>
-        <el-table-column prop="highCount" label="高敏感数据">
+        <el-table-column prop="highCount" label="楂樻晱鎰熸暟鎹?>
           <template slot-scope="scope">
             <span class="count-high">{{ scope.row.highCount || 0 }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态">
+        <el-table-column prop="status" label="鐘舵€?>
           <template slot-scope="scope">
             <span :class="getStatusClass(scope.row.status)">{{ getStatusName(scope.row.status) }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间">
+        <el-table-column prop="createTime" label="鍒涘缓鏃堕棿">
         </el-table-column>
-        <el-table-column prop="scanTime" label="扫描时间">
+        <el-table-column prop="scanTime" label="鎵弿鏃堕棿">
         </el-table-column>
-        <el-table-column label="操作" width="220">
+        <el-table-column label="鎿嶄綔" width="220">
           <template slot-scope="scope">
-            <el-link :underline="false" class="link_primary" @click="handleDetail(scope.row)">详情</el-link>
-            <el-link :underline="false" class="link_primary" @click="handleRerun(scope.row)">再次检测</el-link>
-            <el-link :underline="false" class="link_primary" @click="handleCopyTargets(scope.row)">复制目标</el-link>
+            <el-link :underline="false" class="link_primary" @click="handleDetail(scope.row)">璇︽儏</el-link>
+            <el-link :underline="false" class="link_primary" @click="handleRerun(scope.row)">鍐嶆妫€娴?/el-link>
+            <el-link :underline="false" class="link_primary" @click="handleCopyTargets(scope.row)">澶嶅埗鐩爣</el-link>
           </template>
         </el-table-column>
       </el-table>
@@ -70,13 +72,13 @@
       </el-pagination>
     </div>
 
-    <el-dialog title="新建敏感数据扫描任务" :visible.sync="dialogVisible" width="720px">
+    <el-dialog title="鏂板缓鏁忔劅鏁版嵁鎵弿浠诲姟" :visible.sync="dialogVisible" width="720px">
       <el-form :model="taskForm" :rules="rules" ref="taskForm" label-width="100px">
-        <el-form-item label="任务名称" prop="name">
-          <el-input v-model="taskForm.name" placeholder="请输入任务名称"></el-input>
+        <el-form-item label="浠诲姟鍚嶇О" prop="name">
+          <el-input v-model="taskForm.name" placeholder="璇疯緭鍏ヤ换鍔″悕绉?></el-input>
         </el-form-item>
-        <el-form-item label="数据库类型" prop="dbType">
-          <el-select v-model="taskForm.dbType" placeholder="请选择数据库类型">
+        <el-form-item label="鏁版嵁搴撶被鍨? prop="dbType">
+          <el-select v-model="taskForm.dbType" placeholder="璇烽€夋嫨鏁版嵁搴撶被鍨?>
             <el-option label="MySQL" :value="1"></el-option>
             <el-option label="PostgreSQL" :value="2"></el-option>
             <el-option label="MongoDB" :value="3"></el-option>
@@ -92,27 +94,27 @@
           @remove-library="removeLibraryPick"
           @import-db-type="taskForm.dbType = $event"
         />
-        <el-form-item label="敏感数据类型" prop="dataTypes">
-          <el-select v-model="taskForm.dataTypes" multiple placeholder="请选择敏感数据类型">
-            <el-option label="身份证号" :value="1"></el-option>
-            <el-option label="银行卡号" :value="2"></el-option>
-            <el-option label="护照号" :value="3"></el-option>
-            <el-option label="手机号" :value="4"></el-option>
-            <el-option label="邮箱" :value="5"></el-option>
-            <el-option label="地址" :value="6"></el-option>
-            <el-option label="出生日期" :value="7"></el-option>
-            <el-option label="姓名" :value="8"></el-option>
+        <el-form-item label="鏁忔劅鏁版嵁绫诲瀷" prop="dataTypes">
+          <el-select v-model="taskForm.dataTypes" multiple placeholder="璇烽€夋嫨鏁忔劅鏁版嵁绫诲瀷">
+            <el-option label="韬唤璇佸彿" :value="1"></el-option>
+            <el-option label="閾惰鍗″彿" :value="2"></el-option>
+            <el-option label="鎶ょ収鍙? :value="3"></el-option>
+            <el-option label="鎵嬫満鍙? :value="4"></el-option>
+            <el-option label="閭" :value="5"></el-option>
+            <el-option label="鍦板潃" :value="6"></el-option>
+            <el-option label="鍑虹敓鏃ユ湡" :value="7"></el-option>
+            <el-option label="濮撳悕" :value="8"></el-option>
             <el-option label="Token" :value="9"></el-option>
-            <el-option label="证书信息" :value="10"></el-option>
-            <el-option label="密码哈希" :value="11"></el-option>
+            <el-option label="璇佷功淇℃伅" :value="10"></el-option>
+            <el-option label="瀵嗙爜鍝堝笇" :value="11"></el-option>
           </el-select>
         </el-form-item>
       </el-form>
       <span slot="footer">
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button @click="saveTargetsToLibrary">保存到目标库</el-button>
-        <el-button :loading="testConnLoading" @click="testAllConnections">测试全部连接</el-button>
-        <el-button type="primary" @click="submitForm">开始扫描（{{ targetTotal }} 个目标）</el-button>
+        <el-button @click="dialogVisible = false">鍙栨秷</el-button>
+        <el-button @click="saveTargetsToLibrary">淇濆瓨鍒扮洰鏍囧簱</el-button>
+        <el-button :loading="testConnLoading" @click="testAllConnections">娴嬭瘯鍏ㄩ儴杩炴帴</el-button>
+        <el-button type="primary" @click="submitForm">寮€濮嬫壂鎻忥紙{{ targetTotal }} 涓洰鏍囷級</el-button>
       </span>
     </el-dialog>
 
@@ -162,8 +164,8 @@ export default {
         dataTypes: []
       },
       rules: {
-        name: [{ required: true, message: '请输入任务名称', trigger: 'blur' }],
-        dbType: [{ required: true, message: '请选择数据库类型', trigger: 'change' }]
+        name: [{ required: true, message: '璇疯緭鍏ヤ换鍔″悕绉?, trigger: 'blur' }],
+        dbType: [{ required: true, message: '璇烽€夋嫨鏁版嵁搴撶被鍨?, trigger: 'change' }]
       }
     }
   },
@@ -253,7 +255,7 @@ export default {
       const targets = this.taskForm.targets || []
       const libIds = this.taskForm.libraryTargetIds || []
       if (!targets.length && !libIds.length) {
-        this.$message({ message: '请至少添加一个目标', type: 'warning' })
+        this.$message({ message: '璇疯嚦灏戞坊鍔犱竴涓洰鏍?, type: 'warning' })
         return
       }
       this.testConnLoading = true
@@ -280,11 +282,11 @@ export default {
           else fail++
         }
         const msg = fail === 0
-          ? `全部 ${ok} 个目标连接成功`
-          : `成功 ${ok} 个，失败 ${fail} 个（请检查地址与凭据）`
+          ? `鍏ㄩ儴 ${ok} 涓洰鏍囪繛鎺ユ垚鍔焋
+          : `鎴愬姛 ${ok} 涓紝澶辫触 ${fail} 涓紙璇锋鏌ュ湴鍧€涓庡嚟鎹級`
         this.$message({ message: msg, type: fail === 0 ? 'success' : 'warning', duration: 5000 })
       } catch (e) {
-        this.$message({ message: '全部连接测试失败: ' + (e.message || ''), type: 'error' })
+        this.$message({ message: '鍏ㄩ儴杩炴帴娴嬭瘯澶辫触: ' + (e.message || ''), type: 'error' })
       } finally {
         this.testConnLoading = false
       }
@@ -295,19 +297,19 @@ export default {
         const targets = this.taskForm.targets || []
         const libCount = (this.taskForm.libraryTargetIds || []).length
         if (!targets.length && !libCount) {
-          this.$message({ message: '请至少添加一个目标', type: 'warning' })
+          this.$message({ message: '璇疯嚦灏戞坊鍔犱竴涓洰鏍?, type: 'warning' })
           return
         }
         for (let i = 0; i < targets.length; i++) {
           const t = targets[i]
           if (!(t.dbHost || '').trim() || !(t.dbUser || '').trim() || !t.dbPassword) {
-            this.$message({ message: `请完善第 ${i + 1} 个目标的地址、用户名和密码`, type: 'warning' })
+            this.$message({ message: `璇峰畬鍠勭 ${i + 1} 涓洰鏍囩殑鍦板潃銆佺敤鎴峰悕鍜屽瘑鐮乣, type: 'warning' })
             return
           }
         }
         const res = await security.runSensitiveScan(this.buildDbPayload())
           if (res.code == 200) {
-            this.$message({ message: '任务创建成功', type: 'success' })
+            this.$message({ message: '浠诲姟鍒涘缓鎴愬姛', type: 'success' })
             this.dialogVisible = false
             this.getData()
           } else {
@@ -319,15 +321,15 @@ export default {
       const id = row.id || row.ID
       if (!id) return
       try {
-        const res = await security.rerunDataSecTask({ id, kind: 'sensitive', name: `${row.name || '任务'}-再次检测` })
+        const res = await security.rerunDataSecTask({ id, kind: 'sensitive', name: `${row.name || '浠诲姟'}-鍐嶆妫€娴媊 })
         if (res.code === 200) {
-          this.$message({ message: '已创建再次检测任务', type: 'success' })
+          this.$message({ message: '宸插垱寤哄啀娆℃娴嬩换鍔?, type: 'success' })
           this.getData()
         } else {
-          this.$message({ message: res.msg || '操作失败', type: 'error' })
+          this.$message({ message: res.msg || '鎿嶄綔澶辫触', type: 'error' })
         }
       } catch (e) {
-        this.$message({ message: '操作失败: ' + (e.message || ''), type: 'error' })
+        this.$message({ message: '鎿嶄綔澶辫触: ' + (e.message || ''), type: 'error' })
       }
     },
     async handleCopyTargets(row) {
@@ -338,25 +340,25 @@ export default {
         if (res.code === 200 && res.data) {
           this.dialogVisible = true
           this.taskForm = {
-            name: `${row.name || '任务'}-复制`,
+            name: `${row.name || '浠诲姟'}-澶嶅埗`,
             dbType: res.data.dbType || row.dbType || 1,
             targets: res.data.targets || [],
             libraryTargetIds: [],
             libraryPicks: [],
             dataTypes: res.data.dataTypes || []
           }
-          this.$message({ message: '已复制历史任务目标', type: 'success' })
+          this.$message({ message: '宸插鍒跺巻鍙蹭换鍔＄洰鏍?, type: 'success' })
         } else {
-          this.$message({ message: res.msg || '复制失败', type: 'error' })
+          this.$message({ message: res.msg || '澶嶅埗澶辫触', type: 'error' })
         }
       } catch (e) {
-        this.$message({ message: '复制失败: ' + (e.message || ''), type: 'error' })
+        this.$message({ message: '澶嶅埗澶辫触: ' + (e.message || ''), type: 'error' })
       }
     },
     async saveTargetsToLibrary() {
       const targets = this.taskForm.targets || []
       if (!targets.length) {
-        this.$message({ message: '请先手动添加目标（目标库条目无需重复保存）', type: 'warning' })
+        this.$message({ message: '璇峰厛鎵嬪姩娣诲姞鐩爣锛堢洰鏍囧簱鏉＄洰鏃犻渶閲嶅淇濆瓨锛?, type: 'warning' })
         return
       }
       try {
@@ -366,28 +368,28 @@ export default {
           targets: targets.map((t) => this.buildTargetPayload(t))
         })
         if (res.code === 200) {
-          this.$message({ message: `已保存 ${(res.data && res.data.saved) || 0} 个目标到目标库`, type: 'success' })
+          this.$message({ message: `宸蹭繚瀛?${(res.data && res.data.saved) || 0} 涓洰鏍囧埌鐩爣搴揱, type: 'success' })
         } else {
-          this.$message({ message: res.msg || '保存失败', type: 'error' })
+          this.$message({ message: res.msg || '淇濆瓨澶辫触', type: 'error' })
         }
       } catch (e) {
-        this.$message({ message: '保存失败: ' + (e.message || ''), type: 'error' })
+        this.$message({ message: '淇濆瓨澶辫触: ' + (e.message || ''), type: 'error' })
       }
     },
     async handleDel(row) {
-      this.$confirm('确认删除该任务？', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+      this.$confirm('纭鍒犻櫎璇ヤ换鍔★紵', '鎻愮ず', {
+        confirmButtonText: '纭畾',
+        cancelButtonText: '鍙栨秷',
         type: 'warning'
       }).then(() => {
-        this.$message({ message: '删除成功', type: 'success' })
+        this.$message({ message: '鍒犻櫎鎴愬姛', type: 'success' })
         this.getData()
       }).catch(() => {})
     },
     handleDetail(row) {
       const id = row.id || row.ID
       if (!id) {
-        this.$message({ message: '无效的任务', type: 'warning' })
+        this.$message({ message: '鏃犳晥鐨勪换鍔?, type: 'warning' })
         return
       }
       this.$router.push({
@@ -421,15 +423,15 @@ export default {
     },
     getDBTypeName(type) {
       const map = { 1: 'MySQL', 2: 'PostgreSQL', 3: 'MongoDB', 4: 'Redis', 5: 'CouchDB' }
-      return map[type] || '未知'
+      return map[type] || '鏈煡'
     },
     getDBTypeClass(type) {
       const map = { 1: 'db-mysql', 2: 'db-postgresql', 3: 'db-mongodb', 4: 'db-redis', 5: 'db-couchdb' }
       return map[type] || 'db-default'
     },
     getStatusName(status) {
-      const map = { 1: '等待扫描', 2: '扫描中', 3: '已完成' }
-      return map[status] || '未知'
+      const map = { 1: '绛夊緟鎵弿', 2: '鎵弿涓?, 3: '宸插畬鎴? }
+      return map[status] || '鏈煡'
     },
     getStatusClass(status) {
       const map = { 1: 'status-wait', 2: 'status-running', 3: 'status-complete' }

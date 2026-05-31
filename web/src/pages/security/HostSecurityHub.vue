@@ -7,7 +7,9 @@
     <div class="list_box">
       <div class="search-box">
         <div class="operationbutton">
-          <el-button type="primary" size="small" @click="openCreateDialog">新建主机检查任务</el-button>
+          <el-tooltip :content="$store.state.systemAuthorized ? '' : '系统未授权，请前往「系统配置 → 系统授权」页面完成授权'" :disabled="$store.state.systemAuthorized" placement="bottom">
+            <el-button type="primary" size="small" :disabled="!$store.state.systemAuthorized" @click="openCreateDialog">新建主机检查任务</el-button>
+          </el-tooltip>
           <el-button
             size="small"
             :disabled="selectedRows.length === 0"

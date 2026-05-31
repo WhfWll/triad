@@ -6,7 +6,9 @@
       <div class="search-box">
         <div class="operationbutton">
           <el-button type="default" size="small" @click="openRulesLibrary">规则库与分类</el-button>
-          <el-button type="primary" size="small" @click="openDialog">新建核查</el-button>
+          <el-tooltip :content="$store.state.systemAuthorized ? '' : '系统未授权，请前往「系统配置 → 系统授权」页面完成授权'" :disabled="$store.state.systemAuthorized" placement="bottom">
+            <el-button type="primary" size="small" :disabled="!$store.state.systemAuthorized" @click="openDialog">新建核查</el-button>
+          </el-tooltip>
         </div>
       </div>
 

@@ -1,7 +1,5 @@
 package enums
 
-const SystemNoAuth = "系统未授权 请前往授权"
-
 var (
 	SystemUpgradeProjectDir = "/opt/laozhi/" //项目目录
 	DockerComposeConfigPath = "/opt/laozhi/docker-compose.yml"

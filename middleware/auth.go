@@ -23,7 +23,9 @@ func LoginAuth(c *gin.Context) {
 	ctx := context.Background()
 	if isAuth := mapSetSer.GetProductAuthState(ctx); isAuth == false {
 		if enums.AuthStatusUri[c.Request.URL.Path] {
-			fail(c, errno.LoginAuthErr, errors.New(enums.SystemNoAuth))
+			c.Abort()
+			server.RespFail(c, errno.LoginAuthErr, "系统未授权，请前往「系统配置 → 系统授权」页面完成授权")
+			return
 		}
 	}
 	// 但前请求地址

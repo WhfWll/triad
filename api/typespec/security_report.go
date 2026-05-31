@@ -1,8 +1,8 @@
 package typespec
 
 type SecurityReportGenerateReq struct {
-	Module string `json:"module" form:"module" binding:"required"`
-	TaskID int    `json:"taskId" form:"taskId" binding:"required"`
+	Module string  `json:"module" form:"module" binding:"required"`
+	TaskID FlexInt `json:"taskId" form:"taskId" binding:"required"`
 }
 
 type SecurityReportGenerateResp struct {

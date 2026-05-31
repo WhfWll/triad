@@ -63,6 +63,15 @@ type DataReportMeta struct {
 // HostSecReportService provides report data for security check modules
 type HostSecReportService struct{}
 
+func getTaskName(ctx context.Context, taskID int) string {
+	var taskDao mysqls.TaskTask
+	task, err := taskDao.GetTaskCheckTask(ctx, taskID)
+	if err == nil && task.TaskName != "" {
+		return task.TaskName
+	}
+	return fmt.Sprintf("任务 #%d", taskID)
+}
+
 func (s *HostSecReportService) GetHostReportMeta(ctx context.Context, taskID int) *HostReportMeta {
 	var baselineDao mysqls.BaselineCheckResult
 
@@ -83,7 +92,7 @@ func (s *HostSecReportService) GetHostReportMeta(ctx context.Context, taskID int
 func (s *HostSecReportService) buildHostBaselineMeta(ctx context.Context, taskID int, targets []mysqls.BaselineTaskTargetRow) *HostReportMeta {
 	meta := &HostReportMeta{
 		TaskID:      taskID,
-		TaskName:    fmt.Sprintf("安全配置核查 #%d", taskID),
+		TaskName:    getTaskName(ctx, taskID),
 		TaskKind:    "安全配置核查",
 		CheckTime:   "-",
 		TargetCount: len(targets),
@@ -160,7 +169,7 @@ func (s *HostSecReportService) buildHostBaselineMeta(ctx context.Context, taskID
 func (s *HostSecReportService) buildHostMalwareMeta(ctx context.Context, taskID int, rows []mysqls.HostMalwareScan) *HostReportMeta {
 	meta := &HostReportMeta{
 		TaskID:      taskID,
-		TaskName:    fmt.Sprintf("恶意代码检测 #%d", taskID),
+		TaskName:    getTaskName(ctx, taskID),
 		TaskKind:    "恶意代码检测（YARA）",
 		TargetCount: len(rows),
 	}
@@ -307,17 +316,127 @@ func (s *HostSecReportService) GetAppReportMeta(ctx context.Context, taskID int)
 
 func (s *HostSecReportService) GetDataReportMeta(ctx context.Context, taskID int) *DataReportMeta {
 	meta := &DataReportMeta{
-		TaskID:        taskID,
-		TaskName:      fmt.Sprintf("数据安全检查 #%d", taskID),
-		KindLabel:     "数据安全检查",
-		TargetSummary: "-",
-		CheckTime:     "-",
-		StatCards: []ReportStatCard{
-			{Label: "严重", Value: "0", Class: "critical"},
-			{Label: "高危", Value: "0", Class: "high"},
-			{Label: "中危", Value: "0", Class: "medium"},
-			{Label: "低危", Value: "0", Class: "low"},
-		},
+		TaskID:    taskID,
+		TaskName:  fmt.Sprintf("数据安全检查 #%d", taskID),
+		KindLabel: "数据安全检查",
 	}
+
+	// 获取任务基本信息
+	var taskModel mysqls.TaskTask
+	task, err := taskModel.GetTaskCheckTask(ctx, taskID)
+	if err == nil {
+		meta.TaskName = task.TaskName
+		if !task.CreateTime.IsZero() {
+			meta.CheckTime = task.CreateTime.Format("2006-01-02 15:04:05")
+		}
+		if !task.UpdateTime.IsZero() {
+			meta.CheckTime = task.UpdateTime.Format("2006-01-02 15:04:05")
+		}
+	}
+
+	// 获取目标信息
+	targets := (&mysqls.TaskTarget{}).GetTargetsByTaskId(ctx, taskID)
+	meta.TargetCount = len(targets)
+	if len(targets) > 0 {
+		var targetStrs []string
+		for _, t := range targets {
+			targetStrs = append(targetStrs, t.TargetURL)
+		}
+		meta.TargetSummary = strings.Join(targetStrs, ", ")
+	}
+
+	// 初始化统计卡片
+	critical, high, mid, low := 0, 0, 0, 0
+
+	// 获取数据库检查结果（基线检查和 CVE）
+	var checkResultModel mysqls.DBCheckResult
+	checkResults, _ := checkResultModel.GetByTaskID(ctx, taskID)
+	if len(checkResults) > 0 {
+		meta.BaselineColumns = []string{"目标", "检查类别", "规则名称", "风险等级", "检查结果", "期望值", "实际值", "修复建议"}
+		for _, r := range checkResults {
+			// 跳过元数据检查（版本识别等）
+			if IsDatasecMetaCheckResult(r) && r.RuleName != "CVE 版本匹配" {
+				continue
+			}
+
+			// 统计风险
+			if r.CheckResult == enums.BaselineCheckResultFail {
+				switch r.RiskLevel {
+				case enums.BaselineRiskCritical:
+					critical++
+				case enums.BaselineRiskHigh:
+					high++
+				case enums.BaselineRiskMiddle:
+					mid++
+				case enums.BaselineRiskLow:
+					low++
+				}
+			}
+
+			// 添加到基线检查表格
+			riskName := enums.BaselineEnum.GetBaselineRiskName(r.RiskLevel)
+			resultName := enums.BaselineEnum.GetCheckResultName(r.CheckResult)
+			categoryName := enums.BaselineEnum.GetDBCheckCategoryName(r.CheckCategory)
+			meta.BaselineChecks = append(meta.BaselineChecks, ReportTableRow{
+				Cells: []string{
+					r.TargetIP,
+					categoryName,
+					r.RuleName,
+					riskName,
+					resultName,
+					r.ExpectedValue,
+					r.ActualValue,
+					r.FixSuggestion,
+				},
+			})
+		}
+	}
+
+	// 获取敏感数据发现结果
+	var sensitiveModel mysqls.SensitiveDataResult
+	sensitiveResults, _ := sensitiveModel.GetByTaskID(ctx, taskID)
+	if len(sensitiveResults) > 0 {
+		meta.SensitiveColumns = []string{"目标", "库名", "表名", "字段名", "数据类型", "敏感等级", "样例数据", "数量"}
+		for _, r := range sensitiveResults {
+			// 统计敏感数据风险
+			switch r.DataLevel {
+			case enums.SensitiveDataLevelHigh:
+				high++
+			case enums.SensitiveDataLevelMiddle:
+				mid++
+			case enums.SensitiveDataLevelLow:
+				low++
+			}
+
+			// 添加到敏感数据发现表格
+			dataTypeName := enums.BaselineEnum.GetSensitiveDataTypeName(r.DataType)
+			levelName := enums.BaselineEnum.GetSensitiveDataLevelName(r.DataLevel)
+			countStr := fmt.Sprintf("%d", r.TotalRows)
+			if r.TotalRows <= 0 {
+				countStr = "1"
+			}
+			meta.SensitiveFindings = append(meta.SensitiveFindings, ReportTableRow{
+				Cells: []string{
+					r.TargetIP,
+					r.DBName,
+					r.TableNameStr,
+					r.ColumnName,
+					dataTypeName,
+					levelName,
+					r.SampleData,
+					countStr,
+				},
+			})
+		}
+	}
+
+	// 设置统计卡片
+	meta.StatCards = []ReportStatCard{
+		{Label: "严重", Value: fmt.Sprintf("%d", critical), Class: "critical"},
+		{Label: "高危", Value: fmt.Sprintf("%d", high), Class: "high"},
+		{Label: "中危", Value: fmt.Sprintf("%d", mid), Class: "medium"},
+		{Label: "低危", Value: fmt.Sprintf("%d", low), Class: "low"},
+	}
+
 	return meta
 }

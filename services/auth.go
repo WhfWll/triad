@@ -225,11 +225,18 @@ func (a *Auth) RsaSignWithSha256(data []byte, keyBytes []byte) []byte {
 // UpdateAuthState 更新系统授权状态
 func (a *Auth) UpdateAuthState(ctx context.Context, authState string) error {
 	var mapSet mysqls.MapSet
-	err := mapSet.UpdateObjValueByObjKey(ctx, enums.ProductAuthStateMapSetKey, authState)
+	row, err := mapSet.GetsByObjKey(ctx, enums.ProductAuthStateMapSetKey)
 	if err != nil {
 		return err
 	}
-	return nil
+	if row.ID == 0 {
+		row.Estate = "valid"
+		row.ObjKey = enums.ProductAuthStateMapSetKey
+		row.ObjValue = authState
+		row.Content = "产品授权状态"
+		return row.AddMapSet(ctx)
+	}
+	return mapSet.UpdateObjValueByObjKey(ctx, enums.ProductAuthStateMapSetKey, authState)
 }
 
 // UpdateAuthRecord 更新系统授权记录
@@ -237,22 +244,37 @@ func (a *Auth) UpdateAuthRecord(ctx context.Context, authRecord string) error {
 	var mapSet mysqls.MapSet
 	// 1 获取过去的数据并拼接
 	mapSetRes, err := mapSet.GetsByObjKey(ctx, enums.ProductAuthRecordMapSetKey)
+	if err != nil {
+		return err
+	}
+	if mapSetRes.ID == 0 {
+		mapSetRes.Estate = "valid"
+		mapSetRes.ObjKey = enums.ProductAuthRecordMapSetKey
+		mapSetRes.ObjValue = authRecord
+		mapSetRes.Content = "产品授权记录"
+		return mapSetRes.AddMapSet(ctx)
+	}
 	if mapSetRes.ObjValue != "" {
 		authRecord = mapSetRes.ObjValue + "," + authRecord
 	}
-	if err = mapSet.UpdateObjValueByObjKey(ctx, enums.ProductAuthRecordMapSetKey, authRecord); err != nil {
-		return err
-	}
-	return nil
+	return mapSet.UpdateObjValueByObjKey(ctx, enums.ProductAuthRecordMapSetKey, authRecord)
 }
 
 // CleanAuthRecord 清空授权记录
 func (a *Auth) CleanAuthRecord(ctx context.Context) error {
 	var mapSet mysqls.MapSet
-	if err := mapSet.UpdateObjValueByObjKey(ctx, enums.ProductAuthRecordMapSetKey, ","); err != nil {
+	row, err := mapSet.GetsByObjKey(ctx, enums.ProductAuthRecordMapSetKey)
+	if err != nil {
 		return err
 	}
-	return nil
+	if row.ID == 0 {
+		row.Estate = "valid"
+		row.ObjKey = enums.ProductAuthRecordMapSetKey
+		row.ObjValue = ","
+		row.Content = "产品授权记录"
+		return row.AddMapSet(ctx)
+	}
+	return mapSet.UpdateObjValueByObjKey(ctx, enums.ProductAuthRecordMapSetKey, ",")
 }
 
 // CheckAuthRecord 查验系统授权记录
@@ -279,11 +301,18 @@ func (a *Auth) UpdateAuthInfo(ctx context.Context, authInfoMap map[string]string
 	if err != nil {
 		return err
 	}
-	err = mapSet.UpdateObjValueByObjKey(ctx, enums.ProductAuthInfoMapSetKey, string(authInfoByte))
+	row, err := mapSet.GetsByObjKey(ctx, enums.ProductAuthInfoMapSetKey)
 	if err != nil {
 		return err
 	}
-	return nil
+	if row.ID == 0 {
+		row.Estate = "valid"
+		row.ObjKey = enums.ProductAuthInfoMapSetKey
+		row.ObjValue = string(authInfoByte)
+		row.Content = "产品授权信息"
+		return row.AddMapSet(ctx)
+	}
+	return mapSet.UpdateObjValueByObjKey(ctx, enums.ProductAuthInfoMapSetKey, string(authInfoByte))
 }
 
 // AddProductID 添加ProductID
@@ -300,10 +329,16 @@ func (a *Auth) AddProductID(ctx context.Context, productID string) error {
 func (a *Auth) GetProductID(ctx context.Context) (string, error) {
 	var mapSet mysqls.MapSet
 	mapSetRes, err := mapSet.GetsByObjKey(ctx, enums.ProductAuthInfoMapSetKey)
+	if err != nil {
+		return "", err
+	}
 	var authInfoMap map[string]string
 	err = json.Unmarshal([]byte(mapSetRes.ObjValue), &authInfoMap)
 	if err != nil {
 		return "", err
 	}
-	return authInfoMap["productID"], nil
+	if productID, ok := authInfoMap["productID"]; ok && productID != "" {
+		return productID, nil
+	}
+	return "", errors.New("productID not found")
 }

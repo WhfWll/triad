@@ -5,7 +5,9 @@
     <div class="list_box">
       <div class="search-box">
         <div class="operationbutton">
-          <el-button type="primary" size="small" @click="btnCreate">新建检测任务</el-button>
+          <el-tooltip :content="$store.state.systemAuthorized ? '' : '系统未授权，请前往「系统配置 → 系统授权」页面完成授权'" :disabled="$store.state.systemAuthorized" placement="bottom">
+            <el-button type="primary" size="small" :disabled="!$store.state.systemAuthorized" @click="btnCreate">新建检测任务</el-button>
+          </el-tooltip>
         </div>
         <div class="serach-condition">
           <div class="search-text">

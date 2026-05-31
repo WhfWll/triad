@@ -10,6 +10,7 @@ type AuthInfoReq struct {
 type AuthInfoRes struct {
 	ProductName string `json:"productName"`
 	ProductID   string `json:"productID"`   //
+	SoftwareVersion string `json:"softwareVersion"` // 软件版本号
 	AuthCode    string `json:"authCode"`    // 产品序列号
 	AuthTime    string `json:"authTime"`    // 授权日期
 	AuthExpTime string `json:"authExpTime"` // 授权过期时间

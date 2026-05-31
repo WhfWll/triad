@@ -19,11 +19,15 @@ export default new Vuex.Store({
     sideTheme: JSON.parse(localStorage.getItem('theme'))||'themeDark',
     sideThemeNav: localStorage.getItem('themeNav')||'LeftNav',
     AttributeTheme: localStorage.getItem('AttributeTheme')||'light',
-    sideThemeLOGO: localStorage.getItem('themeLOGO')||'false'
+    sideThemeLOGO: localStorage.getItem('themeLOGO')||'false',
+    systemAuthorized: false
   },
   mutations: {
     setPercentage (state, data) {
       state.uploadPercentage = data
+    },
+    setSystemAuthorized (state, data) {
+      state.systemAuthorized = data
     },
     setgroupID (state, data) {
       state.groupID = data

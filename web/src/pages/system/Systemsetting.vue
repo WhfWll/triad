@@ -75,11 +75,82 @@
                         </el-form>
                     </div> 
                 </el-tab-pane>  -->
-                <el-tab-pane label="安全检查配置" name="tabSec">
-                    <security-check-config v-if="activeName === 'tabSec'" />
+                <el-tab-pane label="系统授权" name="tabAuth">
+                    <div v-if="activeName === 'tabAuth'" class="tabsbox auth-tabs">
+                        <div class="section-header">
+                            <i class="el-icon-key"></i>
+                            <span class="section-title">授权信息</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">产品名称</span>
+                            <span class="info-value">{{ productinfo.name || '未获取' }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">特征码</span>
+                            <span class="info-value">{{ productinfo.software_version || '未获取' }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">软件版本</span>
+                            <span class="info-value">{{ productinfo.software_display_version || '未获取' }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">授权时间</span>
+                            <span class="info-value">{{ productinfo.authTime || '未授权' }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">授权天数</span>
+                            <span class="info-value">{{ formatAuthDays(productinfo.authDays) }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">剩余天数</span>
+                            <span class="info-value" :class="{'danger-text': productinfo.leftDays <= 30}">
+                                {{ formatAuthDays(productinfo.leftDays) }}
+                            </span>
+                        </div>
+
+                        <div class="auth-divider"></div>
+
+                        <div class="section-header">
+                            <i class="el-icon-lock"></i>
+                            <span class="section-title">授权操作</span>
+                        </div>
+                        <el-form label-width="120px">
+                            <el-form-item label="系统授权码">
+                                <el-input 
+                                    type="textarea" 
+                                    :rows="8" 
+                                    v-model="systemSTR" 
+                                    placeholder="请输入系统授权码"
+                                    maxlength="50000"
+                                    class="auth-code-input"
+                                ></el-input>
+                            </el-form-item>
+                            <el-form-item>
+                                <el-button 
+                                    type="primary" 
+                                    @click="handleFileUpload" 
+                                    :loading="authLoading"
+                                    size="medium"
+                                >
+                                    立即授权
+                                </el-button>
+                                <el-button 
+                                    @click="systemSTR = ''" 
+                                    size="medium"
+                                >
+                                    清空
+                                </el-button>
+                            </el-form-item>
+                        </el-form>
+
+
+                    </div>
                 </el-tab-pane>
                 <el-tab-pane label="系统监控" name="tab12">
                     <sysmonitoring v-if="activeName === 'tab12'"/>
+                </el-tab-pane>
+                <el-tab-pane label="安全检查配置" name="tabSec">
+                    <security-check-config v-if="activeName === 'tabSec'" />
                 </el-tab-pane>
             </el-tabs>
 
@@ -310,6 +381,11 @@
         border-radius: 4px;
         box-shadow: 0px 2px 4px 1px rgba(76,122,227,0.1200);
    
+    }
+
+    .tabsbox.auth-tabs {
+        background: var(--appsec-bg-surface, #1a1a2e);
+        border: 1px solid var(--appsec-bg-surface-inset, #16213e);
     }
 
     .totalbox{
@@ -756,7 +832,7 @@ export default {
             system_uid:'',
             dialogSysVisible:false,
             role:0,  
-    		activeName:'tabSec', 
+    		activeName:'tabAuth', 
             formBasics:{
                 ip:'',
                 port:'',
@@ -794,10 +870,15 @@ export default {
                 name:'',
                 engine_version:'',
                 software_version:'',
+                software_display_version:'',
                 version_type:'',
                 time:'',
                 login_url:'',
+                authTime:'',
+                authDays:0,
+                leftDays:0
             },
+            authLoading: false,
             upgrade1:false,
             upgrade2:false,
             shutdown:false,
@@ -967,11 +1048,38 @@ export default {
         this.role = decryptCBC(localStorage.getItem('role'),this.myKey);
     },
     mounted () {
+        this.get_product_info();
+    },
+    watch: {
+        activeName: {
+            handler(newVal) {
+                if (newVal === 'tabAuth') {
+                    this.get_product_info();
+                }
+            },
+            immediate: false
+        }
     },
     beforeDestroy(){
     //    clearTimeout(this.timer2) 
     },
     methods:{
+           formatAuthDays(value) {
+            const text = value === undefined || value === null ? '' : String(value).trim()
+            if (!text || text === '--') {
+                return '--天'
+            }
+            if (text.includes('过期')) {
+                return text
+            }
+            if (text.endsWith('天')) {
+                return text
+            }
+            if (/^\d+$/.test(text)) {
+                return `${text}天`
+            }
+            return text
+            },
            inputChange(val) {
             this.securityform.expire_unused = this.securityform.expire_unused.replace(/[^0-9.]/g, '')
             },
@@ -1342,14 +1450,22 @@ export default {
             console.log('system', dt)
             if(dt.code == 200){ 
                 this.productinfo.name = dt.data.productName;
-                // this.productinfo.engine_version = dt.data.productID;
                 this.productinfo.software_version = dt.data.productID;
-                // this.productinfo.version_type = dt.data.type;
+                this.productinfo.software_display_version = dt.data.softwareVersion;
                 this.productinfo.time = dt.data.use_time;
-                // this.productinfo.login_url =  dt.data.login_url;
-                   this.productinfo.authTime = dt.data.authTime;
-                    this.productinfo.authDays = dt.data.authDays;
-                    this.productinfo.leftDays = dt.data.leftDays;
+                this.productinfo.authTime = dt.data.authTime;
+                this.productinfo.authDays = dt.data.authDays;
+                this.productinfo.leftDays = dt.data.leftDays;
+                const authTime = (dt.data.authTime || '').trim();
+                const authDays = String(dt.data.authDays || '').trim();
+                const leftDays = String(dt.data.leftDays || '').trim();
+                const inferredAuthorized = Boolean(dt.data.status) || (
+                    authTime &&
+                    authTime !== '未授权' &&
+                    !leftDays.includes('过期') &&
+                    authDays !== '--'
+                );
+                this.$store.commit('setSystemAuthorized', inferredAuthorized);
             }else{
                 // this.$message({
                 //     message:dt.error,
@@ -2103,7 +2219,8 @@ export default {
             if(res.code == 200){
                 this.$message.success('授权成功');
                 this.fileDialog = false;
-                this.get_product_info();
+                this.$store.commit('setSystemAuthorized', true);
+                await this.get_product_info();
                 this.systemSTR = ''
             }else{
                 this.$message.error(res.msg);
@@ -2498,8 +2615,70 @@ export default {
     border-top: 1px solid #f0f0f0;
 }
 
-</style>
-    border-top: 1px solid #f0f0f0;
+.auth-divider {
+    height: 1px;
+    background: #2a2a4a;
+    margin: 24px 0;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.section-header i {
+    color: #4c7ae3;
+    font-size: 16px;
+    margin-right: 8px;
+}
+
+.section-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #e0e0e0;
+}
+
+.info-row {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid #2a2a4a;
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    width: 120px;
+    font-size: 14px;
+    color: #909399;
+    font-weight: 500;
+}
+
+.info-value {
+    flex: 1;
+    font-size: 14px;
+    color: #e0e0e0;
+    font-weight: 400;
+}
+
+.danger-text {
+    color: #f56c6c !important;
+    font-weight: 600 !important;
+}
+
+.auth-code-input /deep/ .el-textarea__inner {
+    background: #1a1a2e;
+    border: 1px solid #2a2a4a;
+    color: #e0e0e0;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+}
+
+.auth-code-input /deep/ .el-textarea__inner:focus {
+    border-color: #4c7ae3;
 }
 
 </style>

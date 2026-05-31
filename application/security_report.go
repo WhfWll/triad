@@ -19,29 +19,31 @@ func (a *SecurityReportApp) Generate(ctx context.Context, req *typespec.Security
 	var taskName string
 	var htmlContent string
 
+	taskID := req.TaskID.Int()
+
 	switch req.Module {
 	case "host":
-		t, name, err := a.buildHostReport(ctx, req.TaskID)
+		t, name, err := a.buildHostReport(ctx, taskID)
 		if err != nil {
 			return nil, err
 		}
-		title = fmt.Sprintf("主机安全检查报告 #%d", req.TaskID)
+		title = name
 		taskName = name
 		htmlContent = t
 	case "app":
-		t, name, err := a.buildAppReport(ctx, req.TaskID)
+		t, name, err := a.buildAppReport(ctx, taskID)
 		if err != nil {
 			return nil, err
 		}
-		title = fmt.Sprintf("应用安全检查报告 #%d", req.TaskID)
+		title = name
 		taskName = name
 		htmlContent = t
 	case "data":
-		t, name, err := a.buildDataReport(ctx, req.TaskID)
+		t, name, err := a.buildDataReport(ctx, taskID)
 		if err != nil {
 			return nil, err
 		}
-		title = fmt.Sprintf("数据安全检查报告 #%d", req.TaskID)
+		title = name
 		taskName = name
 		htmlContent = t
 	default:
@@ -51,7 +53,7 @@ func (a *SecurityReportApp) Generate(ctx context.Context, req *typespec.Security
 	model := mysqls.SecurityReport{
 		Title:      title,
 		Module:     req.Module,
-		TaskID:     req.TaskID,
+		TaskID:     taskID,
 		TaskName:   taskName,
 		Content:    htmlContent,
 		CreateBy:   uid,
@@ -60,7 +62,7 @@ func (a *SecurityReportApp) Generate(ctx context.Context, req *typespec.Security
 	if err := model.Add(ctx); err != nil {
 		return nil, err
 	}
-	log.Infof("security report generated: id=%d module=%s taskId=%d", model.ID, req.Module, req.TaskID)
+	log.Infof("security report generated: id=%d module=%s taskId=%d", model.ID, req.Module, taskID)
 	return &typespec.SecurityReportGenerateResp{ID: model.ID}, nil
 }
 
@@ -260,7 +262,25 @@ tr:hover td{background:#1f2937}
 .report-table-targets td:nth-child(1),.report-table-targets th:nth-child(1){width:12%%}
 .report-table-targets td:nth-child(2),.report-table-targets th:nth-child(2){width:50%%}
 .report-table-targets td:nth-child(3),.report-table-targets th:nth-child(3){width:38%%}
-@media (max-width: 960px){.report-wrap{padding:24px 20px}.report-table-findings-six{table-layout:auto}.report-table-findings-six th,.report-table-findings-six td{white-space:normal;word-break:break-word;overflow-wrap:anywhere}}
+.report-table-db-baseline{table-layout:fixed}
+.report-table-db-baseline th:nth-child(1),.report-table-db-baseline td:nth-child(1){width:10%%;white-space:normal;word-break:break-word}
+.report-table-db-baseline th:nth-child(2),.report-table-db-baseline td:nth-child(2){width:10%%;white-space:normal;word-break:break-word}
+.report-table-db-baseline th:nth-child(3),.report-table-db-baseline td:nth-child(3){width:20%%;white-space:normal;word-break:break-word}
+.report-table-db-baseline th:nth-child(4),.report-table-db-baseline td:nth-child(4){width:8%%;white-space:nowrap;word-break:keep-all}
+.report-table-db-baseline th:nth-child(5),.report-table-db-baseline td:nth-child(5){width:8%%;white-space:nowrap;word-break:keep-all}
+.report-table-db-baseline th:nth-child(6),.report-table-db-baseline td:nth-child(6){width:12%%;white-space:normal;word-break:break-word}
+.report-table-db-baseline th:nth-child(7),.report-table-db-baseline td:nth-child(7){width:12%%;white-space:normal;word-break:break-word}
+.report-table-db-baseline th:nth-child(8),.report-table-db-baseline td:nth-child(8){width:20%%;white-space:normal;word-break:break-word}
+.report-table-sensitive-data{table-layout:fixed}
+.report-table-sensitive-data th:nth-child(1),.report-table-sensitive-data td:nth-child(1){width:10%%;white-space:normal;word-break:break-word}
+.report-table-sensitive-data th:nth-child(2),.report-table-sensitive-data td:nth-child(2){width:10%%;white-space:normal;word-break:break-word}
+.report-table-sensitive-data th:nth-child(3),.report-table-sensitive-data td:nth-child(3){width:15%%;white-space:normal;word-break:break-word}
+.report-table-sensitive-data th:nth-child(4),.report-table-sensitive-data td:nth-child(4){width:15%%;white-space:normal;word-break:break-word}
+.report-table-sensitive-data th:nth-child(5),.report-table-sensitive-data td:nth-child(5){width:10%%;white-space:normal;word-break:break-word}
+.report-table-sensitive-data th:nth-child(6),.report-table-sensitive-data td:nth-child(6){width:8%%;white-space:nowrap;word-break:keep-all}
+.report-table-sensitive-data th:nth-child(7),.report-table-sensitive-data td:nth-child(7){width:15%%;white-space:normal;word-break:break-word}
+.report-table-sensitive-data th:nth-child(8),.report-table-sensitive-data td:nth-child(8){width:17%%;white-space:normal;word-break:break-word}
+@media (max-width: 960px){.report-wrap{padding:24px 20px}.report-table-findings-six,.report-table-db-baseline,.report-table-sensitive-data{table-layout:auto}.report-table-findings-six th,.report-table-findings-six td,.report-table-db-baseline th,.report-table-db-baseline td,.report-table-sensitive-data th,.report-table-sensitive-data td{white-space:normal;word-break:break-word;overflow-wrap:anywhere}}
 .report-footer{text-align:center;font-size:12px;color:#6b7280;border-top:1px solid #374151;padding-top:16px;margin-top:28px}
 .risk-critical{color:#ef4444;font-weight:600}
 .risk-high{color:#f97316;font-weight:600}
@@ -414,6 +434,14 @@ func writeTable(b *strings.Builder, headers []string, rows []services.ReportTabl
 func reportTableClass(headers []string) string {
 	if len(headers) == 6 {
 		return "report-table-findings-six"
+	}
+	if len(headers) == 8 {
+		if headers[0] == "目标" && headers[1] == "检查类别" && headers[2] == "规则名称" {
+			return "report-table-db-baseline"
+		}
+		if headers[0] == "目标" && headers[1] == "库名" && headers[2] == "表名" {
+			return "report-table-sensitive-data"
+		}
 	}
 	return ""
 }

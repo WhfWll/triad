@@ -5,12 +5,27 @@
 </template>
 
 <script> 
+import { system } from '@/api/system'
 
 export default {
   name: 'App',
   data(){
     return{}
   },
+  created () {
+    this.syncSystemAuthorization()
+  },
+  methods: {
+    async syncSystemAuthorization () {
+      try {
+        const res = await system.getversion()
+        const authorized = !!(res && res.code === 200 && res.data && res.data.status)
+        this.$store.commit('setSystemAuthorized', authorized)
+      } catch (error) {
+        this.$store.commit('setSystemAuthorized', false)
+      }
+    }
+  }
 }
 </script>
 <style  scoped>
