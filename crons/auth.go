@@ -7,6 +7,7 @@ import (
 	"errors"
 	"math"
 	"os/exec"
+	"runtime"
 	"smart/services"
 	"smart/tools/enums"
 	"smart/tools/utils"
@@ -29,18 +30,53 @@ type AuthProvider interface {
 
 var authProvider AuthProvider = &services.Auth{}
 
-// CheckSystemAuth 检查系统授权
+// markAsUnauthorized 标记系统为未授权状态，同时清空授权时间信息
+func markAsUnauthorized(ctx context.Context, auth AuthProvider, productID string) {
+	def := map[string]string{
+		"productID":   productID,
+		"productName": "自动化渗透测试系统",
+		"authCode":    "",
+		"authTime":    "未授权",
+		"authExpTime": "",
+		"authDays":    "0天",
+		"leftDays":    "0",
+	}
+	_ = auth.UpdateAuthInfo(ctx, def)
+	_ = auth.UpdateAuthState(ctx, enums.ProductAuthStateFailed)
+}
+
+// CheckSystemAuth 检查系统授权（仅 Linux 生效；非 Linux 下如果已有有效授权则保持）
 func CheckSystemAuth() {
 	auth := authProvider
-	log.Println("begin CheckSystemAuth")
 	ctx := context.Background()
+	if runtime.GOOS != "linux" {
+		authInfo, err := auth.GetAuthInfo(ctx)
+		if err != nil {
+			log.Println("CheckSystemAuth: 非 Linux 环境，获取授权信息失败，标记为未授权")
+			markAsUnauthorized(ctx, auth, "")
+			return
+		}
+		authCode := authInfo["authCode"]
+		authTime := authInfo["authTime"]
+		leftDays := authInfo["leftDays"]
+		if authCode == "" || authTime == "未授权" || leftDays == "0" || strings.TrimSpace(leftDays) == "--" {
+			log.Println("CheckSystemAuth: 非 Linux 环境，无有效授权信息，标记为未授权")
+			productID := authInfo["productID"]
+			markAsUnauthorized(ctx, auth, productID)
+			return
+		}
+		log.Println("CheckSystemAuth: 非 Linux 环境，已有有效授权，保持授权状态")
+		_ = auth.UpdateAuthState(ctx, enums.ProductAuthStateSuccess)
+		return
+	}
+	log.Println("begin CheckSystemAuth")
 	//第一步 获取系统授权信息
 	authInfoMap, err := auth.GetAuthInfo(ctx)
 	if err != nil {
 		serialNumber, serr := auth.GenerateSystemSerialNumber(ctx)
 		if serr != nil {
 			log.Println("CheckSystemAuth GetAuthInfo Err:" + err.Error())
-			auth.UpdateAuthState(ctx, enums.ProductAuthStateFailed)
+			markAsUnauthorized(ctx, auth, "")
 			return
 		}
 		def := map[string]string{
@@ -53,7 +89,7 @@ func CheckSystemAuth() {
 			"leftDays":    "0",
 		}
 		_ = auth.UpdateAuthInfo(ctx, def)
-		auth.UpdateAuthState(ctx, enums.ProductAuthStateFailed)
+		_ = auth.UpdateAuthState(ctx, enums.ProductAuthStateFailed)
 		return
 	}
 	//第二步 比较产品序列号，判断是否被改动过
@@ -61,7 +97,7 @@ func CheckSystemAuth() {
 	serialNumber, err := auth.GenerateSystemSerialNumber(ctx)
 	if err != nil {
 		log.Println("CheckSystemAuth GenerateSystemSerialNumber Err:" + err.Error())
-		auth.UpdateAuthState(ctx, enums.ProductAuthStateFailed)
+		markAsUnauthorized(ctx, auth, productID)
 		return
 	}
 	if productID != serialNumber {
@@ -149,13 +185,13 @@ func CheckSystemAuth() {
 	//第三步 解码授权码，并比较 产品id和授权码中的产品id
 	authCode := authInfoMap["authCode"]
 	if authCode == "" {
-		auth.UpdateAuthState(ctx, enums.ProductAuthStateFailed)
+		markAsUnauthorized(ctx, auth, productID)
 		return
 	}
 	decryptMap, err := auth.RsaDecrypt(ctx, authCode)
 	if err != nil {
 		log.Println("CheckSystemAuth RsaDecrypt Err: " + err.Error())
-		auth.UpdateAuthState(ctx, enums.ProductAuthStateFailed)
+		markAsUnauthorized(ctx, auth, productID)
 		return
 	}
 
@@ -168,7 +204,7 @@ func CheckSystemAuth() {
 
 	if decryptMap["productID"] != productID {
 		log.Println("CheckSystemAuth Err: 授权信息有误，授权信息中产品ID与产品ID不相同 授权信息序列号ID：" + decryptMap["productID"] + " 产品ID： " + productID)
-		auth.UpdateAuthState(ctx, enums.ProductAuthStateFailed)
+		markAsUnauthorized(ctx, auth, productID)
 		return
 	}
 	//第四步 计算授权时间
@@ -176,7 +212,7 @@ func CheckSystemAuth() {
 	authDays, err := strconv.Atoi(decryptMap["authDays"])
 	if err != nil {
 		log.Println("CheckSystemAuth decryptMap Atoi Err: " + err.Error())
-		auth.UpdateAuthState(ctx, enums.ProductAuthStateFailed)
+		markAsUnauthorized(ctx, auth, productID)
 		return
 	}
 	authTime, err := time.Parse(enums.ResTimeDayLayout, authTimeString)
@@ -196,7 +232,7 @@ func CheckSystemAuth() {
 
 	if err != nil {
 		log.Println("CheckSystemAuth ParseTime Err: " + err.Error())
-		auth.UpdateAuthState(ctx, enums.ProductAuthStateFailed)
+		markAsUnauthorized(ctx, auth, productID)
 		return
 	}
 	authExpireTime := authTime.AddDate(0, 0, authDays)
@@ -215,7 +251,7 @@ func CheckSystemAuth() {
 	//第六步 判断授权时间
 	if time.Now().After(authExpireTime) { // 如果当前时间超过了允许的授权时间，那么将不允许使用
 		log.Println("CheckSystemAuth Err: 产品已过期")
-		auth.UpdateAuthState(ctx, enums.ProductAuthStateFailed)
+		markAsUnauthorized(ctx, auth, productID)
 		return
 	}
 

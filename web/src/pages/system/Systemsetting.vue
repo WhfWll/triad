@@ -152,6 +152,9 @@
                 <el-tab-pane label="安全检查配置" name="tabSec">
                     <security-check-config v-if="activeName === 'tabSec'" />
                 </el-tab-pane>
+                <el-tab-pane label="数据初始化" name="tabCleanup">
+                    <system-data-cleanup v-if="activeName === 'tabCleanup'" />
+                </el-tab-pane>
             </el-tabs>
 
         </div>
@@ -763,13 +766,15 @@ import { updateFile} from '@/lib'
 import { system } from '@/api/system.js'
 import sysmonitoring from '@/pages/system/sysmonitoring'//系统监控
 import SecurityCheckConfig from '@/pages/system/SecurityCheckConfig.vue';
+import SystemDataCleanup from '@/pages/system/SystemDataCleanup.vue';
 import $ from 'jquery'
 export default {
     name:'systemsetting',
-    components: {
+	components: {
     	xzbutton,
         sysmonitoring,//系统监控
         SecurityCheckConfig,
+        SystemDataCleanup,
   	},
     data(){ 
 
@@ -1459,12 +1464,13 @@ export default {
                 const authTime = (dt.data.authTime || '').trim();
                 const authDays = String(dt.data.authDays || '').trim();
                 const leftDays = String(dt.data.leftDays || '').trim();
-                const inferredAuthorized = Boolean(dt.data.status) || (
+                const timeBasedAuthorized = (
                     authTime &&
                     authTime !== '未授权' &&
                     !leftDays.includes('过期') &&
                     authDays !== '--'
                 );
+                const inferredAuthorized = Boolean(dt.data.status) && timeBasedAuthorized;
                 this.$store.commit('setSystemAuthorized', inferredAuthorized);
             }else{
                 // this.$message({

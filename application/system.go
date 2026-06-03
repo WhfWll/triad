@@ -23,6 +23,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"gitlabee.4dogs.cn/common/mysql"
+	"gorm.io/gorm"
 )
 
 type SystemManage struct {
@@ -32,13 +33,20 @@ type SystemManage struct {
 func (sm *SystemManage) AuthInfo(ctx context.Context, resp *typespec.AuthInfoReq, res *typespec.AuthInfoRes) (err error) {
 	var mapSetSer services.MapSet
 	// 判断授权状态
-	res.Status = mapSetSer.GetProductAuthState(ctx)
+	authStatus := mapSetSer.GetProductAuthState(ctx)
 	authInfo, err := mapSetSer.GetMapValue(ctx, "productAuthInfo")
 	if err != nil {
 		return err
 	}
 	if err = json.Unmarshal([]byte(authInfo), &res); err != nil {
 		return err
+	}
+	res.Status = authStatus
+	res.SoftwareVersion = enums.ProductSoftwareDisplayVersion
+	if runtime.GOOS != "linux" {
+		if res.AuthTime == "未授权" || res.AuthCode == "" {
+			res.Status = false
+		}
 	}
 	if strings.Trim(res.LeftDays, " ") == "--" || res.LeftDays == "0" {
 		res.LeftDays = "授权已过期"
@@ -1212,6 +1220,88 @@ func (sm *SystemManage) TokenList(ctx context.Context, req *typespec.TokenListRe
 // SystemMessageAdd 消息中心 - 添加消息
 func (sm *SystemManage) SystemMessageAdd(ctx context.Context) {
 
+}
+
+// runtimeTablesToClean 与当前库中实际存在的运行时表一致（不含已废弃/未建表的模型表）
+var runtimeTablesToClean = []string{
+	// 安全报告
+	"security_report", "report_record",
+	"report_verify_port", "report_verify_target", "report_verify_task", "report_verify_vul",
+	// 主机 / 数据安全检查结果（表名以库为准：host_vul_*）
+	"baseline_check_result", "host_vul_scan", "host_vul_finding",
+	"host_malware_scan", "malware_check_result",
+	"db_check_result", "sensitive_data_result",
+	// 远程会话
+	"remote_session",
+	// 流程任务运行数据（功能已停用，表仍在库中）
+	"flow_log", "flow_risk", "flow_target", "flow_task", "flow_base",
+	// 资产扫描产生的运行时数据（保留 asset / asset_group / asset_connection）
+	"asset_log", "asset_task_result", "asset_vul", "asset_port", "asset_risk_trend",
+	// 渗透/扫描任务（子表优先）
+	"task_log_info", "task_log", "task_result", "task_task_result",
+	"task_vul", "task_evidence", "task_target_result", "task_task_info",
+	"task_target", "task_configuration", "task_task",
+}
+
+func isMissingTableErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "1146") ||
+		strings.Contains(msg, "doesn't exist") ||
+		strings.Contains(msg, "does not exist") ||
+		strings.Contains(msg, "no such table")
+}
+
+// clearRuntimeTableByName 按实际表名清空单表
+func clearRuntimeTableByName(db *gorm.DB, tableName string) error {
+	truncateSQL := "TRUNCATE TABLE `" + tableName + "`"
+	if err := db.Exec(truncateSQL).Error; err != nil {
+		if isMissingTableErr(err) {
+			log.Warnf("[CleanupRuntimeData] 表 %s 不存在，跳过", tableName)
+			return nil
+		}
+		log.Warnf("[CleanupRuntimeData] TRUNCATE %s 失败，改用 DELETE: %v", tableName, err)
+		deleteSQL := "DELETE FROM `" + tableName + "`"
+		if err := db.Exec(deleteSQL).Error; err != nil {
+			if isMissingTableErr(err) {
+				log.Warnf("[CleanupRuntimeData] 表 %s 不存在，跳过", tableName)
+				return nil
+			}
+			return err
+		}
+	}
+	return nil
+}
+
+// CleanupRuntimeData 清理运行数据（任务、结果、报告等），保留规则、漏洞库、策略
+func (sm *SystemManage) CleanupRuntimeData(ctx context.Context) error {
+	log.Warn("[CleanupRuntimeData] 开始清理运行数据...")
+
+	db := mysql.FromContext(ctx)
+
+	// 禁用外键检查
+	_ = db.Exec("SET FOREIGN_KEY_CHECKS = 0").Error
+
+	var failedTables []string
+	for _, tableName := range runtimeTablesToClean {
+		log.Infof("[CleanupRuntimeData] 清理表: %s ...", tableName)
+		if err := clearRuntimeTableByName(db, tableName); err != nil {
+			log.Errorf("[CleanupRuntimeData] 清理表 %s 失败: %v", tableName, err)
+			failedTables = append(failedTables, tableName)
+		}
+	}
+
+	// 恢复外键检查
+	_ = db.Exec("SET FOREIGN_KEY_CHECKS = 1").Error
+
+	if len(failedTables) > 0 {
+		return fmt.Errorf("以下表清理失败: %v", strings.Join(failedTables, ", "))
+	}
+
+	log.Warn("[CleanupRuntimeData] 运行数据清理完成")
+	return nil
 }
 
 // TokenDelete 系统管理 - api秘钥 - 秘钥删除
