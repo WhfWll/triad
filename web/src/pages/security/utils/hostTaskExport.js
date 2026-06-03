@@ -93,7 +93,10 @@ export function buildHostSummaryText(meta) {
       `检查项总数: ${statData.totalRules || 0}`,
       `通过: ${statData.passCount || 0}`,
       `不通过: ${statData.failCount || 0}`,
-      `通过率: ${statData.passRate || 0}%`
+      `异常: ${statData.errorCount || 0}`,
+      `跳过: ${statData.skipCount || 0}`,
+      `合规通过率: ${statData.effectivePassRate || 0}%`,
+      `整体通过率: ${statData.passRate || 0}%`
     )
   } else if (mode === 'vuln') {
     lines.push(

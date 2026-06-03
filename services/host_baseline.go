@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"smart/api/typespec"
 	"smart/models/mysqls"
 	"smart/tools/enums"
 	"strings"
@@ -48,9 +49,10 @@ type BaselineCheckTask struct {
 	Password       string
 	Key            string
 	OSType         int
-	Transport      int  // 0=auto（由连接层解析），1=SSH，2=WinRM
+	Transport      int  // 0=auto锛堢敱杩炴帴灞傝В鏋愶級锛?=SSH锛?=WinRM
 	WinRMUseHttps  bool
-	ScanScene      int // 1=安全配置核查 2=主机漏洞检测
+	ScanScene      int // 1=瀹夊叏閰嶇疆鏍告煡 2=涓绘満婕忔礊妫€娴?
+	RuleProgress   func(item typespec.BatchRuleResult)
 }
 
 type BaselineCheckReport struct {
@@ -77,6 +79,9 @@ func (c *HostBaselineChecker) RunBaselineCheck(ctx context.Context, task *Baseli
 	if scene <= 0 {
 		scene = enums.HostScanSceneBaseline
 	}
+	fmt.Printf(">>> RunBaselineCheck: start taskID=%d target=%s osType=%d port=%d user=%s transport=%d\n",
+		task.TaskID, task.Host, task.OSType, task.Port, task.Username, task.Transport)
+
 	report := &BaselineCheckReport{
 		TaskID:    task.TaskID,
 		TargetID:  task.TargetID,
@@ -97,18 +102,17 @@ func (c *HostBaselineChecker) RunBaselineCheck(ctx context.Context, task *Baseli
 		Timeout:    30 * time.Second,
 	}
 
+	fmt.Printf(">>> RunBaselineCheck: connecting to %s:%d ...\n", task.Host, task.Port)
 	conn, err := c.connManager.GetConnection(ctx, connConfig)
 	if err != nil {
+		fmt.Printf(">>> RunBaselineCheck: CONNECTION FAILED: %v\n", err)
 		return nil, fmt.Errorf("connect to host %s failed: %v", task.Host, err)
 	}
-
-	var cleanModel mysqls.BaselineCheckResult
-	if err := cleanModel.DeleteByTaskIDAndTargetIP(ctx, task.TaskID, task.Host); err != nil {
-		return nil, fmt.Errorf("clean old results failed: %v", err)
-	}
+	fmt.Printf(">>> RunBaselineCheck: connected OK\n")
 
 	rules := c.ruleEngine.GetRulesByOSType(task.OSType)
 	if len(rules) == 0 {
+		fmt.Printf(">>> RunBaselineCheck: no rules for osType=%d, trying fallback\n", task.OSType)
 		rules = c.ruleEngine.GetAllRules()
 		var filtered []BaselineRule
 		for _, rule := range rules {
@@ -118,15 +122,40 @@ func (c *HostBaselineChecker) RunBaselineCheck(ctx context.Context, task *Baseli
 		}
 		rules = filtered
 	}
+	fmt.Printf(">>> RunBaselineCheck: total rules loaded: %d\n", len(rules))
 
 	report.TotalRules = len(rules)
+
+	var cleanModel mysqls.BaselineCheckResult
+	if err := cleanModel.DeleteByTaskTargetAndScene(ctx, task.TaskID, task.Host, scene); err != nil {
+		fmt.Printf(">>> RunBaselineCheck: DeleteByTaskTargetAndScene error: %v\n", err)
+		return report, fmt.Errorf("clean old results failed: %v", err)
+	}
 
 	totalWeight := 0.0
 	deduction := 0.0
 
-	for _, rule := range rules {
+	emitProgress := func(result mysqls.BaselineCheckResult) {
+		if task.RuleProgress == nil {
+			return
+		}
+		task.RuleProgress(typespec.BatchRuleResult{
+			RuleID:        result.RuleID,
+			RuleName:      result.RuleName,
+			CheckResult:   result.CheckResult,
+			ResultName:    enums.BaselineEnum.GetCheckResultName(result.CheckResult),
+			ExpectedValue: result.ExpectedValue,
+			ActualValue:   summarizeBaselineLogValue(result.ActualValue),
+			Time:          result.CreateTime.Format("2006-01-02 15:04:05"),
+		})
+	}
+
+	for idx, rule := range rules {
+		fmt.Printf(">>> RunBaselineCheck: checking rule[%d] id=%d name=%q category=%d risk=%d osType=%d\n",
+			idx, rule.ID, rule.Name, rule.Category, rule.Risk, rule.OSType)
 		select {
 		case <-ctx.Done():
+			fmt.Printf(">>> RunBaselineCheck: context cancelled\n")
 			return report, ctx.Err()
 		default:
 		}
@@ -151,42 +180,59 @@ func (c *HostBaselineChecker) RunBaselineCheck(ctx context.Context, task *Baseli
 		totalWeight += ruleWeight
 
 		if ruleHasPlaceholder(rule) {
+			fmt.Printf(">>> RunBaselineCheck: rule[%d] has placeholder, skipping\n", idx)
 			result.ActualValue = "规则含未替换占位符，当前环境不适配"
 			result.CheckResult = enums.BaselineCheckResultSkip
 			result.CreateTime = time.Now()
 			report.Results = append(report.Results, result)
+			if err := result.Add(ctx); err != nil {
+				fmt.Printf(">>> RunBaselineCheck: rule[%d] INSERT error (skip): %v\n", idx, err)
+			}
+			emitProgress(result)
 			continue
 		}
 
+		fmt.Printf(">>> RunBaselineCheck: rule[%d] has %d command(s), first cmd: %q\n", idx, len(rule.Commands),
+			func(cmds []string) string { if len(cmds) > 0 { return cmds[0] }; return "" }(rule.Commands))
+
 		allOutput := ""
 		execFailed := false
-		for _, cmd := range rule.Commands {
+		for ci, cmd := range rule.Commands {
 			cmdToRun := normalizeBaselineCommand(cmd)
 			if cmdToRun == "" {
+				fmt.Printf(">>> RunBaselineCheck: rule[%d] cmd[%d] empty after normalize, skip\n", idx, ci)
 				continue
 			}
+			fmt.Printf(">>> RunBaselineCheck: rule[%d] executing cmd[%d]: %s\n", idx, ci, cmdToRun[:min(len(cmdToRun), 80)])
 			rawOutput, err := c.connManager.ExecuteCommand(ctx, conn, cmdToRun)
 			output := strings.TrimSpace(rawOutput)
 			if err != nil && output == "" {
+				fmt.Printf(">>> RunBaselineCheck: rule[%d] cmd[%d] error+no output: %v\n", idx, ci, err)
 				allOutput += "\n"
 				continue
 			}
 			allOutput += output + "\n"
 			if isBaselineExecutionError(output) {
+				fmt.Printf(">>> RunBaselineCheck: rule[%d] cmd[%d] execution error output\n", idx, ci)
 				execFailed = true
 				break
 			}
 		}
 
 		result.ActualValue = truncateBaselineField(strings.TrimSpace(allOutput))
+		fmt.Printf(">>> RunBaselineCheck: rule[%d] actualValue len=%d, execFailed=%v\n", idx, len(result.ActualValue), execFailed)
+
 		if execFailed || isBaselineExecutionError(result.ActualValue) {
+			fmt.Printf(">>> RunBaselineCheck: rule[%d] -> ERROR\n", idx)
 			result.CheckResult = enums.BaselineCheckResultError
 			report.ErrorCount++
 			deduction += ruleWeight * 0.5
 		} else if c.ruleEngine.CheckCommandOutput(result.ActualValue, rule.ExpectedValue, rule.MatchType) {
+			fmt.Printf(">>> RunBaselineCheck: rule[%d] -> PASS\n", idx)
 			result.CheckResult = enums.BaselineCheckResultPass
 			report.PassCount++
 		} else {
+			fmt.Printf(">>> RunBaselineCheck: rule[%d] -> FAIL (expected=%q matchType=%s)\n", idx, rule.ExpectedValue, rule.MatchType)
 			result.CheckResult = enums.BaselineCheckResultFail
 			report.FailCount++
 			deduction += ruleWeight
@@ -195,6 +241,10 @@ func (c *HostBaselineChecker) RunBaselineCheck(ctx context.Context, task *Baseli
 
 		result.CreateTime = time.Now()
 		report.Results = append(report.Results, result)
+		if err := result.Add(ctx); err != nil {
+			fmt.Printf(">>> RunBaselineCheck: rule[%d] INSERT error: %v\n", idx, err)
+		}
+		emitProgress(result)
 	}
 
 	if totalWeight > 0 {
@@ -204,24 +254,31 @@ func (c *HostBaselineChecker) RunBaselineCheck(ctx context.Context, task *Baseli
 	}
 
 	report.EndTime = time.Now()
-
-	if err := cleanModel.BatchAdd(ctx, report.Results); err != nil {
-		return report, fmt.Errorf("save results failed: %v", err)
-	}
+	fmt.Printf(">>> RunBaselineCheck: done. totalRules=%d pass=%d fail=%d err=%d skip=%d score=%.1f\n",
+		report.TotalRules, report.PassCount, report.FailCount, report.ErrorCount,
+		len(report.Results)-report.PassCount-report.FailCount-report.ErrorCount, report.ComplianceScore)
 
 	return report, nil
 }
 
+func summarizeBaselineLogValue(s string) string {
+	s = strings.TrimSpace(strings.ReplaceAll(s, "\r\n", "\n"))
+	s = strings.ReplaceAll(s, "\n", " | ")
+	if len(s) <= 240 {
+		return s
+	}
+	return s[:237] + "..."
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 func ruleHasPlaceholder(rule BaselineRule) bool {
-	if hasUnresolvedPlaceholder(rule.ExpectedValue) {
-		return true
-	}
-	for _, cmd := range rule.Commands {
-		if hasUnresolvedPlaceholder(cmd) {
-			return true
-		}
-	}
-	return false
+	return RuleHasUnresolvedPlaceholder(rule.Commands, rule.ExpectedValue)
 }
 
 func getRiskWeight(risk int) float64 {
@@ -253,3 +310,5 @@ func (c *HostBaselineChecker) updateRiskCount(report *BaselineCheckReport, risk 
 		report.LowRiskCount++
 	}
 }
+
+

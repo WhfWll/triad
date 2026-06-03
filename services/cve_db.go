@@ -13,7 +13,6 @@ import (
 	"smart/tools/enums"
 
 	log "github.com/sirupsen/logrus"
-	_ "github.com/mattn/go-sqlite3"
 )
 
 type CveDB struct {
@@ -122,7 +121,7 @@ func GetCveDB() *CveDB {
 			log.Warn("default-cve.db not found; tried data/default-cve.db and project paths")
 			return
 		}
-		db, err := sql.Open("sqlite3", dbPath)
+		db, err := sql.Open("sqlite", dbPath)
 		if err != nil {
 			log.Errorf("open cve db %s: %v", dbPath, err)
 			return

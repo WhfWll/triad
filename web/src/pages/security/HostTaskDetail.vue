@@ -11,7 +11,7 @@
         </h1>
       </div>
       <div class="topbar-actions">
-        <el-button size="small" :loading="detailLoading" @click="loadAll">刷新</el-button>
+        <el-button size="small" :loading="manualRefreshLoading" @click="refreshAll">刷新</el-button>
         <el-button size="small" :disabled="!taskId" @click="generateReport">生成报告</el-button>
         <el-dropdown trigger="click" @command="onExportCommand">
           <el-button type="primary" size="small" :disabled="!allItems.length">
@@ -27,58 +27,282 @@
 
     <el-tabs v-model="activeTab" class="detail-tabs list_box">
       <el-tab-pane label="概况" name="overview">
-        <div v-if="isBaselineMode" v-loading="statLoading" class="stat-cards">
-          <div class="stat-card">
-            <div class="stat-value">{{ statData.totalRules }}</div>
-            <div class="stat-label">检查项总数</div>
+        <div v-if="isBaselineMode" v-loading="statLoading" class="overview-baseline">
+          <div class="stat-cards stat-cards-grid">
+            <div class="stat-card">
+              <div class="stat-value">{{ statData.totalRules }}</div>
+              <div class="stat-label">检查项总数</div>
+            </div>
+            <div class="stat-card stat-pass">
+              <div class="stat-value">{{ statData.passCount }}</div>
+              <div class="stat-label">通过</div>
+            </div>
+            <div class="stat-card stat-fail">
+              <div class="stat-value">{{ statData.failCount }}</div>
+              <div class="stat-label">不通过</div>
+            </div>
+            <div class="stat-card stat-error">
+              <div class="stat-value">{{ statData.errorCount }}</div>
+              <div class="stat-label">异常</div>
+            </div>
+            <div class="stat-card stat-skip">
+              <div class="stat-value">{{ statData.skipCount }}</div>
+              <div class="stat-label">跳过</div>
+            </div>
+            <div class="stat-card stat-rate">
+              <div class="stat-value">{{ statData.effectivePassRate }}%</div>
+              <div class="stat-label">合规通过率</div>
+              <div class="stat-hint">有效项 {{ statData.effectiveTotal }} · 整体 {{ statData.passRate }}%</div>
+            </div>
           </div>
-          <div class="stat-card stat-pass">
-            <div class="stat-value">{{ statData.passCount }}</div>
-            <div class="stat-label">通过</div>
-          </div>
-          <div class="stat-card stat-fail">
-            <div class="stat-value">{{ statData.failCount }}</div>
-            <div class="stat-label">不通过</div>
-          </div>
-          <div class="stat-card stat-rate">
-            <div class="stat-value">{{ statData.passRate }}%</div>
-            <div class="stat-label">通过率</div>
+
+          <div class="overview-panels">
+            <div class="info-section overview-panel">
+              <div class="section-title">不通过项风险分布</div>
+              <div class="risk-grid">
+                <div class="risk-item">
+                  <span class="risk-value stat-fail">{{ statData.failCritical }}</span>
+                  <span class="risk-label">严重</span>
+                </div>
+                <div class="risk-item">
+                  <span class="risk-value" style="color: #fb923c">{{ statData.failHigh }}</span>
+                  <span class="risk-label">高危</span>
+                </div>
+                <div class="risk-item">
+                  <span class="risk-value" style="color: #fbbf24">{{ statData.failMiddle }}</span>
+                  <span class="risk-label">中危</span>
+                </div>
+                <div class="risk-item">
+                  <span class="risk-value" style="color: #94a3b8">{{ statData.failLow }}</span>
+                  <span class="risk-label">低危</span>
+                </div>
+              </div>
+              <p class="overview-hint">待关注项 {{ statData.issueCount }} 个（不通过 {{ statData.failCount }} + 异常 {{ statData.errorCount }}）</p>
+            </div>
+
+            <div v-if="statData.topFailCategories.length" class="info-section overview-panel">
+              <div class="section-title">不通过项 TOP 分类</div>
+              <ul class="category-rank-list">
+                <li v-for="(cat, idx) in statData.topFailCategories" :key="cat.category" class="category-rank-item">
+                  <span class="rank-no">{{ idx + 1 }}</span>
+                  <span class="rank-name">{{ cat.categoryName || '其他' }}</span>
+                  <span class="rank-bar-wrap">
+                    <span class="rank-bar" :style="{ width: categoryBarWidth(cat.count) }" />
+                  </span>
+                  <span class="rank-count">{{ cat.count }}</span>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
-        <div v-else-if="isVulnMode" v-loading="statLoading" class="stat-cards">
-          <div class="stat-card">
-            <div class="stat-value">{{ vulnStat.packages }}</div>
-            <div class="stat-label">扫描包数</div>
+        <div v-else-if="isVulnMode" v-loading="statLoading" class="overview-vuln">
+          <div class="stat-cards stat-cards-grid">
+            <div class="stat-card stat-scan">
+              <div class="stat-value">{{ vulnStat.packages }}</div>
+              <div class="stat-label">扫描包数</div>
+            </div>
+            <div class="stat-card stat-fail">
+              <div class="stat-value">{{ vulnStat.matchedVulns }}</div>
+              <div class="stat-label">漏洞总数</div>
+              <div class="stat-hint">命中率 {{ vulnMatchRate }}%</div>
+            </div>
+            <div class="stat-card stat-critical">
+              <div class="stat-value">{{ vulnStat.critical }}</div>
+              <div class="stat-label">严重</div>
+            </div>
+            <div class="stat-card stat-high">
+              <div class="stat-value">{{ vulnStat.high }}</div>
+              <div class="stat-label">高危</div>
+            </div>
+            <div class="stat-card stat-medium">
+              <div class="stat-value">{{ vulnStat.medium }}</div>
+              <div class="stat-label">中危</div>
+            </div>
+            <div class="stat-card stat-low">
+              <div class="stat-value">{{ vulnStat.low }}</div>
+              <div class="stat-label">低危</div>
+            </div>
           </div>
-          <div class="stat-card stat-fail">
-            <div class="stat-value">{{ vulnStat.matchedVulns }}</div>
-            <div class="stat-label">漏洞总数</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value">{{ vulnStat.critical }}</div>
-            <div class="stat-label">严重</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value">{{ vulnStat.high }}</div>
-            <div class="stat-label">高危</div>
+
+          <div class="overview-panels">
+            <div class="info-section overview-panel">
+              <div class="section-title">漏洞风险分布</div>
+              <div v-if="vulnRiskTotal > 0" class="vuln-risk-stack">
+                <div
+                  v-if="vulnStat.critical"
+                  class="vuln-risk-seg seg-critical"
+                  :style="{ flex: vulnStat.critical }"
+                  :title="`严重 ${vulnStat.critical}`"
+                />
+                <div
+                  v-if="vulnStat.high"
+                  class="vuln-risk-seg seg-high"
+                  :style="{ flex: vulnStat.high }"
+                  :title="`高危 ${vulnStat.high}`"
+                />
+                <div
+                  v-if="vulnStat.medium"
+                  class="vuln-risk-seg seg-medium"
+                  :style="{ flex: vulnStat.medium }"
+                  :title="`中危 ${vulnStat.medium}`"
+                />
+                <div
+                  v-if="vulnStat.low"
+                  class="vuln-risk-seg seg-low"
+                  :style="{ flex: vulnStat.low }"
+                  :title="`低危 ${vulnStat.low}`"
+                />
+              </div>
+              <div class="risk-grid vuln-risk-grid">
+                <div class="risk-item">
+                  <span class="risk-value risk-critical">{{ vulnStat.critical }}</span>
+                  <span class="risk-label">严重</span>
+                  <span class="risk-pct">{{ vulnRiskPercent(vulnStat.critical) }}%</span>
+                </div>
+                <div class="risk-item">
+                  <span class="risk-value risk-high">{{ vulnStat.high }}</span>
+                  <span class="risk-label">高危</span>
+                  <span class="risk-pct">{{ vulnRiskPercent(vulnStat.high) }}%</span>
+                </div>
+                <div class="risk-item">
+                  <span class="risk-value risk-medium">{{ vulnStat.medium }}</span>
+                  <span class="risk-label">中危</span>
+                  <span class="risk-pct">{{ vulnRiskPercent(vulnStat.medium) }}%</span>
+                </div>
+                <div class="risk-item">
+                  <span class="risk-value risk-low">{{ vulnStat.low }}</span>
+                  <span class="risk-label">低危</span>
+                  <span class="risk-pct">{{ vulnRiskPercent(vulnStat.low) }}%</span>
+                </div>
+              </div>
+              <p class="overview-hint">需优先处置 {{ vulnHighRiskCount }} 个严重/高危漏洞</p>
+            </div>
+
+            <div v-if="vulnTopPackages.length" class="info-section overview-panel">
+              <div class="section-title">漏洞数 TOP 软件包</div>
+              <ul class="category-rank-list">
+                <li v-for="(pkg, idx) in vulnTopPackages" :key="pkg.name" class="category-rank-item">
+                  <span class="rank-no">{{ idx + 1 }}</span>
+                  <span class="rank-name" :title="pkg.name">{{ pkg.name }}</span>
+                  <span class="rank-bar-wrap">
+                    <span class="rank-bar rank-bar-vuln" :style="{ width: vulnPackageBarWidth(pkg.count) }" />
+                  </span>
+                  <span class="rank-count">{{ pkg.count }}</span>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
-        <div v-else-if="isMalwareMode" v-loading="statLoading" class="stat-cards">
-          <div class="stat-card">
-            <div class="stat-value">{{ malwareStat.totalFindings }}</div>
-            <div class="stat-label">发现项总数</div>
+        <div v-else-if="isMalwareMode" v-loading="statLoading" class="overview-malware">
+          <div class="stat-cards stat-cards-grid">
+            <div class="stat-card stat-scan">
+              <div class="stat-value">{{ malwareStat.targetCount || targets.length }}</div>
+              <div class="stat-label">检测目标</div>
+            </div>
+            <div class="stat-card stat-fail">
+              <div class="stat-value">{{ malwareStat.totalFindings }}</div>
+              <div class="stat-label">发现项总数</div>
+              <div class="stat-hint">平均每目标 {{ malwareAvgFindings }} 项</div>
+            </div>
+            <div class="stat-card stat-critical">
+              <div class="stat-value">{{ malwareStat.critical }}</div>
+              <div class="stat-label">严重</div>
+            </div>
+            <div class="stat-card stat-high">
+              <div class="stat-value">{{ malwareStat.high }}</div>
+              <div class="stat-label">高危</div>
+            </div>
+            <div class="stat-card stat-medium">
+              <div class="stat-value">{{ malwareStat.medium }}</div>
+              <div class="stat-label">中危</div>
+            </div>
+            <div class="stat-card stat-low">
+              <div class="stat-value">{{ malwareStat.low }}</div>
+              <div class="stat-label">低危</div>
+            </div>
           </div>
-          <div class="stat-card stat-fail">
-            <div class="stat-value">{{ malwareStat.critical }}</div>
-            <div class="stat-label">严重</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value">{{ malwareStat.high }}</div>
-            <div class="stat-label">高危</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value">{{ malwareStat.medium }}</div>
-            <div class="stat-label">中危</div>
+
+          <div class="overview-panels">
+            <div class="info-section overview-panel">
+              <div class="section-title">发现项风险分布</div>
+              <div v-if="malwareRiskTotal > 0" class="vuln-risk-stack">
+                <div
+                  v-if="malwareStat.critical"
+                  class="vuln-risk-seg seg-critical"
+                  :style="{ flex: malwareStat.critical }"
+                  :title="`严重 ${malwareStat.critical}`"
+                />
+                <div
+                  v-if="malwareStat.high"
+                  class="vuln-risk-seg seg-high"
+                  :style="{ flex: malwareStat.high }"
+                  :title="`高危 ${malwareStat.high}`"
+                />
+                <div
+                  v-if="malwareStat.medium"
+                  class="vuln-risk-seg seg-medium"
+                  :style="{ flex: malwareStat.medium }"
+                  :title="`中危 ${malwareStat.medium}`"
+                />
+                <div
+                  v-if="malwareStat.low"
+                  class="vuln-risk-seg seg-low"
+                  :style="{ flex: malwareStat.low }"
+                  :title="`低危 ${malwareStat.low}`"
+                />
+              </div>
+              <div class="risk-grid vuln-risk-grid">
+                <div class="risk-item">
+                  <span class="risk-value risk-critical">{{ malwareStat.critical }}</span>
+                  <span class="risk-label">严重</span>
+                  <span class="risk-pct">{{ malwareRiskPercent(malwareStat.critical) }}%</span>
+                </div>
+                <div class="risk-item">
+                  <span class="risk-value risk-high">{{ malwareStat.high }}</span>
+                  <span class="risk-label">高危</span>
+                  <span class="risk-pct">{{ malwareRiskPercent(malwareStat.high) }}%</span>
+                </div>
+                <div class="risk-item">
+                  <span class="risk-value risk-medium">{{ malwareStat.medium }}</span>
+                  <span class="risk-label">中危</span>
+                  <span class="risk-pct">{{ malwareRiskPercent(malwareStat.medium) }}%</span>
+                </div>
+                <div class="risk-item">
+                  <span class="risk-value risk-low">{{ malwareStat.low }}</span>
+                  <span class="risk-label">低危</span>
+                  <span class="risk-pct">{{ malwareRiskPercent(malwareStat.low) }}%</span>
+                </div>
+              </div>
+              <p class="overview-hint">需优先处置 {{ malwareHighRiskCount }} 个严重/高危发现项</p>
+            </div>
+
+            <div v-if="malwareTopCheckTypes.length" class="info-section overview-panel">
+              <div class="section-title">检测类型分布 TOP</div>
+              <ul class="category-rank-list">
+                <li v-for="(item, idx) in malwareTopCheckTypes" :key="item.name" class="category-rank-item">
+                  <span class="rank-no">{{ idx + 1 }}</span>
+                  <span class="rank-name" :title="item.name">{{ item.name }}</span>
+                  <span class="rank-bar-wrap">
+                    <span class="rank-bar rank-bar-malware" :style="{ width: malwareCheckTypeBarWidth(item.count) }" />
+                  </span>
+                  <span class="rank-count">{{ item.count }}</span>
+                </li>
+              </ul>
+            </div>
+
+            <div v-if="malwareTopRules.length" class="info-section overview-panel">
+              <div class="section-title">命中规则 TOP</div>
+              <ul class="category-rank-list">
+                <li v-for="(item, idx) in malwareTopRules" :key="item.name" class="category-rank-item">
+                  <span class="rank-no">{{ idx + 1 }}</span>
+                  <span class="rank-name" :title="item.name">{{ item.name }}</span>
+                  <span class="rank-bar-wrap">
+                    <span class="rank-bar rank-bar-malware" :style="{ width: malwareRuleBarWidth(item.count) }" />
+                  </span>
+                  <span class="rank-count">{{ item.count }}</span>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
 
@@ -102,6 +326,69 @@
               <span class="info-value">{{ checkTime }}</span>
             </div>
           </div>
+        </div>
+
+        <div v-if="isBaselineMode && targets.length" v-loading="targetsLoading" class="info-section target-summary-section">
+          <div class="section-title">目标核查摘要</div>
+          <el-table :data="targets" style="width: 100%" class="myTable target-summary-table" size="small">
+            <el-table-column prop="targetIp" label="目标主机" min-width="140" />
+            <el-table-column prop="osTypeName" label="操作系统" width="120" />
+            <el-table-column prop="totalRules" label="检查项" width="80" align="center" />
+            <el-table-column prop="passCount" label="通过" width="72" align="center" />
+            <el-table-column prop="failCount" label="不通过" width="80" align="center" />
+            <el-table-column prop="errorCount" label="异常" width="72" align="center" />
+            <el-table-column label="合规率" width="88" align="center">
+              <template slot-scope="scope">
+                {{ targetEffectiveRate(scope.row) }}%
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+
+        <div v-if="isVulnMode && targets.length" v-loading="targetsLoading" class="info-section target-summary-section">
+          <div class="section-title">目标扫描摘要</div>
+          <el-table :data="targets" style="width: 100%" class="myTable target-summary-table" size="small">
+            <el-table-column prop="targetIp" label="目标主机" min-width="140" />
+            <el-table-column prop="osTypeName" label="操作系统" width="120" />
+            <el-table-column prop="packages" label="扫描包数" width="88" align="center" />
+            <el-table-column prop="matchedVulns" label="漏洞数" width="80" align="center" />
+            <el-table-column prop="critical" label="严重" width="72" align="center">
+              <template slot-scope="scope">
+                <span class="risk-critical">{{ scope.row.critical || 0 }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="high" label="高危" width="72" align="center">
+              <template slot-scope="scope">
+                <span class="risk-high">{{ scope.row.high || 0 }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="worstRiskName" label="最高风险" width="100" align="center" />
+          </el-table>
+        </div>
+
+        <div v-if="isMalwareMode && targets.length" v-loading="targetsLoading" class="info-section target-summary-section">
+          <div class="section-title">目标扫描摘要</div>
+          <el-table :data="targets" style="width: 100%" class="myTable target-summary-table" size="small">
+            <el-table-column prop="targetIp" label="目标主机" min-width="140" />
+            <el-table-column prop="osTypeName" label="操作系统" width="120" />
+            <el-table-column prop="totalFindings" label="发现项" width="80" align="center" />
+            <el-table-column prop="critical" label="严重" width="72" align="center">
+              <template slot-scope="scope">
+                <span class="risk-critical">{{ scope.row.critical || 0 }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="high" label="高危" width="72" align="center">
+              <template slot-scope="scope">
+                <span class="risk-high">{{ scope.row.high || 0 }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="medium" label="中危" width="72" align="center">
+              <template slot-scope="scope">
+                <span class="risk-medium">{{ scope.row.medium || 0 }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="worstRiskName" label="最高风险" width="100" align="center" />
+          </el-table>
         </div>
       </el-tab-pane>
 
@@ -456,7 +743,17 @@ export default {
         totalRules: 0,
         passCount: 0,
         failCount: 0,
-        passRate: 0
+        errorCount: 0,
+        skipCount: 0,
+        issueCount: 0,
+        passRate: 0,
+        effectivePassRate: 0,
+        effectiveTotal: 0,
+        failCritical: 0,
+        failHigh: 0,
+        failMiddle: 0,
+        failLow: 0,
+        topFailCategories: []
       },
       vulnStat: {
         packages: 0,
@@ -467,6 +764,7 @@ export default {
         low: 0
       },
       malwareStat: {
+        targetCount: 0,
         totalFindings: 0,
         critical: 0,
         high: 0,
@@ -487,6 +785,7 @@ export default {
       itemPageSize: 50,
       itemDetailVisible: false,
       itemDetail: null,
+      batchProgress: null,
       logsByTarget: {},
       logsLoading: false,
       logSearch: '',
@@ -494,8 +793,13 @@ export default {
       logDetailVisible: false,
       logDetailTitle: '',
       logDetailTargetIp: '',
-      logDetailLevel: ''
+      logDetailLevel: '',
+      manualRefreshLoading: false,
+      runningPollTimer: null
     }
+  },
+  beforeDestroy() {
+    this.stopRunningPoll()
   },
   computed: {
     isBaselineMode() {
@@ -591,6 +895,65 @@ export default {
         vulnStat: this.vulnStat,
         malwareStat: this.malwareStat
       })
+    },
+    vulnRiskTotal() {
+      const s = this.vulnStat
+      const total = (s.critical || 0) + (s.high || 0) + (s.medium || 0) + (s.low || 0)
+      return total > 0 ? total : (s.matchedVulns || 0)
+    },
+    vulnHighRiskCount() {
+      return (this.vulnStat.critical || 0) + (this.vulnStat.high || 0)
+    },
+    vulnMatchRate() {
+      const pkgs = this.vulnStat.packages || 0
+      if (pkgs <= 0) return '0.0'
+      return (((this.vulnStat.matchedVulns || 0) / pkgs) * 100).toFixed(1)
+    },
+    vulnTopPackages() {
+      const map = new Map()
+      for (const item of this.allItems || []) {
+        const name = item.packageName || '未知'
+        map.set(name, (map.get(name) || 0) + 1)
+      }
+      return Array.from(map.entries())
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 8)
+    },
+    malwareRiskTotal() {
+      const s = this.malwareStat
+      const total = (s.critical || 0) + (s.high || 0) + (s.medium || 0) + (s.low || 0)
+      return total > 0 ? total : (s.totalFindings || 0)
+    },
+    malwareHighRiskCount() {
+      return (this.malwareStat.critical || 0) + (this.malwareStat.high || 0)
+    },
+    malwareAvgFindings() {
+      const targets = this.malwareStat.targetCount || this.targets.length || 0
+      if (targets <= 0) return '0.0'
+      return ((this.malwareStat.totalFindings || 0) / targets).toFixed(1)
+    },
+    malwareTopCheckTypes() {
+      const map = new Map()
+      for (const item of this.allItems || []) {
+        const name = item.checkTypeName || '其他'
+        map.set(name, (map.get(name) || 0) + 1)
+      }
+      return Array.from(map.entries())
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 6)
+    },
+    malwareTopRules() {
+      const map = new Map()
+      for (const item of this.allItems || []) {
+        const name = item.matchRule || '未知规则'
+        map.set(name, (map.get(name) || 0) + 1)
+      }
+      return Array.from(map.entries())
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 6)
     }
   },
   created() {
@@ -613,17 +976,121 @@ export default {
       this.logsLoading = true
       try {
         if (this.isVulnMode) {
+          this.batchProgress = null
           await Promise.all([this.loadVulnStat(), this.loadVulnTargets(), this.loadVulnFindings()])
           this.buildVulnLogs()
         } else if (this.isMalwareMode) {
+          this.batchProgress = null
           await Promise.all([this.loadMalwareStat(), this.loadMalwareTargets(), this.loadMalwareFindings()])
           this.buildMalwareLogs()
         } else {
           await Promise.all([this.loadStat(), this.loadTargets(), this.loadItems()])
           this.buildLogs()
+          this.startRunningPoll()
         }
       } finally {
         this.logsLoading = false
+      }
+    },
+    async refreshAll() {
+      this.manualRefreshLoading = true
+      try {
+        await this.loadAll()
+      } finally {
+        this.manualRefreshLoading = false
+      }
+    },
+    startRunningPoll() {
+      this.stopRunningPoll()
+      const poll = async () => {
+        if (this.statLoading || this.targetsLoading || this.itemsLoading) return
+        try {
+          const progress = await security.getBaselineBatchProgress({ taskId: this.taskId })
+          this.batchProgress = progress && progress.code === 200 ? progress.data || null : null
+          if (!this.batchProgress || this.batchProgress.status !== 'running') {
+            await Promise.all([this.loadStat(), this.loadTargets(), this.loadItems()])
+            this.buildLogs()
+            this.stopRunningPoll()
+            return
+          }
+          await Promise.all([this.loadStat(), this.loadTargets(), this.loadItems()])
+          this.buildLogs()
+        } catch {
+          this.stopRunningPoll()
+        }
+      }
+      poll()
+      this.runningPollTimer = setInterval(poll, 2000)
+    },
+    stopRunningPoll() {
+      if (this.runningPollTimer) {
+        clearInterval(this.runningPollTimer)
+        this.runningPollTimer = null
+      }
+    },
+    normalizeTargetRows(list) {
+      const merged = new Map()
+      for (const row of list || []) {
+        const key = row.targetIp || `${row.targetId || ''}-${row.osType || ''}`
+        const current = merged.get(key)
+        if (!current) {
+          merged.set(key, { ...row })
+          continue
+        }
+        current.targetId = current.targetId || row.targetId
+        current.osType = current.osType || row.osType
+        current.osTypeName = current.osTypeName || row.osTypeName
+        current.totalRules = Math.max(current.totalRules || 0, row.totalRules || 0)
+        current.passCount = Math.max(current.passCount || 0, row.passCount || 0)
+        current.failCount = Math.max(current.failCount || 0, row.failCount || 0)
+        current.errorCount = Math.max(current.errorCount || 0, row.errorCount || 0)
+      }
+      return Array.from(merged.values())
+    },
+    getRunningTargetProgress(targetIp) {
+      if (!this.batchProgress || !Array.isArray(this.batchProgress.targets)) return null
+      return this.batchProgress.targets.find(target => target.host === targetIp) || null
+    },
+    appendProgressLogs(lines, progressTarget, fallbackTime) {
+      if (!progressTarget || !Array.isArray(progressTarget.items) || progressTarget.items.length === 0) return
+      for (const item of progressTarget.items) {
+        const checkTime = item.time || fallbackTime
+        if (item.checkResult === 1) {
+          lines.push({
+            time: checkTime,
+            level: 'info',
+            levelLabel: 'INFO',
+            message: `${item.ruleName} 通过`
+          })
+        } else if (item.checkResult === 4) {
+          lines.push({
+            time: checkTime,
+            level: 'info',
+            levelLabel: 'INFO',
+            message: `${item.ruleName} 跳过：${item.actualValue || '不适配'}`
+          })
+        } else if (item.checkResult === 2) {
+          lines.push({
+            time: checkTime,
+            level: 'warn',
+            levelLabel: 'WARN',
+            message: `${item.ruleName} 不通过：期望 ${item.expectedValue || '-'}，实际 ${item.actualValue || '-'}`
+          })
+        } else if (item.checkResult === 3) {
+          lines.push({
+            time: checkTime,
+            level: 'error',
+            levelLabel: 'ERROR',
+            message: `${item.ruleName} 执行异常：${item.actualValue || '未知错误'}`
+          })
+        } else {
+          lines.push({
+            time: checkTime,
+            level: 'info',
+            levelLabel: 'INFO',
+            message: `${item.ruleName}：${item.resultName || '已执行'}`
+          })
+        }
       }
     },
     async generateReport() {
@@ -664,7 +1131,7 @@ export default {
       try {
         const res = await security.getHostVulnTargets({ taskId: this.taskId })
         if (res.code === 200 && res.data) {
-          this.targets = res.data.list || []
+          this.targets = this.normalizeTargetRows(res.data.list || [])
         }
       } finally {
         this.targetsLoading = false
@@ -687,6 +1154,7 @@ export default {
         const res = await security.getHostMalwareStat({ taskId: this.taskId })
         if (res.code === 200 && res.data) {
           this.malwareStat = {
+            targetCount: res.data.targetCount || 0,
             totalFindings: res.data.totalFindings || 0,
             critical: res.data.critical || 0,
             high: res.data.high || 0,
@@ -703,7 +1171,7 @@ export default {
       try {
         const res = await security.getHostMalwareTargets({ taskId: this.taskId })
         if (res.code === 200 && res.data) {
-          this.targets = res.data.list || []
+          this.targets = this.normalizeTargetRows(res.data.list || [])
         }
       } finally {
         this.targetsLoading = false
@@ -825,46 +1293,78 @@ export default {
 
       for (const target of this.targets) {
         const lines = []
+        const progressTarget = this.getRunningTargetProgress(target.targetIp)
+        const useLiveProgress = progressTarget && progressTarget.status === 'running' && Array.isArray(progressTarget.items) && progressTarget.items.length > 0
         lines.push({
           time: baseTime,
           level: 'info',
           levelLabel: 'INFO',
           message: `开始核查目标 ${target.targetIp}（${target.osTypeName || '未知系统'}）`
         })
-        lines.push({
-          time: baseTime,
-          level: 'info',
-          levelLabel: 'INFO',
-          message: `核查完成：检查项 ${target.totalRules}，通过 ${target.passCount}，不通过 ${target.failCount}，异常 ${target.errorCount || 0}`
-        })
-
-        const failedItems = this.allItems.filter(i => i.targetIp === target.targetIp && i.checkResult === 2)
-        for (const item of failedItems) {
+        if (useLiveProgress) {
+          this.appendProgressLogs(lines, progressTarget, baseTime)
           lines.push({
-            time: item.checkTime || baseTime,
-            level: 'warn',
-            levelLabel: 'WARN',
-            message: `${item.ruleName} 不通过：期望 ${item.expectedValue || '-'}，实际 ${item.actualValue || '-'}`
+            time: baseTime,
+            level: 'info',
+            levelLabel: 'INFO',
+            message: progressTarget.message || `正在执行，已完成 ${progressTarget.items.length} 项检查`
+          })
+        } else {
+          lines.push({
+            time: baseTime,
+            level: 'info',
+            levelLabel: 'INFO',
+            message: `核查完成：检查项 ${target.totalRules}，通过 ${target.passCount}，不通过 ${target.failCount}，异常 ${target.errorCount || 0}`
+          })
+
+          const passItems = this.allItems.filter(i => i.targetIp === target.targetIp && i.checkResult === 1)
+          for (const item of passItems) {
+            lines.push({
+              time: item.checkTime || baseTime,
+              level: 'info',
+              levelLabel: 'INFO',
+              message: `${item.ruleName} 通过`
+            })
+          }
+
+          const skipItems = this.allItems.filter(i => i.targetIp === target.targetIp && i.checkResult === 4)
+          for (const item of skipItems) {
+            lines.push({
+              time: item.checkTime || baseTime,
+              level: 'info',
+              levelLabel: 'INFO',
+              message: `${item.ruleName} 跳过：${item.actualValue || '不适配'}`
+            })
+          }
+
+          const failedItems = this.allItems.filter(i => i.targetIp === target.targetIp && i.checkResult === 2)
+          for (const item of failedItems) {
+            lines.push({
+              time: item.checkTime || baseTime,
+              level: 'warn',
+              levelLabel: 'WARN',
+              message: `${item.ruleName} 不通过：期望 ${item.expectedValue || '-'}，实际 ${item.actualValue || '-'}`
+            })
+          }
+
+          const errorItems = this.allItems.filter(i => i.targetIp === target.targetIp && i.checkResult === 3)
+          for (const item of errorItems) {
+            lines.push({
+              time: item.checkTime || baseTime,
+              level: 'error',
+              levelLabel: 'ERROR',
+              message: `${item.ruleName} 执行异常：${item.actualValue || '未知错误'}`
+            })
+          }
+
+          const issueCount = failedItems.length + errorItems.length
+          lines.push({
+            time: baseTime,
+            level: issueCount > 0 ? 'warn' : 'info',
+            levelLabel: issueCount > 0 ? 'WARN' : 'INFO',
+            message: `目标核查结束，共 ${target.totalRules} 项，问题 ${issueCount} 项`
           })
         }
-
-        const errorItems = this.allItems.filter(i => i.targetIp === target.targetIp && i.checkResult === 3)
-        for (const item of errorItems) {
-          lines.push({
-            time: item.checkTime || baseTime,
-            level: 'error',
-            levelLabel: 'ERROR',
-            message: `${item.ruleName} 执行异常：${item.actualValue || '未知错误'}`
-          })
-        }
-
-        const issueCount = failedItems.length + errorItems.length
-        lines.push({
-          time: baseTime,
-          level: issueCount > 0 ? 'warn' : 'info',
-          levelLabel: issueCount > 0 ? 'WARN' : 'INFO',
-          message: `目标核查结束，共 ${target.totalRules} 项，问题 ${issueCount} 项`
-        })
 
         logsByTarget[target.targetIp] = lines
       }
@@ -884,23 +1384,68 @@ export default {
       try {
         const res = await security.getBaselineStat({ taskId: this.taskId })
         if (res.code === 200 && res.data) {
+          const d = res.data
+          const effectiveTotal = (d.passCount || 0) + (d.failCount || 0)
           this.statData = {
-            totalRules: res.data.totalRules || 0,
-            passCount: res.data.passCount || 0,
-            failCount: res.data.failCount || 0,
-            passRate: (res.data.passRate || 0).toFixed(1)
+            totalRules: d.totalRules || 0,
+            passCount: d.passCount || 0,
+            failCount: d.failCount || 0,
+            errorCount: d.errorCount || 0,
+            skipCount: d.skipCount || 0,
+            issueCount: d.issueCount || 0,
+            passRate: (d.passRate || 0).toFixed(1),
+            effectivePassRate: (d.effectivePassRate || 0).toFixed(1),
+            effectiveTotal,
+            failCritical: d.failCritical || 0,
+            failHigh: d.failHigh || 0,
+            failMiddle: d.failMiddle || 0,
+            failLow: d.failLow || 0,
+            topFailCategories: d.topFailCategories || []
           }
         }
       } finally {
         this.statLoading = false
       }
     },
+    targetEffectiveRate(row) {
+      const pass = row.passCount || 0
+      const fail = row.failCount || 0
+      const total = pass + fail
+      if (total <= 0) return '0.0'
+      return ((pass / total) * 100).toFixed(1)
+    },
+    categoryBarWidth(count) {
+      const max = Math.max(...(this.statData.topFailCategories || []).map(c => c.count || 0), 1)
+      return `${Math.max(8, Math.round(((count || 0) / max) * 100))}%`
+    },
+    vulnRiskPercent(count) {
+      const total = this.vulnRiskTotal
+      if (total <= 0) return '0.0'
+      return (((count || 0) / total) * 100).toFixed(1)
+    },
+    vulnPackageBarWidth(count) {
+      const max = Math.max(...this.vulnTopPackages.map(p => p.count), 1)
+      return `${Math.max(8, Math.round(((count || 0) / max) * 100))}%`
+    },
+    malwareRiskPercent(count) {
+      const total = this.malwareRiskTotal
+      if (total <= 0) return '0.0'
+      return (((count || 0) / total) * 100).toFixed(1)
+    },
+    malwareCheckTypeBarWidth(count) {
+      const max = Math.max(...this.malwareTopCheckTypes.map(p => p.count), 1)
+      return `${Math.max(8, Math.round(((count || 0) / max) * 100))}%`
+    },
+    malwareRuleBarWidth(count) {
+      const max = Math.max(...this.malwareTopRules.map(p => p.count), 1)
+      return `${Math.max(8, Math.round(((count || 0) / max) * 100))}%`
+    },
     async loadTargets() {
       this.targetsLoading = true
       try {
         const res = await security.getBaselineTaskTargets({ taskId: this.taskId })
         if (res.code === 200 && res.data) {
-          this.targets = res.data.list || []
+          this.targets = this.normalizeTargetRows(res.data.list || [])
         }
       } finally {
         this.targetsLoading = false
@@ -1025,6 +1570,51 @@ export default {
   gap: 16px;
   margin-bottom: 24px;
 }
+.stat-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 16px;
+  width: 100%;
+}
+@media (max-width: 1280px) {
+  .stat-cards-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 720px) {
+  .stat-cards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.stat-cards-grid .stat-card {
+  flex: none;
+  min-width: 0;
+}
+.overview-baseline,
+.overview-vuln,
+.overview-malware {
+  margin-bottom: 24px;
+}
+.overview-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.overview-panel {
+  margin-bottom: 0;
+}
+.overview-hint {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: #64748b;
+}
+.stat-hint {
+  margin-top: 6px;
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.4;
+}
 .stat-card {
   flex: 1;
   background: rgba(255,255,255,0.03);
@@ -1046,7 +1636,127 @@ export default {
 }
 .stat-pass .stat-value { color: #34d399; }
 .stat-fail .stat-value { color: #f87171; }
+.stat-error .stat-value { color: #fb923c; }
+.stat-skip .stat-value { color: #94a3b8; }
 .stat-rate .stat-value { color: #60a5fa; }
+.stat-scan .stat-value { color: #00d4aa; }
+.stat-critical .stat-value { color: #ef4444; }
+.stat-high .stat-value { color: #f35f28; }
+.stat-medium .stat-value { color: #fbbf24; }
+.stat-low .stat-value { color: #60a5fa; }
+
+.vuln-risk-stack {
+  display: flex;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  background: rgba(255, 255, 255, 0.06);
+}
+.vuln-risk-seg {
+  min-width: 2px;
+  transition: flex 0.3s ease;
+}
+.seg-critical { background: #ef4444; }
+.seg-high { background: #f35f28; }
+.seg-medium { background: #fbbf24; }
+.seg-low { background: #60a5fa; }
+
+.vuln-risk-grid .risk-item {
+  position: relative;
+  padding-bottom: 20px;
+}
+.vuln-risk-grid .risk-pct {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 6px;
+  font-size: 11px;
+  color: #64748b;
+}
+.risk-critical { color: #ef4444; }
+.risk-high { color: #f35f28; }
+.risk-medium { color: #fbbf24; }
+.risk-low { color: #60a5fa; }
+
+.rank-bar-vuln {
+  background: linear-gradient(90deg, #ef4444, #f35f28);
+}
+.rank-bar-malware {
+  background: linear-gradient(90deg, #a855f7, #6366f1);
+}
+
+.risk-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.risk-item {
+  text-align: center;
+  padding: 12px 8px;
+  background: rgba(0,0,0,0.15);
+  border-radius: 8px;
+}
+.risk-value {
+  display: block;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.risk-label {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.category-rank-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.category-rank-item {
+  display: grid;
+  grid-template-columns: 24px 1fr minmax(80px, 120px) 36px;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  &:last-child { border-bottom: none; }
+}
+.rank-no {
+  font-size: 12px;
+  color: #64748b;
+}
+.rank-name {
+  font-size: 13px;
+  color: #e2e8f0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rank-bar-wrap {
+  height: 6px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.rank-bar {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #f87171, #fb923c);
+  border-radius: 999px;
+}
+.rank-count {
+  text-align: right;
+  font-size: 13px;
+  color: #94a3b8;
+  font-variant-numeric: tabular-nums;
+}
+
+.target-summary-section {
+  margin-top: 16px;
+}
 
 .info-section {
   background: rgba(255,255,255,0.03);

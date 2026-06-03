@@ -106,7 +106,7 @@ func (a *BaselineApp) RunBaselineCheck(ctx context.Context, req *typespec.Baseli
 	return resp, nil
 }
 
-// batchTaskManager 管理批量任务的进度状态
+// batchTaskManager 管理批量任务进度状态
 var (
 	batchTasksMu sync.RWMutex
 	batchTasks   = make(map[int]*typespec.BaselineBatchTaskProgress)
@@ -123,13 +123,30 @@ func registerBatchTask(taskID int, targets []typespec.BaselineCheckReq) {
 	}
 	for i, t := range targets {
 		progress.Targets[i] = typespec.BatchTargetProgress{
-			Host:   t.Host,
-			Status: "pending",
+			Host:       t.Host,
+			Status:     "pending",
+			TotalItems: estimateBaselineRuleTotal(t.OSType),
 		}
 	}
 	batchTasksMu.Lock()
 	batchTasks[taskID] = progress
 	batchTasksMu.Unlock()
+}
+
+func estimateBaselineRuleTotal(osType int) int {
+	engine := services.GetBaselineEngine()
+	rules := engine.GetRulesByOSType(osType)
+	if len(rules) > 0 {
+		return len(rules)
+	}
+	all := engine.GetAllRules()
+	total := 0
+	for _, rule := range all {
+		if rule.OSType == 0 || rule.OSType == osType {
+			total++
+		}
+	}
+	return total
 }
 
 func updateBatchTargetStatus(taskID int, idx int, status, message string) {
@@ -152,6 +169,25 @@ func updateBatchTargetStatus(taskID int, idx int, status, message string) {
 	}
 }
 
+func appendBatchTargetItem(taskID int, idx int, item typespec.BatchRuleResult) {
+	batchTasksMu.Lock()
+	defer batchTasksMu.Unlock()
+	p, ok := batchTasks[taskID]
+	if !ok || idx < 0 || idx >= len(p.Targets) {
+		return
+	}
+	target := &p.Targets[idx]
+	target.Items = append(target.Items, item)
+	if target.Status == "pending" {
+		target.Status = "running"
+	}
+	if target.TotalItems > 0 {
+		target.Message = fmt.Sprintf("已检查 %d/%d 项", len(target.Items), target.TotalItems)
+	} else {
+		target.Message = fmt.Sprintf("已检查 %d 项", len(target.Items))
+	}
+}
+
 // RunBaselineBatchCheckAsync 异步批量多目标核查，创建任务后立即返回
 func (a *BaselineApp) RunBaselineBatchCheckAsync(ctx context.Context, req *typespec.BaselineBatchCheckReq) (*typespec.BaselineBatchCheckResp, error) {
 	if len(req.Targets) == 0 {
@@ -168,7 +204,23 @@ func (a *BaselineApp) RunBaselineBatchCheckAsync(ctx context.Context, req *types
 
 	registerBatchTask(batchTaskID, req.Targets)
 
-	go a.runBatchChecks(mysql.NewContext(context.Background(), mysql.GetDB()), batchTaskID, req.Targets)
+	fmt.Printf(">>> RunBaselineBatchCheckAsync: batchTaskID=%d, targets=%d\n", batchTaskID, len(req.Targets))
+
+	dbCtx := mysql.NewContext(context.Background(), mysql.GetDB())
+	for idx, target := range req.Targets {
+		scene := target.ScanScene
+		if scene <= 0 {
+			scene = enums.HostScanSceneBaseline
+		}
+		fmt.Printf(">>> RunBaselineBatchCheckAsync: inserting placeholder for taskID=%d idx=%d host=%s scene=%d\n", batchTaskID, idx, target.Host, scene)
+		if err := services.PersistBaselineCheckPlaceholder(dbCtx, batchTaskID, idx+1, target.Host, target.OSType, scene); err != nil {
+			log.Errorf("PersistBaselineCheckPlaceholder failed for %s: %v", target.Host, err)
+		} else {
+			fmt.Printf(">>> RunBaselineBatchCheckAsync: placeholder inserted OK for %s\n", target.Host)
+		}
+	}
+
+	go a.runBatchChecks(dbCtx, batchTaskID, req.Targets)
 
 	return &typespec.BaselineBatchCheckResp{TaskID: batchTaskID}, nil
 }
@@ -191,15 +243,32 @@ func (a *BaselineApp) runBatchChecks(ctx context.Context, batchTaskID int, targe
 			defer func() { <-sem }()
 
 			updateBatchTargetStatus(batchTaskID, idx, "running", "")
-			resp, err := a.RunBaselineCheck(ctx, &t)
+			checker := services.GetHostBaselineChecker()
+			task := &services.BaselineCheckTask{
+				TaskID:        t.TaskID,
+				TargetID:      t.TargetID,
+				Host:          t.Host,
+				Port:          t.Port,
+				Username:      t.Username,
+				Password:      t.Password,
+				Key:           t.Key,
+				OSType:        t.OSType,
+				Transport:     t.Transport,
+				WinRMUseHttps: t.WinRMUseHttps,
+				ScanScene:     t.ScanScene,
+				RuleProgress: func(item typespec.BatchRuleResult) {
+					appendBatchTargetItem(batchTaskID, idx, item)
+				},
+			}
+			report, err := checker.RunBaselineCheck(ctx, task)
 			if err != nil {
 				log.Errorf("runBatchChecks: target %s failed: %v", t.Host, err)
 				updateBatchTargetStatus(batchTaskID, idx, "failed", err.Error())
 				return
 			}
-			msg := fmt.Sprintf("核查完成：通过 %d / %d", resp.PassCount, resp.TotalRules)
-			if resp.FailCount > 0 || resp.ErrorCount > 0 {
-				msg = fmt.Sprintf("核查完成：通过 %d，不通过 %d，异常 %d", resp.PassCount, resp.FailCount, resp.ErrorCount)
+			msg := fmt.Sprintf("核查完成：通过 %d / %d", report.PassCount, report.TotalRules)
+			if report.FailCount > 0 || report.ErrorCount > 0 {
+				msg = fmt.Sprintf("核查完成：通过 %d，不通过 %d，异常 %d", report.PassCount, report.FailCount, report.ErrorCount)
 			}
 			updateBatchTargetStatus(batchTaskID, idx, "completed", msg)
 		}(i, target)
@@ -209,7 +278,7 @@ func (a *BaselineApp) runBatchChecks(ctx context.Context, batchTaskID int, targe
 	log.Infof("runBatchChecks: batch task %d completed", batchTaskID)
 }
 
-// GetBatchTaskProgress 获取批量任务进度
+// GetBatchTaskProgress 鑾峰彇鎵归噺浠诲姟杩涘害
 func (a *BaselineApp) GetBatchTaskProgress(ctx context.Context, taskID int) *typespec.BaselineBatchTaskProgress {
 	batchTasksMu.RLock()
 	defer batchTasksMu.RUnlock()
@@ -263,22 +332,48 @@ func (a *BaselineApp) GetBaselineResults(ctx context.Context, req *typespec.Base
 
 func (a *BaselineApp) GetBaselineStat(ctx context.Context, req *typespec.BaselineStatReq) (*typespec.BaselineStatResp, error) {
 	var model mysqls.BaselineCheckResult
-	pass, fail, total, err := model.GetStatByTaskID(ctx, req.TaskID)
+	stat, err := model.GetDetailStatByTaskID(ctx, req.TaskID)
 	if err != nil {
 		return nil, err
 	}
 
-	rate := 0.0
-	if total > 0 {
-		rate = float64(pass) / float64(total) * 100
+	passRate := 0.0
+	if stat.TotalRules > 0 {
+		passRate = float64(stat.PassCount) / float64(stat.TotalRules) * 100
+	}
+	effective := 0.0
+	effectiveTotal := stat.PassCount + stat.FailCount
+	if effectiveTotal > 0 {
+		effective = float64(stat.PassCount) / float64(effectiveTotal) * 100
 	}
 
-	return &typespec.BaselineStatResp{
-		TotalRules: int(total),
-		PassCount:  int(pass),
-		FailCount:  int(fail),
-		PassRate:   rate,
-	}, nil
+	resp := &typespec.BaselineStatResp{
+		TotalRules:        int(stat.TotalRules),
+		PassCount:         int(stat.PassCount),
+		FailCount:         int(stat.FailCount),
+		ErrorCount:        int(stat.ErrorCount),
+		SkipCount:         int(stat.SkipCount),
+		IssueCount:        int(stat.FailCount + stat.ErrorCount),
+		PassRate:          passRate,
+		EffectivePassRate: effective,
+		FailCritical:      int(stat.FailCritical),
+		FailHigh:          int(stat.FailHigh),
+		FailMiddle:        int(stat.FailMiddle),
+		FailLow:           int(stat.FailLow),
+	}
+
+	catRows, err := model.GetTopFailCategoriesByTaskID(ctx, req.TaskID, 5)
+	if err == nil {
+		for _, c := range catRows {
+			resp.TopFailCategories = append(resp.TopFailCategories, typespec.BaselineStatCategoryItem{
+				Category:     c.Category,
+				CategoryName: enums.BaselineEnum.GetCategoryName(c.Category),
+				Count:        int(c.Count),
+			})
+		}
+	}
+
+	return resp, nil
 }
 
 func (a *BaselineApp) GetBaselineTaskList(ctx context.Context, req *typespec.BaselineTaskListReq) (*typespec.BaselineTaskListResp, error) {
@@ -292,16 +387,27 @@ func (a *BaselineApp) GetBaselineTaskList(ctx context.Context, req *typespec.Bas
 	}
 	var model mysqls.BaselineCheckResult
 	scanScene := req.ScanScene
+	fmt.Printf(">>> GetBaselineTaskList: page=%d size=%d scanScene=%d\n", page, size, scanScene)
 	total, err := model.CountDistinctTasks(ctx, scanScene)
 	if err != nil {
+		fmt.Printf(">>> GetBaselineTaskList: CountDistinctTasks error: %v\n", err)
 		return nil, err
 	}
+	fmt.Printf(">>> GetBaselineTaskList: total=%d\n", total)
 	rows, err := model.ListGroupedByTask(ctx, page, size, scanScene)
 	if err != nil {
 		return nil, err
 	}
 	resp := &typespec.BaselineTaskListResp{Total: total}
 	for _, r := range rows {
+		isRunning := r.Pending > 0
+		if !isRunning {
+			batchTasksMu.RLock()
+			if p, ok := batchTasks[r.TaskID]; ok && p.Status == "running" {
+				isRunning = true
+			}
+			batchTasksMu.RUnlock()
+		}
 		resp.List = append(resp.List, typespec.BaselineTaskListItem{
 			TaskID:        r.TaskID,
 			TargetIP:      r.TargetIP,
@@ -314,8 +420,10 @@ func (a *BaselineApp) GetBaselineTaskList(ctx context.Context, req *typespec.Bas
 			FailCount:     int(r.FailCount),
 			ErrorCount:    int(r.ErrCount),
 			CheckTime:     r.LastTime.Format("2006-01-02 15:04:05"),
+			IsRunning:     isRunning,
 		})
 	}
+	fmt.Printf(">>> GetBaselineTaskList: returning %d items\n", len(resp.List))
 	return resp, nil
 }
 
@@ -347,10 +455,10 @@ func (a *BaselineApp) ReloadBaselineRulesFromDB(ctx context.Context) error {
 
 // ImportBaselineRules 导入规则到引擎并写入数据库
 func (a *BaselineApp) ImportBaselineRules(ctx context.Context, req *typespec.BaselineRulesImportReq) *typespec.BaselineRulesImportResp {
-	// 先写入数据库，再从数据库重载到引擎，保证引擎与DB始终同步
+	// 鍏堝啓鍏ユ暟鎹簱锛屽啀浠庢暟鎹簱閲嶈浇鍒板紩鎿庯紝淇濊瘉寮曟搸涓嶥B濮嬬粓鍚屾
 	var model mysqls.HostBaselineRule
 
-	// 查询当前最大 rule_code，用于生成唯一编号
+	// 鏌ヨ褰撳墠鏈€澶?rule_code锛岀敤浜庣敓鎴愬敮涓€缂栧彿
 	var maxRuleCode int
 	mysql.FromContext(ctx).Model(&model).Select("COALESCE(MAX(rule_code), 0)").Scan(&maxRuleCode)
 
@@ -368,6 +476,10 @@ func (a *BaselineApp) ImportBaselineRules(ctx context.Context, req *typespec.Bas
 	dbSkipped := 0
 	nextCode := maxRuleCode
 	for _, item := range req.Rules {
+		if services.RuleHasUnresolvedPlaceholder(item.Commands, item.ExpectedValue) {
+			dbSkipped++
+			continue
+		}
 		key := fmt.Sprintf("%s|%d|%d", item.Name, item.Category, item.OSType)
 		if dbExisting[key] {
 			dbSkipped++
@@ -394,7 +506,7 @@ func (a *BaselineApp) ImportBaselineRules(ctx context.Context, req *typespec.Bas
 			Enabled:         1,
 		}
 		if err := model.Create(ctx, rule); err != nil {
-			log.Errorf("ImportBaselineRules: 写入数据库失败 name=%s err=%v", item.Name, err)
+			log.Errorf("ImportBaselineRules: 鍐欏叆鏁版嵁搴撳け璐?name=%s err=%v", item.Name, err)
 			dbSkipped++
 		} else {
 			dbExisting[key] = true
@@ -402,9 +514,9 @@ func (a *BaselineApp) ImportBaselineRules(ctx context.Context, req *typespec.Bas
 		}
 	}
 
-	// 从数据库重载到引擎，保证引擎与DB完全一致
+	// 从数据库重载到引擎，保证引擎与数据库一致
 	if err := services.ReloadBaselineRulesFromDB(ctx); err != nil {
-		log.Errorf("ImportBaselineRules: 重载引擎失败 err=%v", err)
+		log.Errorf("ImportBaselineRules: 閲嶈浇寮曟搸澶辫触 err=%v", err)
 	}
 
 	return &typespec.BaselineRulesImportResp{
@@ -414,7 +526,7 @@ func (a *BaselineApp) ImportBaselineRules(ctx context.Context, req *typespec.Bas
 	}
 }
 
-// GetBaselineRulesStats 规则库统计（仅数量，供仪表盘等轻量场景）
+// GetBaselineRulesStats 瑙勫垯搴撶粺璁★紙浠呮暟閲忥紝渚涗华琛ㄧ洏绛夎交閲忓満鏅級
 func (a *BaselineApp) GetBaselineRulesStats(ctx context.Context) *typespec.BaselineRulesStatsResp {
 	var model mysqls.HostBaselineRule
 	total, err := model.CountAll(ctx)
@@ -504,7 +616,7 @@ func (a *BaselineApp) GetBaselineRulesFromDB(ctx context.Context, req *typespec.
 	return resp
 }
 
-// GetBaselineRuleDetail 从数据库获取单条规则详情
+// GetBaselineRuleDetail 浠庢暟鎹簱鑾峰彇鍗曟潯瑙勫垯璇︽儏
 func (a *BaselineApp) GetBaselineRuleDetail(ctx context.Context, id int) (*typespec.BaselineRuleDetailResp, error) {
 	var model mysqls.HostBaselineRule
 	rule, err := model.GetByID(ctx, id)
@@ -537,7 +649,7 @@ func (a *BaselineApp) GetBaselineRuleDetail(ctx context.Context, id int) (*types
 	}, nil
 }
 
-// CreateBaselineRule 新增规则到数据库
+// CreateBaselineRule 鏂板瑙勫垯鍒版暟鎹簱
 func (a *BaselineApp) CreateBaselineRule(ctx context.Context, req *typespec.BaselineRuleCreateReq) error {
 	cmdsJSON := "[]"
 	if len(req.Commands) > 0 {
@@ -763,7 +875,7 @@ func (a *BaselineApp) GetMalwareTaskList(ctx context.Context, req *typespec.Malw
 	}
 	resp := &typespec.MalwareTaskListResp{Total: total}
 	for _, r := range rows {
-		worstName := "—"
+		worstName := "-"
 		if r.WorstRiskLevel > 0 {
 			worstName = enums.BaselineEnum.GetMalwareRiskName(r.WorstRiskLevel)
 		}
@@ -1035,3 +1147,4 @@ func (a *BaselineApp) GetEnums(ctx context.Context) interface{} {
 		},
 	}
 }
+

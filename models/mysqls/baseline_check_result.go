@@ -45,13 +45,21 @@ func (b *BaselineCheckResult) BatchAdd(ctx context.Context, list []BaselineCheck
 
 func (b *BaselineCheckResult) GetByTargetID(ctx context.Context, targetID int) ([]BaselineCheckResult, error) {
 	var list []BaselineCheckResult
-	err := mysql.FromContext(ctx).Model(b).Where("target_id = ?", targetID).Order("rule_category asc").Find(&list).Error
+	err := mysql.FromContext(ctx).Model(b).
+		Where("target_id = ?", targetID).
+		Where("check_result <> ?", 0).
+		Order("rule_category asc").
+		Find(&list).Error
 	return list, err
 }
 
 func (b *BaselineCheckResult) GetByTaskID(ctx context.Context, taskID int) ([]BaselineCheckResult, error) {
 	var list []BaselineCheckResult
-	err := mysql.FromContext(ctx).Model(b).Where("task_id = ?", taskID).Order("rule_category asc").Find(&list).Error
+	err := mysql.FromContext(ctx).Model(b).
+		Where("task_id = ?", taskID).
+		Where("check_result <> ?", 0).
+		Order("rule_category asc").
+		Find(&list).Error
 	return list, err
 }
 
@@ -72,11 +80,64 @@ func (b *BaselineCheckResult) DeleteByTaskTargetAndScene(ctx context.Context, ta
 }
 
 func (b *BaselineCheckResult) GetStatByTaskID(ctx context.Context, taskID int) (passCount, failCount, total int64, err error) {
-	db := mysql.FromContext(ctx).Model(b).Where("task_id = ?", taskID)
-	db.Count(&total)
-	db.Where("check_result = ?", 1).Count(&passCount)
-	db.Where("check_result = ?", 2).Count(&failCount)
-	return
+	stat, err := b.GetDetailStatByTaskID(ctx, taskID)
+	if err != nil || stat == nil {
+		return
+	}
+	return stat.PassCount, stat.FailCount, stat.TotalRules, nil
+}
+
+// BaselineDetailStatRow 任务级核查统计（详情概况）
+type BaselineDetailStatRow struct {
+	TotalRules   int64 `gorm:"column:total_rules"`
+	PassCount    int64 `gorm:"column:pass_count"`
+	FailCount    int64 `gorm:"column:fail_count"`
+	ErrorCount   int64 `gorm:"column:error_count"`
+	SkipCount    int64 `gorm:"column:skip_count"`
+	FailCritical int64 `gorm:"column:fail_critical"`
+	FailHigh     int64 `gorm:"column:fail_high"`
+	FailMiddle   int64 `gorm:"column:fail_middle"`
+	FailLow      int64 `gorm:"column:fail_low"`
+}
+
+func (b *BaselineCheckResult) GetDetailStatByTaskID(ctx context.Context, taskID int) (*BaselineDetailStatRow, error) {
+	var row BaselineDetailStatRow
+	err := mysql.FromContext(ctx).Model(b).
+		Select(`SUM(CASE WHEN check_result <> 0 THEN 1 ELSE 0 END) AS total_rules,
+			SUM(CASE WHEN check_result = 1 THEN 1 ELSE 0 END) AS pass_count,
+			SUM(CASE WHEN check_result = 2 THEN 1 ELSE 0 END) AS fail_count,
+			SUM(CASE WHEN check_result = 3 THEN 1 ELSE 0 END) AS error_count,
+			SUM(CASE WHEN check_result = 4 THEN 1 ELSE 0 END) AS skip_count,
+			SUM(CASE WHEN check_result = 2 AND rule_risk = 0 THEN 1 ELSE 0 END) AS fail_critical,
+			SUM(CASE WHEN check_result = 2 AND rule_risk = 1 THEN 1 ELSE 0 END) AS fail_high,
+			SUM(CASE WHEN check_result = 2 AND rule_risk = 2 THEN 1 ELSE 0 END) AS fail_middle,
+			SUM(CASE WHEN check_result = 2 AND rule_risk = 3 THEN 1 ELSE 0 END) AS fail_low`).
+		Where("task_id = ?", taskID).
+		Scan(&row).Error
+	if err != nil {
+		return nil, err
+	}
+	return &row, nil
+}
+
+type BaselineFailCategoryRow struct {
+	Category int   `gorm:"column:rule_category"`
+	Count    int64 `gorm:"column:cnt"`
+}
+
+func (b *BaselineCheckResult) GetTopFailCategoriesByTaskID(ctx context.Context, taskID int, limit int) ([]BaselineFailCategoryRow, error) {
+	if limit <= 0 {
+		limit = 5
+	}
+	var rows []BaselineFailCategoryRow
+	err := mysql.FromContext(ctx).Model(b).
+		Select("rule_category, COUNT(*) AS cnt").
+		Where("task_id = ? AND check_result = ?", taskID, 2).
+		Group("rule_category").
+		Order("cnt DESC").
+		Limit(limit).
+		Scan(&rows).Error
+	return rows, err
 }
 
 func (b *BaselineCheckResult) GetStatByTargetID(ctx context.Context, targetID int) (passCount, failCount, total int64, err error) {
@@ -98,6 +159,7 @@ type BaselineTaskGroupRow struct {
 	PassCount  int64     `gorm:"column:pass_count"`
 	FailCount  int64     `gorm:"column:fail_count"`
 	ErrCount   int64     `gorm:"column:err_count"`
+	Pending    int64     `gorm:"column:pending"`
 }
 
 func (b *BaselineCheckResult) CountDistinctTasks(ctx context.Context, scanScene int) (int64, error) {
@@ -106,8 +168,10 @@ func (b *BaselineCheckResult) CountDistinctTasks(ctx context.Context, scanScene 
 	var err error
 	if scanScene > 0 {
 		err = mysql.FromContext(ctx).Raw(fmt.Sprintf(tpl, "WHERE scan_scene = ? "), scanScene).Scan(&total).Error
+		fmt.Printf(">>> CountDistinctTasks: scanScene=%d total=%d err=%v\n", scanScene, total, err)
 	} else {
 		err = mysql.FromContext(ctx).Raw(fmt.Sprintf(tpl, "")).Scan(&total).Error
+		fmt.Printf(">>> CountDistinctTasks: scanScene=all total=%d err=%v\n", total, err)
 	}
 	return total, err
 }
@@ -130,7 +194,8 @@ func (b *BaselineCheckResult) ListGroupedByTask(ctx context.Context, page, size,
 			MAX(os_type) AS os_type,
 			MAX(scan_scene) AS scan_scene,
 			MAX(create_time) AS last_time,
-			COUNT(*) AS total_rules,
+			SUM(CASE WHEN check_result = 0 THEN 1 ELSE 0 END) AS pending,
+			SUM(CASE WHEN check_result <> 0 THEN 1 ELSE 0 END) AS total_rules,
 			SUM(CASE WHEN check_result = 1 THEN 1 ELSE 0 END) AS pass_count,
 			SUM(CASE WHEN check_result = 2 THEN 1 ELSE 0 END) AS fail_count,
 			SUM(CASE WHEN check_result = 3 THEN 1 ELSE 0 END) AS err_count`).
@@ -139,6 +204,11 @@ func (b *BaselineCheckResult) ListGroupedByTask(ctx context.Context, page, size,
 		Offset(offset).
 		Limit(size).
 		Scan(&rows).Error
+	fmt.Printf(">>> ListGroupedByTask: page=%d size=%d scanScene=%d offset=%d rows=%d err=%v\n", page, size, scanScene, offset, len(rows), err)
+	for i, r := range rows {
+		fmt.Printf(">>> ListGroupedByTask: row[%d] taskID=%d targetIP=%s totalRules=%d pass=%d fail=%d err=%d lastTime=%v\n",
+			i, r.TaskID, r.TargetIP, r.TotalRules, r.PassCount, r.FailCount, r.ErrCount, r.LastTime)
+	}
 	return rows, err
 }
 
@@ -156,15 +226,15 @@ type BaselineTaskTargetRow struct {
 func (b *BaselineCheckResult) GetTargetsByTaskID(ctx context.Context, taskID int) ([]BaselineTaskTargetRow, error) {
 	var rows []BaselineTaskTargetRow
 	err := mysql.FromContext(ctx).Model(b).
-		Select(`target_id,
+		Select(`MAX(target_id) AS target_id,
 			target_ip,
 			MAX(os_type) AS os_type,
-			COUNT(*) AS total_rules,
+			SUM(CASE WHEN check_result <> 0 THEN 1 ELSE 0 END) AS total_rules,
 			SUM(CASE WHEN check_result = 1 THEN 1 ELSE 0 END) AS pass_count,
 			SUM(CASE WHEN check_result = 2 THEN 1 ELSE 0 END) AS fail_count,
 			SUM(CASE WHEN check_result = 3 THEN 1 ELSE 0 END) AS err_count`).
 		Where("task_id = ?", taskID).
-		Group("target_id, target_ip").
+		Group("target_ip").
 		Order("target_ip ASC").
 		Scan(&rows).Error
 	return rows, err

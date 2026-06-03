@@ -6,9 +6,10 @@ func TestNormalizeBaselineCommand(t *testing.T) {
 	cases := []struct {
 		in, want string
 	}{
-		{`$ sudo grep -i "FAIL_DELAY" /etc/login.defs`, `sudo grep -i "FAIL_DELAY" /etc/login.defs`},
+		{`$ sudo grep -i "FAIL_DELAY" /etc/login.defs`, `grep -i "FAIL_DELAY" /etc/login.defs`},
 		{"grep '^Protocol' /etc/ssh/sshd_config", "grep '^Protocol' /etc/ssh/sshd_config"},
 		{"  $ echo ok  ", "echo ok"},
+		{"sudo -n cat /etc/shadow", "cat /etc/shadow"},
 	}
 	for _, tc := range cases {
 		got := normalizeBaselineCommand(tc.in)
@@ -30,6 +31,9 @@ func TestIsBaselineExecutionError(t *testing.T) {
 	}
 	if isBaselineExecutionError("FAIL_DELAY 5") {
 		t.Fatal("normal grep output should not be execution error")
+	}
+	if !isBaselineExecutionError("sudo: a terminal is required to read the password") {
+		t.Fatal("sudo password prompt should be execution error")
 	}
 }
 

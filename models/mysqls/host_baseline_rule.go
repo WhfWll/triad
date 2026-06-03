@@ -219,3 +219,8 @@ func (m *HostBaselineRule) Update(ctx context.Context, rule *HostBaselineRule) e
 func (m *HostBaselineRule) Delete(ctx context.Context, id int) error {
 	return mysql.FromContext(ctx).Model(m).Where("id = ?", id).Delete(&HostBaselineRule{}).Error
 }
+
+// DeleteAll 清空全部规则（重新导入前使用）
+func (m *HostBaselineRule) DeleteAll(ctx context.Context) error {
+	return mysql.FromContext(ctx).Where("1 = 1").Delete(&HostBaselineRule{}).Error
+}

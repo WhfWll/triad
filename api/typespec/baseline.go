@@ -38,11 +38,24 @@ type BaselineBatchTaskProgress struct {
 	CreatedAt        string                `json:"createdAt"`
 }
 
+// BatchRuleResult 单条规则实时检查结果（用于执行日志实时回传）
+type BatchRuleResult struct {
+	RuleID        int    `json:"ruleId"`
+	RuleName      string `json:"ruleName"`
+	CheckResult   int    `json:"checkResult"` // 1=通过 2=不通过 3=异常 4=跳过
+	ResultName    string `json:"resultName,omitempty"`
+	ExpectedValue string `json:"expectedValue,omitempty"`
+	ActualValue   string `json:"actualValue,omitempty"`
+	Time          string `json:"time,omitempty"`
+}
+
 // BatchTargetProgress 单个目标进度
 type BatchTargetProgress struct {
-	Host    string `json:"host"`
-	Status  string `json:"status"` // pending / running / completed / failed
-	Message string `json:"message,omitempty"`
+	Host       string            `json:"host"`
+	Status     string            `json:"status"` // pending / running / completed / failed
+	Message    string            `json:"message,omitempty"`
+	TotalItems int               `json:"totalItems,omitempty"`
+	Items      []BatchRuleResult `json:"items,omitempty"`
 }
 
 type BaselineCheckResp struct {
@@ -95,11 +108,26 @@ type BaselineStatReq struct {
 	TaskID int `json:"taskId" form:"taskId"`
 }
 
+type BaselineStatCategoryItem struct {
+	Category     int    `json:"category"`
+	CategoryName string `json:"categoryName"`
+	Count        int    `json:"count"`
+}
+
 type BaselineStatResp struct {
-	TotalRules int     `json:"totalRules"`
-	PassCount  int     `json:"passCount"`
-	FailCount  int     `json:"failCount"`
-	PassRate   float64 `json:"passRate"`
+	TotalRules        int                        `json:"totalRules"`
+	PassCount         int                        `json:"passCount"`
+	FailCount         int                        `json:"failCount"`
+	ErrorCount        int                        `json:"errorCount"`
+	SkipCount         int                        `json:"skipCount"`
+	IssueCount        int                        `json:"issueCount"`        // 不通过 + 异常
+	PassRate          float64                    `json:"passRate"`          // 通过 / 总数
+	EffectivePassRate float64                    `json:"effectivePassRate"` // 通过 / (通过+不通过)，不含跳过与异常
+	FailCritical      int                        `json:"failCritical"`
+	FailHigh          int                        `json:"failHigh"`
+	FailMiddle        int                        `json:"failMiddle"`
+	FailLow           int                        `json:"failLow"`
+	TopFailCategories []BaselineStatCategoryItem `json:"topFailCategories,omitempty"`
 }
 
 // BaselineTaskListReq 按核查批次（task_id）分页列表
@@ -121,6 +149,7 @@ type BaselineTaskListItem struct {
 	FailCount     int    `json:"failCount"`
 	ErrorCount    int    `json:"errorCount"`
 	CheckTime     string `json:"checkTime"`
+	IsRunning     bool   `json:"isRunning"`
 }
 
 type BaselineTaskListResp struct {

@@ -19,50 +19,40 @@
         </div>
       </div>
 
-      <el-tabs v-model="listTab" class="hub-tabs" @tab-click="onListTabChange">
-        <el-tab-pane label="全部（最近）" name="all" />
-        <el-tab-pane label="安全配置核查" name="baseline" />
-        <el-tab-pane label="主机漏洞检测" name="vuln" />
-        <el-tab-pane label="恶意代码检测" name="malware" />
-      </el-tabs>
+      <div class="hub-filter-bar">
+        <el-input
+          v-model="searchKeyword"
+          placeholder="搜索目标 IP / 任务批次 / 任务类型"
+          size="small"
+          clearable
+          class="hub-search-input"
+          @keydown.enter.native="applySearch"
+          @clear="applySearch"
+        />
+        <el-select v-model="taskTypeFilter" size="small" class="hub-type-select" @change="onFilterChange">
+          <el-option label="全部任务类型" value="all" />
+          <el-option label="安全配置核查" value="baseline" />
+          <el-option label="主机漏洞检测" value="vuln" />
+          <el-option label="恶意代码检测" value="malware" />
+        </el-select>
+        <el-button size="small" @click="applySearch">搜索</el-button>
+      </div>
 
       <div class="hub-table-wrap">
       <el-table
         ref="taskTable"
         v-loading="tableLoading"
-        :data="tableRows"
+        :data="displayRows"
         :row-key="taskRowKey"
         style="width: 100%"
         class="myTable hub-task-table"
         @selection-change="onSelectionChange"
       >
         <el-table-column type="selection" width="48" reserve-selection />
-        <el-table-column v-if="listTab === 'all'" prop="kindLabel" label="任务类型" width="130" />
+        <el-table-column prop="kindLabel" label="任务类型" width="130" />
         <el-table-column prop="targetIp" label="目标主机" min-width="110" :show-overflow-tooltip="true" />
-        <el-table-column v-if="listTab === 'baseline' || listTab === 'vuln' || listTab === 'all'" prop="osTypeName" label="操作系统" width="108" />
-        <!-- 基线核查列 -->
-        <template v-if="listTab === 'baseline'">
-          <el-table-column prop="totalRules" label="检查项数" width="88" align="center" />
-          <el-table-column prop="passCount" label="通过" width="64" align="center" />
-          <el-table-column prop="failCount" label="不通过" width="72" align="center" />
-          <el-table-column prop="errorCount" label="异常" width="64" align="center" />
-        </template>
-        <!-- 漏洞检测列 -->
-        <template v-if="listTab === 'vuln'">
-          <el-table-column prop="packages" label="扫描包数" width="88" align="center" />
-          <el-table-column prop="matchedVulns" label="漏洞数" width="76" align="center" />
-          <el-table-column prop="critical" label="严重" width="64" align="center" />
-          <el-table-column prop="high" label="高危" width="64" align="center" />
-          <el-table-column prop="worstRiskName" label="最高风险" width="88" align="center" />
-        </template>
-        <!-- 恶意代码列 -->
-        <template v-if="listTab === 'malware'">
-          <el-table-column prop="osTypeName" label="操作系统" width="108" />
-          <el-table-column prop="totalFindings" label="发现项数" width="88" align="center" />
-          <el-table-column prop="worstRiskName" label="最高风险" width="88" align="center" />
-        </template>
-        <!-- 全部：结果摘要 -->
-        <el-table-column v-if="listTab === 'all'" label="结果摘要" min-width="180" :show-overflow-tooltip="true">
+        <el-table-column prop="osTypeName" label="操作系统" width="108" />
+        <el-table-column label="结果摘要" min-width="200" :show-overflow-tooltip="true">
           <template slot-scope="scope">
             {{ rowSummary(scope.row) }}
           </template>
@@ -74,7 +64,7 @@
             <el-tag v-else type="success" size="mini" effect="plain">已完成</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="进度" width="72" align="center">
+        <el-table-column label="进度" width="112" align="center" class-name="col-progress">
           <template slot-scope="scope">
             <span v-if="scope.row.isRunning" class="inline-progress">{{ scope.row.progressText }}</span>
             <span v-else class="inline-progress done">—</span>
@@ -91,10 +81,7 @@
       </el-table>
       </div>
 
-      <p v-if="listTab === 'all'" class="merge-hint">以上为各类型最近一批记录的合并视图；精确分页请在上方子类页签中查看。</p>
-
       <el-pagination
-        v-if="listTab !== 'all'"
         :page-size="pageSize"
         background
         layout="total, prev, pager, next, sizes, jumper"
@@ -306,7 +293,9 @@ export default {
   name: 'HostSecurityHub',
   data() {
     return {
-      listTab: 'all',
+      taskTypeFilter: 'all',
+      searchKeyword: '',
+      searchApplied: '',
       tableLoading: false,
       tableRows: [],
       totalpage: 0,
@@ -357,6 +346,19 @@ export default {
   computed: {
     editTargetPortLabel() {
       return this.editTargetForm.transport === 'winrm' ? 'WinRM 端口' : 'SSH 端口'
+    },
+    displayRows() {
+      if (this.taskTypeFilter === 'all') {
+        return this.tableRows
+      }
+      const kw = (this.searchApplied || '').trim().toLowerCase()
+      if (!kw) return this.tableRows
+      return this.tableRows.filter(row => {
+        const ip = (row.targetIp || '').toLowerCase()
+        const kind = (row.kindLabel || '').toLowerCase()
+        const taskId = String(row.taskId || '')
+        return ip.includes(kw) || kind.includes(kw) || taskId.includes(kw)
+      })
     }
   },
   mounted() {
@@ -525,7 +527,13 @@ export default {
         ]
       }
     },
-    onListTabChange() {
+    onFilterChange() {
+      const ownerTab = this.progressOwnerTab(this.progressPollType)
+      if (ownerTab && ownerTab !== this.taskTypeFilter && this.taskTypeFilter !== 'all') {
+        this.stopProgressPoll()
+        this.progressTaskId = 0
+        this.progressPollType = ''
+      }
       this.formData.page = 1
       this.currentpage = 1
       this.selectedRows = []
@@ -533,6 +541,29 @@ export default {
         this.$refs.taskTable.clearSelection()
       }
       this.loadData()
+    },
+    applySearch() {
+      this.searchApplied = (this.searchKeyword || '').trim()
+      this.formData.page = 1
+      this.currentpage = 1
+      this.loadData()
+    },
+    progressOwnerTab(pollType) {
+      const map = { baseline: 'baseline', cve: 'vuln', yara: 'malware' }
+      return map[pollType] || ''
+    },
+    tabSource(taskTypeFilter) {
+      if (taskTypeFilter === 'baseline' || taskTypeFilter === 'vuln' || taskTypeFilter === 'malware') {
+        return taskTypeFilter
+      }
+      return ''
+    },
+    filterRunningRowsForTab(rows, taskTypeFilter) {
+      const source = this.tabSource(taskTypeFilter)
+      if (!source) {
+        return (rows || []).filter(r => r.isRunning)
+      }
+      return (rows || []).filter(r => r.isRunning && r.source === source)
     },
     mergeRowsWithRunningRows(rows, runningRows) {
       const merged = []
@@ -551,13 +582,60 @@ export default {
       })
       return merged
     },
+    baselineCheckedCount(r) {
+      return (r.passCount || 0) + (r.failCount || 0) + (r.errorCount || 0)
+    },
+    baselineProgressText(r, done, total) {
+      if (typeof done === 'number' && typeof total === 'number' && total > 0) {
+        return `${done}/${total}`
+      }
+      const checked = this.baselineCheckedCount(r)
+      const rules = r.totalRules || 0
+      if (r.isRunning && rules > 0) {
+        return `${checked}/${rules}`
+      }
+      if (r.isRunning) {
+        return '准备中'
+      }
+      return '—'
+    },
+    mapBaselineListRow(r, extra = {}) {
+      const isRunning = !!r.isRunning
+      const row = {
+        source: 'baseline',
+        kindLabel: r.scanSceneName || '安全配置核查',
+        taskId: r.taskId,
+        targetIp: r.targetIp,
+        scanScene: r.scanScene || 1,
+        osTypeName: r.osTypeName,
+        totalRules: r.totalRules,
+        passCount: r.passCount,
+        failCount: r.failCount,
+        errorCount: r.errorCount,
+        checkTime: r.checkTime,
+        isRunning,
+        runStatus: isRunning ? 'running' : '',
+        runStatusLabel: isRunning ? '执行中' : '',
+        progressText: this.baselineProgressText(r),
+        ...extra
+      }
+      return row
+    },
+    maybeResumeBaselinePoll(rows) {
+      if (this.progressTaskId) return
+      const running = (rows || []).find(r => r.source === 'baseline' && r.isRunning)
+      if (!running) return
+      this.progressTaskId = running.taskId
+      this.progressPollType = 'baseline'
+      this.pollProgressInline()
+    },
     async loadData() {
-      const runningRows = this.tableRows.filter(r => r.isRunning)
+      const runningRows = this.filterRunningRowsForTab(this.tableRows, this.taskTypeFilter)
       this.tableLoading = true
       try {
-        if (this.listTab === 'all') {
-          await this.loadMerged()
-        } else if (this.listTab === 'malware') {
+        if (this.taskTypeFilter === 'all') {
+          await this.loadUnifiedList()
+        } else if (this.taskTypeFilter === 'malware') {
           const res = await security.getYaraTaskList({
             page: this.formData.page,
             size: this.pageSize
@@ -589,7 +667,7 @@ export default {
             this.tableRows = []
             this.$message({ message: res.msg || '加载失败', type: 'error' })
           }
-        } else if (this.listTab === 'vuln') {
+        } else if (this.taskTypeFilter === 'vuln') {
           const res = await security.getHostVulnTaskList({
             page: this.formData.page,
             size: this.pageSize
@@ -613,7 +691,11 @@ export default {
               scanStatus: r.scanStatus,
               scanStatusName: r.scanStatusName,
               errorMessage: r.errorMessage,
-              checkTime: r.checkTime
+              checkTime: r.checkTime,
+              isRunning: r.scanStatus === 0,
+              runStatus: r.scanStatus === 0 ? 'running' : '',
+              runStatusLabel: r.scanStatus === 0 ? (r.scanStatusName || '执行中') : '',
+              progressText: r.scanStatus === 0 ? '进行中' : '—'
             }))
           } else {
             this.tableRows = []
@@ -627,19 +709,8 @@ export default {
           })
           if (res.code === 200 && res.data) {
             this.totalpage = res.data.total || 0
-            this.tableRows = (res.data.list || []).map((r) => ({
-              source: 'baseline',
-              kindLabel: r.scanSceneName || '安全配置核查',
-              taskId: r.taskId,
-              targetIp: r.targetIp,
-              scanScene: r.scanScene || 1,
-              osTypeName: r.osTypeName,
-              totalRules: r.totalRules,
-              passCount: r.passCount,
-              failCount: r.failCount,
-              errorCount: r.errorCount,
-              checkTime: r.checkTime
-            }))
+            this.tableRows = (res.data.list || []).map((r) => this.mapBaselineListRow(r))
+            this.maybeResumeBaselinePoll(this.tableRows)
           } else {
             this.tableRows = []
             this.$message({ message: res.msg || '加载失败', type: 'error' })
@@ -652,33 +723,28 @@ export default {
         this.tableLoading = false
       }
     },
-    async loadMerged() {
-      const take = 25
+    async loadUnifiedList() {
+      const page = this.formData.page
+      const size = this.pageSize
+      const fetchSize = Math.max(page * size, 50)
+      const kw = (this.searchApplied || '').trim().toLowerCase()
       const [bRes, vRes, mRes] = await Promise.all([
-        security.getBaselineTaskList({ page: 1, size: take, scanScene: 1 }),
-        security.getHostVulnTaskList({ page: 1, size: take }),
-        security.getYaraTaskList({ page: 1, size: take })
+        security.getBaselineTaskList({ page: 1, size: fetchSize, scanScene: 1 }),
+        security.getHostVulnTaskList({ page: 1, size: fetchSize }),
+        security.getYaraTaskList({ page: 1, size: fetchSize })
       ])
       const merged = []
+      let total = 0
       if (bRes.code === 200 && bRes.data && bRes.data.list) {
+        total += bRes.data.total || 0
         for (const r of bRes.data.list) {
-          merged.push({
-            source: 'baseline',
-            kindLabel: r.scanSceneName || '安全配置核查',
-            taskId: r.taskId,
-            targetIp: r.targetIp,
-            scanScene: r.scanScene || 1,
-            osTypeName: r.osTypeName,
-            totalRules: r.totalRules,
-            passCount: r.passCount,
-            failCount: r.failCount,
-            errorCount: r.errorCount,
-            checkTime: r.checkTime,
-            _ts: new Date(r.checkTime.replace(/-/g, '/')).getTime()
-          })
+          merged.push(this.mapBaselineListRow(r, {
+            _ts: this.parseCheckTime(r.checkTime)
+          }))
         }
       }
       if (vRes.code === 200 && vRes.data && vRes.data.list) {
+        total += vRes.data.total || 0
         for (const r of vRes.data.list) {
           merged.push({
             source: 'vuln',
@@ -691,15 +757,23 @@ export default {
             matchedVulns: r.matchedVulns,
             critical: r.critical,
             high: r.high,
+            medium: r.medium,
+            low: r.low,
             worstRiskName: r.worstRiskName,
             scanStatus: r.scanStatus,
+            scanStatusName: r.scanStatusName,
             errorMessage: r.errorMessage,
             checkTime: r.checkTime,
-            _ts: new Date(r.checkTime.replace(/-/g, '/')).getTime()
+            isRunning: r.scanStatus === 0,
+            runStatus: r.scanStatus === 0 ? 'running' : '',
+            runStatusLabel: r.scanStatus === 0 ? (r.scanStatusName || '执行中') : '',
+            progressText: r.scanStatus === 0 ? '进行中' : '—',
+            _ts: this.parseCheckTime(r.checkTime)
           })
         }
       }
       if (mRes.code === 200 && mRes.data && mRes.data.list) {
+        total += mRes.data.total || 0
         for (const r of mRes.data.list) {
           merged.push({
             source: 'malware',
@@ -713,15 +787,40 @@ export default {
             high: r.high,
             worstRiskName: r.worstRiskName,
             scanStatus: r.scanStatus,
+            scanStatusName: r.scanStatusName,
             errorMessage: r.errorMessage,
             checkTime: r.checkTime,
-            _ts: new Date(r.checkTime.replace(/-/g, '/')).getTime()
+            isRunning: r.scanStatus === 0,
+            runStatus: r.scanStatus === 0 ? 'running' : '',
+            runStatusLabel: r.scanStatus === 0 ? (r.scanStatusName || '执行中') : '',
+            progressText: r.scanStatus === 0 ? '进行中' : '—',
+            _ts: this.parseCheckTime(r.checkTime)
           })
         }
       }
       merged.sort((a, b) => (b._ts || 0) - (a._ts || 0))
-      this.tableRows = merged.slice(0, take)
-      this.totalpage = this.tableRows.length
+      let filtered = merged
+      if (kw) {
+        filtered = merged.filter(row => {
+          const ip = (row.targetIp || '').toLowerCase()
+          const kind = (row.kindLabel || '').toLowerCase()
+          const taskId = String(row.taskId || '')
+          return ip.includes(kw) || kind.includes(kw) || taskId.includes(kw)
+        })
+        this.totalpage = filtered.length
+      } else {
+        this.totalpage = total
+      }
+      const offset = (page - 1) * size
+      this.tableRows = filtered.slice(offset, offset + size)
+      this.maybeResumeBaselinePoll(this.tableRows)
+    },
+    parseCheckTime(checkTime) {
+      if (!checkTime || checkTime === '—') return 0
+      return new Date(String(checkTime).replace(/-/g, '/')).getTime() || 0
+    },
+    async loadMerged() {
+      await this.loadUnifiedList()
     },
     openCreateDialog() {
       this.createVisible = true
@@ -849,9 +948,9 @@ export default {
         scanScene,
         runStatus: 'running',
         runStatusLabel: '执行中',
-        progressText: `0/${total}`,
+        progressText: kind === 'baseline' ? '准备中' : `0/${total}`,
         progressDone: 0,
-        progressTotal: total,
+        progressTotal: kind === 'baseline' ? 0 : total,
         checkTime: '—',
         runMessage: ''
       }))
@@ -861,27 +960,52 @@ export default {
       this.progressTaskId = taskId
       const pollMap = { baseline: 'baseline', vuln: 'cve', malware: 'yara' }
       this.progressPollType = pollMap[kind] || 'baseline'
-      const tabMap = { baseline: 'baseline', vuln: 'vuln', malware: 'malware' }
-      this.listTab = tabMap[kind] || 'baseline'
+      this.taskTypeFilter = 'all'
+      this.formData.page = 1
+      this.currentpage = 1
+      this.selectedRows = []
+      if (this.$refs.taskTable) {
+        this.$refs.taskTable.clearSelection()
+      }
       const runningRows = this.buildRunningRows(taskId, kind, targets)
-      this.tableRows = [...runningRows, ...this.tableRows.filter(r => !r.isRunning)]
-      this.pollProgressInline()
+      this.loadData().then(() => {
+        this.tableRows = this.mergeRowsWithRunningRows(this.tableRows, runningRows)
+        this.totalpage = Math.max(this.totalpage, this.tableRows.length)
+        this.pollProgressInline()
+      })
     },
     updateRunningRowsFromProgress(apiTargets, done, total) {
       if (!this.progressTaskId) return
       this.tableRows = this.tableRows.map(row => {
         if (!row.isRunning || row.taskId !== this.progressTaskId) return row
         const pt = (apiTargets || []).find(t => (t.host || t.targetIp) === row.targetIp)
+        let progressDone = done
+        let progressTotal = total
+        if (this.progressPollType === 'baseline' && pt && pt.totalItems > 0) {
+          progressDone = (pt.items || []).length
+          progressTotal = pt.totalItems
+        }
         const updates = {
-          progressDone: done,
-          progressTotal: total,
-          progressText: `${done}/${total}`
+          progressDone,
+          progressTotal,
+          progressText: this.baselineProgressText(row, progressDone, progressTotal),
+          isRunning: true,
+          runStatus: 'running',
+          runStatusLabel: '执行中'
         }
         if (pt) {
           const status = pt.status || (pt.error ? 'failed' : 'completed')
-          updates.runStatus = status
-          updates.runStatusLabel = this.runStatusLabel(status)
+          if (status === 'completed' || status === 'failed') {
+            updates.runStatus = status
+            updates.runStatusLabel = this.runStatusLabel(status)
+          }
           updates.runMessage = pt.message || pt.error || ''
+          if (this.progressPollType === 'baseline' && status === 'running') {
+            updates.passCount = (pt.items || []).filter(i => i.checkResult === 1).length
+            updates.failCount = (pt.items || []).filter(i => i.checkResult === 2).length
+            updates.errorCount = (pt.items || []).filter(i => i.checkResult === 3).length
+            updates.totalRules = pt.totalItems || row.totalRules
+          }
         } else if (done < total) {
           updates.runStatus = 'running'
           updates.runStatusLabel = '执行中'
@@ -932,7 +1056,7 @@ export default {
       } catch (e) {
         console.error('pollProgressInline error:', e)
       }
-      this.progressTimer = setTimeout(() => this.pollProgressInline(), 2000)
+      this.progressTimer = setTimeout(() => this.pollProgressInline(), this.progressPollType === 'baseline' ? 1000 : 2000)
     },
     finishProgressPoll() {
       this.stopProgressPoll()
@@ -980,6 +1104,11 @@ export default {
       if (row.source === 'malware') {
         if (row.scanStatus === 2) return `扫描异常：${row.errorMessage || '未知错误'}`
         return `发现 ${row.totalFindings || 0} 项 · 严重 ${row.critical || 0} / 高危 ${row.high || 0}`
+      }
+      if (row.isRunning) {
+        const checked = this.baselineCheckedCount(row)
+        const total = row.progressTotal || row.totalRules || '—'
+        return `执行中 · 已检查 ${checked}/${total} 项`
       }
       return `检查 ${row.totalRules || 0} · 通过 ${row.passCount || 0} / 不通过 ${row.failCount || 0}`
     },
@@ -1091,8 +1220,20 @@ export default {
   max-width: 960px;
 }
 
-.hub-tabs {
-  margin-bottom: 12px;
+.hub-filter-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.hub-search-input {
+  width: 280px;
+}
+
+.hub-type-select {
+  width: 168px;
 }
 
 .hub-table-wrap {
@@ -1108,19 +1249,6 @@ export default {
     table-layout: fixed;
     width: 100% !important;
   }
-}
-
-.merge-hint {
-  font-size: 12px;
-  color: rgba(148, 163, 184, 0.85);
-  margin: 10px 0 0;
-}
-
-.field-hint {
-  display: block;
-  margin-top: 6px;
-  font-size: 12px;
-  color: rgba(148, 163, 184, 0.75);
 }
 
 .detail-meta {
@@ -1178,6 +1306,8 @@ export default {
 }
 
 .inline-progress {
+  display: inline-block;
+  white-space: nowrap;
   font-variant-numeric: tabular-nums;
   color: #e2e8f0;
   font-size: 13px;

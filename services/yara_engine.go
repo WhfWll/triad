@@ -467,9 +467,12 @@ func parseCondition(line string) *YaraCondition {
 		parts := strings.Split(line, " and ")
 		cond := &YaraCondition{Op: "and"}
 		for _, p := range parts {
-			if c := parseSimpleCondition(strings.TrimSpace(p)); c != nil {
+			if c := parseCondition(strings.TrimSpace(p)); c != nil {
 				cond.Children = append(cond.Children, *c)
 			}
+		}
+		if len(cond.Children) == 0 {
+			return &YaraCondition{Op: "false"}
 		}
 		return cond
 	}
@@ -478,9 +481,12 @@ func parseCondition(line string) *YaraCondition {
 		parts := strings.Split(line, " or ")
 		cond := &YaraCondition{Op: "or"}
 		for _, p := range parts {
-			if c := parseSimpleCondition(strings.TrimSpace(p)); c != nil {
+			if c := parseCondition(strings.TrimSpace(p)); c != nil {
 				cond.Children = append(cond.Children, *c)
 			}
+		}
+		if len(cond.Children) == 0 {
+			return &YaraCondition{Op: "false"}
 		}
 		return cond
 	}
@@ -489,7 +495,7 @@ func parseCondition(line string) *YaraCondition {
 		return c
 	}
 
-	return &YaraCondition{Op: "true"}
+	return &YaraCondition{Op: "false"}
 }
 
 func parseSimpleCondition(expr string) *YaraCondition {
@@ -500,6 +506,12 @@ func parseSimpleCondition(expr string) *YaraCondition {
 	}
 	if expr == "false" {
 		return &YaraCondition{Op: "false"}
+	}
+	if expr == "is_elf" {
+		return &YaraCondition{Op: "is_elf"}
+	}
+	if expr == "is_pe" {
+		return &YaraCondition{Op: "is_pe"}
 	}
 
 	if strings.HasPrefix(expr, "#") {
@@ -561,11 +573,10 @@ func evaluateRule(rule *YaraRule, data []byte) []YaraMatch {
 		}
 	}
 
-	if !evaluateCondition(&rule.Condition, stringMatches, len(rule.StringDefs)) {
+	if !evaluateCondition(&rule.Condition, stringMatches, len(rule.StringDefs), data) {
 		return nil
 	}
 
-	var matches []YaraMatch
 	severity := rule.Meta["severity"]
 	if severity == "" {
 		severity = rule.Meta["score"]
@@ -575,30 +586,21 @@ func evaluateRule(rule *YaraRule, data []byte) []YaraMatch {
 		desc = rule.Name
 	}
 
+	match := YaraMatch{
+		RuleName:    rule.Name,
+		Description: desc,
+		Severity:    severity,
+	}
 	for _, sd := range rule.StringDefs {
-		if ms, ok := stringMatches[sd.ID]; ok {
-			for _, m := range ms {
-				matches = append(matches, YaraMatch{
-					RuleName:    rule.Name,
-					Description: desc,
-					Severity:    severity,
-					StringID:    sd.ID,
-					Matched:     string(m.Value),
-					Offset:      m.Offset,
-				})
-			}
+		if ms, ok := stringMatches[sd.ID]; ok && len(ms) > 0 {
+			match.StringID = sd.ID
+			match.Matched = string(ms[0].Value)
+			match.Offset = ms[0].Offset
+			break
 		}
 	}
 
-	if len(matches) == 0 {
-		matches = append(matches, YaraMatch{
-			RuleName:    rule.Name,
-			Description: desc,
-			Severity:    severity,
-		})
-	}
-
-	return matches
+	return []YaraMatch{match}
 }
 
 type YaraStringMatch struct {
@@ -690,7 +692,7 @@ func matchStringDef(sd *YaraStringDef, data []byte) []YaraStringMatch {
 	return nil
 }
 
-func evaluateCondition(cond *YaraCondition, matches map[string][]YaraStringMatch, totalStrings int) bool {
+func evaluateCondition(cond *YaraCondition, matches map[string][]YaraStringMatch, totalStrings int, data []byte) bool {
 	if cond == nil {
 		return true
 	}
@@ -700,35 +702,51 @@ func evaluateCondition(cond *YaraCondition, matches map[string][]YaraStringMatch
 		return true
 	case "false":
 		return false
+	case "is_elf":
+		return isELF(data)
+	case "is_pe":
+		return isPE(data)
 	case "string":
 		_, ok := matches[cond.StringID]
 		return ok
 	case "not":
 		if len(cond.Children) > 0 {
-			return !evaluateCondition(&cond.Children[0], matches, totalStrings)
+			return !evaluateCondition(&cond.Children[0], matches, totalStrings, data)
 		}
 		return false
 	case "and":
+		if len(cond.Children) == 0 {
+			return false
+		}
 		for _, c := range cond.Children {
-			if !evaluateCondition(&c, matches, totalStrings) {
+			if !evaluateCondition(&c, matches, totalStrings, data) {
 				return false
 			}
 		}
 		return true
 	case "or":
+		if len(cond.Children) == 0 {
+			return false
+		}
 		for _, c := range cond.Children {
-			if evaluateCondition(&c, matches, totalStrings) {
+			if evaluateCondition(&c, matches, totalStrings, data) {
 				return true
 			}
 		}
 		return false
 	case "all":
 		for _, sd := range cond.Children {
-			if !evaluateCondition(&sd, matches, totalStrings) {
+			if !evaluateCondition(&sd, matches, totalStrings, data) {
 				return false
 			}
 		}
 		if len(cond.Children) == 0 {
+			if totalStrings == 0 {
+				return true
+			}
+			if len(matches) != totalStrings {
+				return false
+			}
 			for _, ms := range matches {
 				if len(ms) == 0 {
 					return false
@@ -739,7 +757,7 @@ func evaluateCondition(cond *YaraCondition, matches map[string][]YaraStringMatch
 		return true
 	case "any":
 		for _, sd := range cond.Children {
-			if evaluateCondition(&sd, matches, totalStrings) {
+			if evaluateCondition(&sd, matches, totalStrings, data) {
 				return true
 			}
 		}
@@ -786,6 +804,14 @@ func evaluateCondition(cond *YaraCondition, matches map[string][]YaraStringMatch
 	}
 
 	return false
+}
+
+func isELF(data []byte) bool {
+	return len(data) >= 4 && data[0] == 0x7f && data[1] == 'E' && data[2] == 'L' && data[3] == 'F'
+}
+
+func isPE(data []byte) bool {
+	return len(data) >= 2 && data[0] == 'M' && data[1] == 'Z'
 }
 
 func indexOf(data, pattern []byte, start int) int {
