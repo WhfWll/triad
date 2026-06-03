@@ -189,6 +189,39 @@
       </template>
     </template>
 
+    <template v-if="showPanel('weakpass')">
+      <el-divider v-if="!section" content-position="left">弱口令扫描</el-divider>
+      <el-form-item label-width="0" class="switch-row">
+        <el-switch
+          v-model="weakPass.isOpen"
+          active-text="开启"
+          inactive-text="关闭"
+        />
+        <span class="form-tip">开启后对已选服务进行弱口令爆破检测</span>
+      </el-form-item>
+      <template v-if="weakPass.isOpen">
+        <div class="weakpass-toolbar">
+          <span class="weakpass-count">已选 <strong>{{ weakPass.services.length }}</strong> 个协议</span>
+          <el-button size="small" type="text" @click="selectAllWeakPassServices">全选</el-button>
+          <el-button size="small" type="text" @click="clearWeakPassServices">清空</el-button>
+        </div>
+        <div v-loading="weakPassServicesLoading" class="weakpass-services">
+          <el-checkbox-group v-model="weakPass.services" class="weakpass-check-group">
+            <el-checkbox
+              v-for="item in weakPassServiceOptions"
+              :key="item.value"
+              :label="item.value"
+            >
+              {{ item.label }}
+            </el-checkbox>
+          </el-checkbox-group>
+          <p v-if="!weakPassServicesLoading && !weakPassServiceOptions.length" class="weakpass-empty">
+            未加载到协议列表，请刷新页面或检查场景枚举接口
+          </p>
+        </div>
+      </template>
+    </template>
+
     <template v-if="showPanel('advanced')">
       <el-divider v-if="!section" content-position="left">高级配置</el-divider>
       <el-form-item label="代理配置">
@@ -210,8 +243,13 @@
 <script>
 import { vulnerability } from '@/api/tool.js'
 import task from '@/api/task.js'
+import scene from '@/api/scene.js'
 import { PORT_RANGE_MAP } from '../appsecPortRanges.js'
 import { getStrategySections } from '../appsecBuiltinStrategies.js'
+import {
+  cloneDefaultWeakPass,
+  WEAKPASS_SERVICE_FALLBACK
+} from '../appsecWeakPassDefaults.js'
 
 export default {
   name: 'ScanStrategyConfigForm',
@@ -239,7 +277,9 @@ export default {
       portRangeType: 100,
       vulnLoading: false,
       vulnLoadError: '',
-      selectAllAllLoading: false
+      selectAllAllLoading: false,
+      weakPassServiceOptions: [],
+      weakPassServicesLoading: false
     }
   },
   computed: {
@@ -257,7 +297,8 @@ export default {
           scan: false,
           crawler: false,
           port: false,
-          advanced: false
+          advanced: false,
+          weakPass: false
         }
       }
       return base
@@ -269,6 +310,10 @@ export default {
     websiteLogin() {
       this.ensureWebsiteLogin()
       return this.config.websiteLogin
+    },
+    weakPass() {
+      this.ensureWeakPass()
+      return this.config.weakPass
     }
   },
   watch: {
@@ -296,11 +341,17 @@ export default {
         this.applyVulnIdsFromConfig()
         this.fetchVulns()
       }
+      if (val === 'weakpass') {
+        this.fetchWeakPassServices()
+      }
     }
   },
   async mounted() {
     this.ensureWebsiteLogin()
-    await Promise.all([this.fetchEnums(), this.fetchLoginTypes()])
+    this.ensureWeakPass()
+    const tasks = [this.fetchEnums(), this.fetchLoginTypes()]
+    if (this.sections.weakPass) tasks.push(this.fetchWeakPassServices())
+    await Promise.all(tasks)
     this.applyVulnIdsFromConfig()
     this.guessPortRangeType()
     if (this.showPanel('vuln')) {
@@ -315,6 +366,42 @@ export default {
       } else if (!Array.isArray(this.config.websiteLogin.list)) {
         this.$set(this.config.websiteLogin, 'list', [])
       }
+    },
+    ensureWeakPass() {
+      if (!this.config) return
+      if (!this.config.weakPass) {
+        this.$set(this.config, 'weakPass', cloneDefaultWeakPass())
+      } else if (!Array.isArray(this.config.weakPass.services)) {
+        this.$set(this.config.weakPass, 'services', [])
+      }
+    },
+    async fetchWeakPassServices() {
+      if (!this.showPanel('weakpass')) return
+      this.weakPassServicesLoading = true
+      try {
+        const res = await scene.getSceneEnum()
+        const list = res && res.code === 200 && res.data && res.data.weakPass && res.data.weakPass.services
+        if (Array.isArray(list) && list.length) {
+          this.weakPassServiceOptions = list
+            .filter(item => item && item.value != null && item.label !== '通用')
+            .map(item => ({
+              value: Number(item.value),
+              label: String(item.label)
+            }))
+        } else {
+          this.weakPassServiceOptions = [...WEAKPASS_SERVICE_FALLBACK]
+        }
+      } catch {
+        this.weakPassServiceOptions = [...WEAKPASS_SERVICE_FALLBACK]
+      } finally {
+        this.weakPassServicesLoading = false
+      }
+    },
+    selectAllWeakPassServices() {
+      this.weakPass.services = this.weakPassServiceOptions.map(x => x.value)
+    },
+    clearWeakPassServices() {
+      this.weakPass.services = []
     },
     async fetchLoginTypes() {
       try {
@@ -407,7 +494,8 @@ export default {
         port: 'port',
         crawler: 'crawler',
         advanced: 'advanced',
-        vuln: 'vuln'
+        vuln: 'vuln',
+        weakpass: 'weakPass'
       }
       const area = areaMap[key]
       if (this.section) {
@@ -723,6 +811,44 @@ export default {
 }
 .login-status-pending {
   color: #64748b;
+}
+.weakpass-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.weakpass-count {
+  color: #94a3b8;
+  font-size: 13px;
+  margin-right: 8px;
+}
+.weakpass-count strong {
+  color: #00d4aa;
+}
+.weakpass-services {
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  border: 1px solid rgba(0, 212, 170, 0.1);
+  min-height: 80px;
+}
+.weakpass-check-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+.weakpass-empty {
+  color: #64748b;
+  font-size: 13px;
+  margin: 0;
+}
+/deep/ .weakpass-check-group .el-checkbox {
+  color: #94a3b8;
+  margin-right: 0;
+}
+/deep/ .weakpass-check-group .el-checkbox__label {
+  color: #cbd5e1;
 }
 /deep/ .login-table .el-table__header th {
   background: rgba(0, 0, 0, 0.4) !important;

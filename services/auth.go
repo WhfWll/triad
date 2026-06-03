@@ -12,9 +12,9 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"net"
 	"os"
 	"os/exec"
+	"runtime"
 	"smart/models/mysqls"
 	"smart/tools/enums"
 	"smart/tools/utils"
@@ -39,8 +39,12 @@ func (a *Auth) GetAuthInfo(ctx context.Context) (map[string]string, error) {
 	return authInfoMap, nil
 }
 
-// GenerateSystemSerialNumber 生成系统序列号
+// GenerateSystemSerialNumber 生成系统序列号（仅 Linux：绑定 DMI / machine-id，不使用跨平台 MAC 降级）
 func (a *Auth) GenerateSystemSerialNumber(ctx context.Context) (string, error) {
+	if runtime.GOOS != "linux" {
+		return "", errors.New("系统授权特征码仅支持在 Linux 环境生成")
+	}
+
 	// 1. 优先尝试 dmidecode (硬件级唯一，最稳定，但需要权限)
 	productNameCmd := []string{"-s", "system-product-name"}
 	cmd := exec.CommandContext(ctx, "dmidecode", productNameCmd...)
@@ -95,19 +99,7 @@ func (a *Auth) GenerateSystemSerialNumber(ctx context.Context) (string, error) {
 		return utils.Md5V(strings.TrimSpace(string(machineId))), nil
 	}
 
-	// 3. 再次降级尝试获取第一张网卡的 MAC 地址 (硬件特征，通常稳定)
-	interfaces, err := net.Interfaces()
-	if err == nil {
-		for _, inter := range interfaces {
-			// 排除回环接口(lo)和未开启的接口(down)，且必须有 MAC 地址
-			if inter.Flags&net.FlagUp != 0 && inter.Flags&net.FlagLoopback == 0 && len(inter.HardwareAddr) > 0 {
-				fmt.Println("using MAC address:", inter.HardwareAddr.String())
-				return utils.Md5V(inter.HardwareAddr.String()), nil
-			}
-		}
-	}
-
-	return "", errors.New("failed to generate system serial number: all methods failed")
+	return "", errors.New("failed to generate system serial number: dmidecode and machine-id unavailable")
 }
 
 // 公钥加密

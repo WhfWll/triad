@@ -52,10 +52,10 @@ func (a *DatasecDBTargetApp) Save(ctx context.Context, uid int, req *typespec.Da
 	if host == "" {
 		return fmt.Errorf("请填写数据库地址")
 	}
-	if user == "" {
+	dbType := req.DBType.Int()
+	if user == "" && dbType != enums.DBSupportTypeRedis {
 		return fmt.Errorf("请填写用户名")
 	}
-	dbType := req.DBType.Int()
 	if dbType < 1 {
 		return fmt.Errorf("请选择数据库类型")
 	}
@@ -342,7 +342,7 @@ func (a *DatasecDBTargetApp) resolveTestConfig(ctx context.Context, uid int, req
 	if cfg.DBHost == "" {
 		return cfg, fmt.Errorf("请填写数据库地址")
 	}
-	if cfg.DBUser == "" {
+	if cfg.DBUser == "" && cfg.DBType != enums.DBSupportTypeRedis {
 		return cfg, fmt.Errorf("请填写用户名")
 	}
 	if cfg.DBType < 1 {

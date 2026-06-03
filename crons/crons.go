@@ -1,8 +1,6 @@
 package crons
 
 import (
-	"runtime"
-
 	"github.com/robfig/cron"
 )
 
@@ -18,7 +16,7 @@ func Start() {
 	c.AddFunc("@every 10s", ReportGenerate)           // 每10s执行下报告生成
 	//c.AddFunc("@every 10s", TripartiteXray)            // 每10s执行下三方工具 xray
 	//c.AddFunc("@every 10s", TripartiteBurpsuite)       // 每10s执行下三方工具 burpsuite
-	c.AddFunc("@every 10m", CheckSystemAuth)       // 每10m执行下系统授权检查
+	c.AddFunc("@every 1m", CheckSystemAuth)        // 每10m执行系统授权检查（非 Linux 会标记未授权）
 	c.AddFunc("@every 1m", LogBackupCron)          // 每1分钟判断一次是否执行日志备份
 	c.AddFunc("@every 1m", SystemConfigBackupCron) // 每1分钟判断一次是否执行系统配置备份
 	c.AddFunc("@every 2m", SystemMonitor)          // 每2m执行一次系统信息统计
@@ -40,7 +38,5 @@ func Start() {
 	//c.AddFunc("@every 8s", LogicTaskExec) // 每隔8s进行一次逻辑漏洞任务检测
 
 	c.Start()
-	if runtime.GOOS == "linux" {
-		go CheckSystemAuth()
-	}
+	go CheckSystemAuth() // 启动时立即校验（非 Linux 会标记未授权）
 }

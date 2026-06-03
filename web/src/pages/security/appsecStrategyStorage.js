@@ -61,5 +61,14 @@ export function mergeScanConfig(base, patch) {
   if (patch.webCrawler) out.webCrawler = { ...out.webCrawler, ...patch.webCrawler }
   if (patch.portScan) out.portScan = { ...out.portScan, ...patch.portScan }
   if (patch.proxy) out.proxy = { ...out.proxy, ...patch.proxy }
+  if (patch.weakPass) {
+    out.weakPass = {
+      ...(out.weakPass || {}),
+      ...patch.weakPass,
+      services: patch.weakPass.services != null
+        ? [...patch.weakPass.services]
+        : (out.weakPass && out.weakPass.services) || []
+    }
+  }
   return out
 }

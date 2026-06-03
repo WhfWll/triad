@@ -130,6 +130,7 @@
 import security from '@/api/security.js'
 import DataSecTargetList from './components/DataSecTargetList.vue'
 import DataSecTargetPicker from './components/DataSecTargetPicker.vue'
+import { isRedisDbType } from './datasecTaskLabels.js'
 
 export default {
   name: 'DBSecurity',
@@ -274,7 +275,7 @@ export default {
         }
         for (let i = 0; i < targets.length; i++) {
           const t = targets[i]
-          if (!t.dbHost || !t.dbUser) {
+          if (!t.dbHost || (!isRedisDbType(this.taskForm.dbType) && !t.dbUser)) {
             fail++
             continue
           }
@@ -303,9 +304,15 @@ export default {
         }
         for (let i = 0; i < targets.length; i++) {
           const t = targets[i]
-          if (!(t.dbHost || '').trim() || !(t.dbUser || '').trim() || !t.dbPassword) {
-            this.$message({ message: `请完善第 ${i + 1} 个目标的地址、用户名和密码`, type: 'warning' })
+          if (!(t.dbHost || '').trim()) {
+            this.$message({ message: `请完善第 ${i + 1} 个目标的地址`, type: 'warning' })
             return
+          }
+          if (!isRedisDbType(this.taskForm.dbType)) {
+            if (!(t.dbUser || '').trim() || !t.dbPassword) {
+              this.$message({ message: `请完善第 ${i + 1} 个目标的地址、用户名和密码`, type: 'warning' })
+              return
+            }
           }
         }
         const res = await security.runDBCheck(this.buildDbPayload())

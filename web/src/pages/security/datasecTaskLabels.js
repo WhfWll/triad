@@ -2,6 +2,12 @@ export function kindLabel(kind) {
   return kind === 'sensitive' ? '敏感数据发现' : '数据库安全检查'
 }
 
+export const DB_TYPE_REDIS = 4
+
+export function isRedisDbType(type) {
+  return Number(type) === DB_TYPE_REDIS
+}
+
 export function getDBTypeName(type) {
   const map = { 1: 'MySQL', 2: 'PostgreSQL', 3: 'MongoDB', 4: 'Redis', 5: 'CouchDB' }
   return map[type] || '未知'

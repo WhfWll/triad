@@ -166,6 +166,7 @@ const PANEL_META = {
   general: { title: '基本信息', hint: '策略名称与说明，便于在列表中识别。' },
   port: { title: '端口扫描', hint: '配置扫描端口范围、方式与超时。' },
   login: { title: '登录凭证', hint: '为需登录的 Web 目标配置 Cookie 或 Header，扫描时自动携带。' },
+  weakpass: { title: '弱口令扫描', hint: '开启弱口令检测，并选择要爆破的协议/服务类型。' },
   crawler: { title: '爬虫配置', hint: '配置 Web 爬取深度、范围与速度。' },
   advanced: { title: '代理设置', hint: '通过 HTTP/HTTPS/SOCKS5 代理发起扫描。' }
 }
@@ -210,10 +211,11 @@ export default {
       if (s.crawler) items.push({ key: 'crawler', label: '爬虫配置' })
       if (s.advanced) items.push({ key: 'advanced', label: '代理设置' })
       if (s.login) items.push({ key: 'login', label: '登录凭证' })
+      if (s.weakPass) items.push({ key: 'weakpass', label: '弱口令扫描' })
       return items
     },
     configSectionKey() {
-      const map = { port: 'port', crawler: 'crawler', advanced: 'advanced', login: 'login' }
+      const map = { port: 'port', crawler: 'crawler', advanced: 'advanced', login: 'login', weakpass: 'weakpass' }
       return map[this.activeSection] || ''
     },
     panelTitle() {
@@ -346,6 +348,13 @@ export default {
       }
       if (!this.scanConfig) {
         this.$message({ message: '策略配置未加载', type: 'error' })
+        return
+      }
+      const wp = this.scanConfig.weakPass
+      if (wp && wp.isOpen && (!Array.isArray(wp.services) || !wp.services.length)) {
+        this.$message({ message: '已开启弱口令扫描，请至少选择一种协议', type: 'warning' })
+        this.activeTab = 'settings'
+        this.activeSection = 'weakpass'
         return
       }
 

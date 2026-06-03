@@ -257,17 +257,53 @@ func emptyResultCheck() func(string) bool {
 	}
 }
 
-func redisRequirePassCheck() func(string) bool {
+// nonEmptyResultCheck 实际输出非空即通过（用于「非空」类基线项，如 Redis requirepass）
+func nonEmptyResultCheck() func(string) bool {
 	return func(actual string) bool {
 		s := strings.TrimSpace(actual)
 		if s == "" {
 			return false
 		}
+		val := strings.Trim(strings.TrimSpace(redisConfigValue(actual)), "\"")
+		if val != "" {
+			lower := strings.ToLower(val)
+			return lower != "null" && lower != "[]" && lower != "(null)"
+		}
 		if strings.Contains(s, "result=") {
-			val := strings.TrimSpace(strings.SplitN(s, "result=", 2)[1])
-			return val != "" && val != "NULL" && val != "null"
+			raw := strings.TrimSpace(strings.SplitN(s, "result=", 2)[1])
+			raw = strings.Trim(raw, "[]")
+			return strings.TrimSpace(raw) != "" && !strings.EqualFold(raw, "null")
 		}
 		return true
+	}
+}
+
+func redisRequirePassCheck() func(string) bool {
+	return nonEmptyResultCheck()
+}
+
+// redisBindNotWildcardCheck 不应监听 0.0.0.0 / *（允许 127.0.0.1、::1 等受限地址）
+func redisBindNotWildcardCheck() func(string) bool {
+	return func(actual string) bool {
+		val := strings.ToLower(strings.TrimSpace(redisConfigValue(actual)))
+		if val == "" {
+			return false
+		}
+		for _, token := range strings.Fields(strings.ReplaceAll(val, ",", " ")) {
+			token = strings.Trim(token, "\"'[]")
+			switch token {
+			case "0.0.0.0", "*", "::":
+				return false
+			}
+		}
+		return true
+	}
+}
+
+func redisRenameCommandConfiguredCheck() func(string) bool {
+	return func(actual string) bool {
+		val := strings.Trim(strings.TrimSpace(redisConfigValue(actual)), "\"")
+		return val != "" && val != "[]"
 	}
 }
 
@@ -493,13 +529,10 @@ func getMongoDBBaselineRules() []dbRuleDef {
 func getRedisBaselineRules() []dbRuleDef {
 	return []dbRuleDef{
 		{ID: 1, Name: "检查requirepass", Description: "Redis 应设置密码", Category: enums.DBCheckCategoryAuthentication, Risk: enums.BaselineRiskHigh, Queries: []string{"CONFIG GET requirepass"}, ExpectedValue: "非空", FixSuggestion: "在 redis.conf 中设置 requirepass <password>", CheckFunc: redisRequirePassCheck()},
-		{ID: 2, Name: "检查绑定地址", Description: "不应绑定 0.0.0.0", Category: enums.DBCheckCategoryNetwork, Risk: enums.BaselineRiskHigh, Queries: []string{"CONFIG GET bind"}, ExpectedValue: "127.0.0.1", FixSuggestion: "设置 bind 127.0.0.1", CheckFunc: func(s string) bool { return containsCheck("127.0.0.1")(s) || containsCheck("::1")(s) }},
+		{ID: 2, Name: "检查绑定地址", Description: "不应绑定 0.0.0.0", Category: enums.DBCheckCategoryNetwork, Risk: enums.BaselineRiskHigh, Queries: []string{"CONFIG GET bind"}, ExpectedValue: "不含 0.0.0.0", FixSuggestion: "设置 bind 127.0.0.1 或 ::1，避免 0.0.0.0", CheckFunc: redisBindNotWildcardCheck()},
 		{ID: 3, Name: "检查保护模式", Description: "应开启保护模式", Category: enums.DBCheckCategoryConfigSecure, Risk: enums.BaselineRiskMiddle, Queries: []string{"CONFIG GET protected-mode"}, ExpectedValue: "yes", FixSuggestion: "设置 protected-mode yes", CheckFunc: containsCheck("yes")},
-		{ID: 4, Name: "检查rename危险命令", Description: "FLUSHALL/CONFIG 等危险命令应重命名或禁用", Category: enums.DBCheckCategoryConfigSecure, Risk: enums.BaselineRiskHigh, Queries: []string{"CONFIG GET rename-command"}, ExpectedValue: "已配置 rename-command", FixSuggestion: "在 redis.conf 中重命名或禁用危险命令", CheckFunc: func(s string) bool {
-			s = strings.TrimSpace(s)
-			return s != "" && (strings.Contains(s, "rename-command") || !strings.HasSuffix(s, "result="))
-		}},
-		{ID: 5, Name: "检查最大内存策略", Description: "应配置 maxmemory 防止内存耗尽", Category: enums.DBCheckCategoryConfigSecure, Risk: enums.BaselineRiskMiddle, Queries: []string{"CONFIG GET maxmemory"}, ExpectedValue: "非 0", FixSuggestion: "设置 maxmemory 与 maxmemory-policy", CheckFunc: func(s string) bool { return !strings.Contains(s, "result=0") && strings.TrimSpace(s) != "" }},
+		{ID: 4, Name: "检查rename危险命令", Description: "FLUSHALL/CONFIG 等危险命令应重命名或禁用", Category: enums.DBCheckCategoryConfigSecure, Risk: enums.BaselineRiskHigh, Queries: []string{"CONFIG GET rename-command"}, ExpectedValue: "已配置 rename-command", FixSuggestion: "在 redis.conf 中重命名或禁用危险命令", CheckFunc: redisRenameCommandConfiguredCheck()},
+		{ID: 5, Name: "检查最大内存策略", Description: "应配置 maxmemory 防止内存耗尽", Category: enums.DBCheckCategoryConfigSecure, Risk: enums.BaselineRiskMiddle, Queries: []string{"CONFIG GET maxmemory"}, ExpectedValue: "大于 0", FixSuggestion: "设置 maxmemory 与 maxmemory-policy", CheckFunc: redisConfigPositiveIntCheck()},
 		{ID: 6, Name: "检查AOF持久化", Description: "建议开启 appendonly，降低实例异常退出后的数据丢失风险", Category: enums.DBCheckCategoryAuditLog, Risk: enums.BaselineRiskMiddle, Queries: []string{"CONFIG GET appendonly"}, ExpectedValue: "yes", FixSuggestion: "设置 appendonly yes，并结合 appendfsync 制定持久化策略", CheckFunc: redisConfigEqualsCheck("yes")},
 		{ID: 7, Name: "检查快照策略", Description: "建议保留 RDB 快照策略，便于恢复与回溯", Category: enums.DBCheckCategoryAuditLog, Risk: enums.BaselineRiskLow, Queries: []string{"CONFIG GET save"}, ExpectedValue: "非空", FixSuggestion: "设置 save 规则，例如 save 900 1 / 300 10 / 60 10000", CheckFunc: redisConfigNonEmptyCheck()},
 		{ID: 8, Name: "检查bgsave异常保护", Description: "应在持久化失败时停止写入，避免继续接受不可落盘的数据", Category: enums.DBCheckCategoryConfigSecure, Risk: enums.BaselineRiskMiddle, Queries: []string{"CONFIG GET stop-writes-on-bgsave-error"}, ExpectedValue: "yes", FixSuggestion: "设置 stop-writes-on-bgsave-error yes", CheckFunc: redisConfigEqualsCheck("yes")},

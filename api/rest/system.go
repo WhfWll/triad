@@ -1220,3 +1220,15 @@ func TokenDelete(c *gin.Context) {
 	}
 	server.RespSuccess(c, resp)
 }
+
+// SystemCleanupRuntimeData 系统管理 - 清理运行数据
+func SystemCleanupRuntimeData(c *gin.Context) {
+	ctx := server.NewContext(context.Background(), c)
+	var app application.SystemManage
+	if err := app.CleanupRuntimeData(ctx); err != nil {
+		log.Error("SystemCleanupRuntimeData error: " + err.Error())
+		server.RespFail(c, 4000, err.Error())
+		return
+	}
+	server.RespSuccess(c, "运行数据清理完成")
+}

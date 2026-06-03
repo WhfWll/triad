@@ -275,18 +275,22 @@
             <p v-if="!filteredCveItems.length" class="empty-hint">未发现与当前版本匹配的 CVE</p>
           </el-tab-pane>
 
-          <el-tab-pane v-if="showSensitiveTabs" name="distribution">
-            <span slot="label">类型分布</span>
-            <div v-if="typeStats.length" class="type-distribution">
-              <div v-for="item in typeStats" :key="item.dataType" class="type-chip">
-                {{ getDataTypeName(item.dataType) }}<strong>{{ item.count }}</strong>
-              </div>
-            </div>
-            <p v-else class="empty-hint">暂无类型分布数据</p>
-          </el-tab-pane>
-
           <el-tab-pane v-if="showSensitiveTabs" name="findings">
             <span slot="label">敏感字段 <span class="tab-count">({{ filteredFindings.length }})</span></span>
+            <div v-if="typeStats.length" class="finding-type-section">
+              <span class="finding-type-label">类型分布</span>
+              <div class="type-distribution">
+                <div
+                  v-for="item in typeStats"
+                  :key="item.dataType"
+                  class="type-chip"
+                  :class="{ active: findingFilter.dataType === item.dataType }"
+                  @click="toggleDataTypeFilter(item.dataType)"
+                >
+                  {{ getDataTypeName(item.dataType) }}<strong>{{ item.count }}</strong>
+                </div>
+              </div>
+            </div>
             <div class="check-filters">
               <el-select v-if="targetList.length > 1" v-model="selectedTargetId" placeholder="全部目标" size="small" clearable class="filter-select target-filter">
                 <el-option label="全部目标" :value="null" />
@@ -369,7 +373,7 @@ import {
 } from './datasecTaskLabels.js'
 import { buildDatasecSummaryText, downloadTextFile, exportDatasecRowsCsv } from './utils/datasecTaskExport.js'
 
-const VALID_TABS_SENSITIVE = ['overview', 'targets', 'distribution', 'findings', 'logs']
+const VALID_TABS_SENSITIVE = ['overview', 'targets', 'findings', 'logs']
 
 export default {
   name: 'DataSecTaskDetail',
@@ -427,7 +431,7 @@ export default {
       if (!this.isDb) return VALID_TABS_SENSITIVE
       const tabs = ['overview', 'targets', 'checks', 'cve']
       if (this.hasSensitiveScan) {
-        tabs.push('distribution', 'findings')
+        tabs.push('findings')
       }
       tabs.push('logs')
       return tabs
@@ -638,12 +642,17 @@ export default {
       this.selectedTargetId = this.selectedTargetId === id ? null : id
     },
     syncFromRoute() {
-      const tab = this.$route.query.tab
+      let tab = this.$route.query.tab
+      if (tab === 'distribution') tab = 'findings'
       if (tab && this.validTabs.includes(tab)) {
         this.activeTab = tab
       } else {
         this.activeTab = 'overview'
       }
+    },
+    toggleDataTypeFilter(dataType) {
+      this.findingFilter.dataType =
+        this.findingFilter.dataType === dataType ? null : dataType
     },
     onTabClick() {
       this.$router.replace({

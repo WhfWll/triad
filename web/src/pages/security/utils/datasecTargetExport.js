@@ -48,7 +48,7 @@ export function parseTargetsImportFile(text) {
       dbName: (t.dbName || '').trim(),
       dbUser: (t.dbUser || '').trim(),
       dbPassword: t.dbPassword || ''
-    })).filter((t) => t.dbHost && t.dbUser)
+    })).filter((t) => t.dbHost && (t.dbUser || dbType === 4))
   }
 }
 

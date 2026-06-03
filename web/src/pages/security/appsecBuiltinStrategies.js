@@ -1,6 +1,10 @@
 /** 内置扫描策略（新建任务第 1 步仅展示此类模板） */
 
 import { loadBuiltinOverride, mergeScanConfig } from './appsecStrategyStorage.js'
+import {
+  cloneDefaultWeakPass,
+  WEAKPASS_DEFAULT_SERVICE_IDS
+} from './appsecWeakPassDefaults.js'
 
 export const BUILTIN_STRATEGIES = [
   {
@@ -51,14 +55,17 @@ export const DEFAULT_SCAN_ASSESSMENT = {
 const DEFAULT_WEBSITE_LOGIN = { isOpen: false, list: [] }
 
 function withAssessmentDefaults(cfg) {
+  const websiteLogin = cfg.websiteLogin
+    ? { ...DEFAULT_WEBSITE_LOGIN, ...cfg.websiteLogin, list: [...(cfg.websiteLogin.list || [])] }
+    : JSON.parse(JSON.stringify(DEFAULT_WEBSITE_LOGIN))
   return {
     ...DEFAULT_SCAN_ASSESSMENT,
     websiteLogin: JSON.parse(JSON.stringify(DEFAULT_WEBSITE_LOGIN)),
+    weakPass: cloneDefaultWeakPass(),
     ...cfg,
     ...DEFAULT_SCAN_ASSESSMENT,
-    websiteLogin: cfg.websiteLogin
-      ? { ...DEFAULT_WEBSITE_LOGIN, ...cfg.websiteLogin, list: [...(cfg.websiteLogin.list || [])] }
-      : JSON.parse(JSON.stringify(DEFAULT_WEBSITE_LOGIN))
+    websiteLogin,
+    weakPass: cfg.weakPass ? cloneDefaultWeakPass(cfg.weakPass) : cloneDefaultWeakPass()
   }
 }
 
@@ -85,7 +92,11 @@ const BUILTIN_CONFIGS = {
     vulIdsConfig: [],
     webCrawler: { isOpen: false, maxDepth: 1, scanRange: 0, crawlerSpeed: 1 },
     portScan: { isOpen: true, scanPort: '21,22,23,3306,3389,5432,6379', tcpScanType: 1, timeout: 10, concurrent: 50 },
-    proxy: { isOpen: false, proto: 1, addr: '', port: '' }
+    proxy: { isOpen: false, proto: 1, addr: '', port: '' },
+    weakPass: cloneDefaultWeakPass({
+      isOpen: true,
+      services: [...WEAKPASS_DEFAULT_SERVICE_IDS]
+    })
   }),
   'builtin-component': withAssessmentDefaults({
     vulIdsConfig: [],
@@ -106,7 +117,7 @@ const STRATEGY_SECTIONS = {
   'builtin-full': { vuln: true, scan: true, crawler: true, port: true, advanced: true, login: true },
   'builtin-highrisk': { vuln: true, scan: true, crawler: true, port: true, advanced: true, login: true },
   'builtin-web': { vuln: true, scan: true, crawler: true, port: false, advanced: true, login: true },
-  'builtin-weakpass': { vuln: true, scan: true, crawler: false, port: true, advanced: false, login: true },
+  'builtin-weakpass': { vuln: true, scan: true, crawler: false, port: true, advanced: false, login: true, weakPass: true },
   'builtin-component': { vuln: true, scan: true, crawler: false, port: true, advanced: true, login: true },
   'builtin-portscan': { vuln: false, scan: true, crawler: false, port: true, advanced: false, login: false }
 }
@@ -134,6 +145,11 @@ export function applyScanAssessmentDefaults(config) {
   if (!config) return config
   Object.assign(config, DEFAULT_SCAN_ASSESSMENT)
   delete config.testIntensity
+  if (!config.weakPass) {
+    config.weakPass = cloneDefaultWeakPass()
+  } else {
+    config.weakPass = cloneDefaultWeakPass(config.weakPass)
+  }
   if (!config.websiteLogin) {
     config.websiteLogin = JSON.parse(JSON.stringify(DEFAULT_WEBSITE_LOGIN))
   } else if (!Array.isArray(config.websiteLogin.list)) {

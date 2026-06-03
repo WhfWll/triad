@@ -2,11 +2,21 @@
 @import './appsec-task-detail.less';
 
 .datasec-detail-page {
+  .finding-type-section {
+    margin-bottom: 14px;
+  }
+
+  .finding-type-label {
+    display: block;
+    font-size: 12px;
+    color: #94a3b8;
+    margin-bottom: 8px;
+  }
+
   .type-distribution {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
-    margin-bottom: 16px;
   }
 
   .type-chip {
@@ -16,6 +26,17 @@
     border: 1px solid @appsec-border-default;
     font-size: 13px;
     color: #cbd5e1;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+
+    &:hover {
+      border-color: rgba(0, 212, 170, 0.35);
+    }
+
+    &.active {
+      border-color: #00d4aa;
+      background: rgba(0, 212, 170, 0.1);
+    }
 
     strong {
       color: #00d4aa;

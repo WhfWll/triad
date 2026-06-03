@@ -4,8 +4,6 @@
       <span class="targets-title">目标列表（{{ totalCount }} 个）</span>
       <div class="targets-actions">
         <el-button type="text" size="small" @click="$emit('pick-library')">从目标库选择</el-button>
-        <el-button type="text" size="small" @click="importJson">导入 JSON</el-button>
-        <el-button type="text" size="small" :disabled="!innerTargets.length" @click="exportJson">导出 JSON</el-button>
         <el-button type="text" size="small" icon="el-icon-plus" @click="openAddDialog">手动添加</el-button>
       </div>
     </div>
@@ -37,7 +35,7 @@
         <span class="td-host" :title="t.dbHost">{{ t.dbHost }}</span>
         <span class="td-port">{{ t.dbPort || defaultPort }}</span>
         <span class="td-db" :title="t.dbName">{{ t.dbName || '-' }}</span>
-        <span class="td-user" :title="t.dbUser">{{ t.dbUser }}</span>
+        <span class="td-user" :title="t.dbUser">{{ t.dbUser || '-' }}</span>
         <span class="td-pwd">{{ maskPassword(t.dbPassword) }}</span>
         <span class="td-actions">
           <el-button type="text" size="mini" @click="openEditDialog(idx)">编辑</el-button>
@@ -63,8 +61,12 @@
         <el-form-item label="库名" prop="dbName">
           <el-input v-model="editForm.dbName" placeholder="可选" />
         </el-form-item>
-        <el-form-item label="用户" prop="dbUser">
-          <el-input v-model="editForm.dbUser" placeholder="用户名" autocomplete="off" />
+        <el-form-item :label="isRedis ? '用户（可选）' : '用户'" prop="dbUser">
+          <el-input
+            v-model="editForm.dbUser"
+            :placeholder="isRedis ? 'Redis 通常无需用户名' : '用户名'"
+            autocomplete="off"
+          />
         </el-form-item>
         <el-form-item label="密码" prop="dbPassword">
           <el-input v-model="editForm.dbPassword" type="password" placeholder="密码" show-password autocomplete="new-password" />
@@ -81,7 +83,7 @@
 
 <script>
 import security from '@/api/security.js'
-import { exportTargetsJson, parseTargetsImportFile, pickImportFile } from '../utils/datasecTargetExport.js'
+import { isRedisDbType } from '../datasecTaskLabels.js'
 
 const DEFAULT_PORTS = { 1: 3306, 2: 5432, 3: 27017, 4: 6379, 5: 5984 }
 
@@ -120,17 +122,22 @@ export default {
       dialogVisible: false,
       dialogTestLoading: false,
       editIndex: -1,
-      editForm: createEmptyDataSecTarget(1),
-      formRules: {
-        dbHost: [{ required: true, message: '请输入地址', trigger: 'blur' }],
-        dbUser: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-        dbPassword: this.requirePassword
-          ? [{ required: true, message: '请输入密码', trigger: 'blur' }]
-          : []
-      }
+      editForm: createEmptyDataSecTarget(1)
     }
   },
   computed: {
+    isRedis() {
+      return isRedisDbType(this.dbType)
+    },
+    formRules() {
+      return {
+        dbHost: [{ required: true, message: '请输入地址', trigger: 'blur' }],
+        dbUser: this.isRedis ? [] : [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+        dbPassword: this.requirePassword && !this.isRedis
+          ? [{ required: true, message: '请输入密码', trigger: 'blur' }]
+          : []
+      }
+    },
     innerTargets: {
       get() {
         return this.value
@@ -216,11 +223,11 @@ export default {
         this.$message({ message: '请先填写地址', type: 'warning' })
         return
       }
-      if (!(this.editForm.dbUser || '').trim()) {
+      if (!this.isRedis && !(this.editForm.dbUser || '').trim()) {
         this.$message({ message: '请先填写用户名', type: 'warning' })
         return
       }
-      if (this.requirePassword && !this.editForm.dbPassword) {
+      if (this.requirePassword && !this.isRedis && !this.editForm.dbPassword) {
         this.$message({ message: '请先填写密码', type: 'warning' })
         return
       }
@@ -240,35 +247,6 @@ export default {
         this.$message({ message: '连接测试失败: ' + (e.message || ''), type: 'error' })
       } finally {
         this.dialogTestLoading = false
-      }
-    },
-    exportJson() {
-      exportTargetsJson(this.innerTargets, this.dbType)
-    },
-    async importJson() {
-      try {
-        const text = await pickImportFile('.json')
-        const parsed = parseTargetsImportFile(text)
-        if (!parsed.targets.length) {
-          this.$message({ message: '文件中没有有效目标', type: 'warning' })
-          return
-        }
-        const merged = this.innerTargets.slice()
-        const seen = new Set(merged.map((t) => `${t.dbHost}:${t.dbPort}/${t.dbName}`))
-        parsed.targets.forEach((t) => {
-          const key = `${t.dbHost}:${t.dbPort || this.defaultPort}/${t.dbName}`
-          if (!seen.has(key)) {
-            seen.add(key)
-            merged.push({ ...t, dbPort: t.dbPort || this.defaultPort })
-          }
-        })
-        this.$emit('input', merged)
-        if (parsed.dbType && parsed.dbType !== this.dbType) {
-          this.$emit('import-db-type', parsed.dbType)
-        }
-        this.$message({ message: `已导入 ${parsed.targets.length} 个目标`, type: 'success' })
-      } catch (e) {
-        this.$message({ message: '导入失败: ' + (e.message || ''), type: 'error' })
       }
     }
   }

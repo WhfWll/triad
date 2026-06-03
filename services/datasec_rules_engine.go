@@ -99,30 +99,52 @@ func ReloadDatasecRulesFromDB(ctx context.Context) error {
 }
 
 func buildDBRuleCheckFunc(matchType, expected string) func(string) bool {
+	ev := strings.TrimSpace(expected)
 	switch matchType {
 	case "exact":
 		return func(s string) bool { return strings.TrimSpace(s) == expected }
 	case "not_contains":
 		return func(s string) bool { return !strings.Contains(s, expected) }
+	case "not_contains_value":
+		// 解析 Redis CONFIG 等 result= 输出后判断是否包含禁用值
+		bad := strings.TrimSpace(expected)
+		return func(s string) bool {
+			val := strings.ToLower(redisConfigValue(s))
+			if bad == "" {
+				return true
+			}
+			return !strings.Contains(val, strings.ToLower(bad))
+		}
+	case "nonempty":
+		return nonEmptyResultCheck()
 	case "empty":
-		return func(s string) bool { return strings.TrimSpace(s) == "" }
+		// 历史导入误将「非空」写成 empty，按语义纠正
+		if ev == "非空" {
+			return nonEmptyResultCheck()
+		}
+		return emptyResultCheck()
 	case "always":
 		return func(s string) bool { return true }
 	default:
+		if ev == "非空" {
+			return nonEmptyResultCheck()
+		}
+		if ev == "空结果" {
+			return emptyResultCheck()
+		}
+		if strings.HasPrefix(ev, "不含") {
+			bad := strings.TrimSpace(strings.TrimPrefix(ev, "不含"))
+			return func(s string) bool {
+				val := strings.ToLower(redisConfigValue(s))
+				return bad == "" || !strings.Contains(val, strings.ToLower(bad))
+			}
+		}
 		return containsCheck(expected)
 	}
 }
 
 func applyDatasecBuiltinRuleOverride(dbType int, def dbRuleDef) dbRuleDef {
-	var builtin dbRuleDef
-	switch dbType {
-	case enums.DBSupportTypeMongoDB:
-		builtin = findBuiltinRuleByName(getMongoDBBaselineRules(), def.Name)
-	case enums.DBSupportTypeCouchDB:
-		builtin = findBuiltinRuleByName(getCouchDBBaselineRules(), def.Name)
-	default:
-		return def
-	}
+	builtin := findBuiltinRuleByName(getBuiltinDBBaselineRules(dbType), def.Name)
 	if builtin.Name == "" {
 		return def
 	}
@@ -242,8 +264,14 @@ type DatasecRuleExportItem struct {
 
 func inferBuiltinMatchType(r dbRuleDef) string {
 	ev := strings.TrimSpace(r.ExpectedValue)
-	if ev == "空结果" || ev == "非空" {
+	if ev == "空结果" {
 		return "empty"
+	}
+	if ev == "非空" {
+		return "nonempty"
+	}
+	if strings.HasPrefix(ev, "不含") {
+		return "not_contains_value"
 	}
 	if ev == "3306" || ev == "27017" || ev == "不超过1000" || ev == "CouchDB" || ev == "认证配置" {
 		return "always"

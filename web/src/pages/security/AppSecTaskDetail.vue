@@ -117,6 +117,7 @@
               <div class="capability-tags">
                 <el-tag v-if="configSummary.crawler" size="small" type="success">Web 爬虫</el-tag>
                 <el-tag v-if="configSummary.portScan" size="small" type="success">端口扫描</el-tag>
+                <el-tag v-if="configSummary.weakPass" size="small" type="success">弱口令</el-tag>
                 <el-tag v-if="configSummary.proxy" size="small">代理</el-tag>
                 <el-tag v-if="configSummary.safeTest" size="small">安全测试模式</el-tag>
                 <el-tag v-if="!configSummary.crawler && !configSummary.portScan" size="small" type="info">仅漏洞检测</el-tag>
@@ -340,6 +341,14 @@
                 <span class="label">端口扫描</span>
                 <span class="value">{{ configSummary.portScan ? '已启用' : '未启用' }}</span>
               </div>
+              <div class="info-item">
+                <span class="label">弱口令扫描</span>
+                <span class="value">{{ configSummary.weakPass ? '已启用' : '未启用' }}</span>
+              </div>
+              <div v-if="configSummary.weakPassServiceCount" class="info-item">
+                <span class="label">弱口令协议</span>
+                <span class="value">{{ configSummary.weakPassServiceCount }} 项</span>
+              </div>
             </div>
             <div class="config-json-wrap">
               <div class="panel-title">完整配置快照（TaskTemplateJSON）</div>
@@ -493,7 +502,9 @@ export default {
       const wc = cfg.webCrawlerConfig || cfg.webCrawler || {}
       const ps = cfg.portScanConfig || cfg.portScan || {}
       const px = cfg.proxyConfig || cfg.proxy || {}
+      const wp = cfg.weakPassConfig || cfg.weakPass || {}
       const ids = cfg.vulIdsConfig
+      const services = wp.services
       return {
         testMode: getTestModeLabel(cfg.testMode),
         safeTest: Boolean(cfg.safeTest),
@@ -501,6 +512,8 @@ export default {
         crawler: Boolean(wc.isOpen),
         portScan: Boolean(ps.isOpen),
         proxy: Boolean(px.isOpen),
+        weakPass: Boolean(wp.isOpen),
+        weakPassServiceCount: wp.isOpen && Array.isArray(services) ? services.length : 0,
         vulIdsCount: Array.isArray(ids) ? ids.length : 0
       }
     },

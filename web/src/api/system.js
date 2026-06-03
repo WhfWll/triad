@@ -166,6 +166,10 @@ const system = {
     configAiScenario(params){
         return axios.post('/smart/aiscenario/config', params)
     },
+    //清理运行数据（任务、结果、报告等）
+    cleanupRuntimeData(){
+        return axios.post('/smart/system/cleanup')
+    },
 }
 const otherset = {
     //获得设置信息（告警、安全）

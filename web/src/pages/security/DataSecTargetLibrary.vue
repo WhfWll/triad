@@ -93,8 +93,12 @@
         <el-form-item label="库名">
           <el-input v-model="editForm.dbName" />
         </el-form-item>
-        <el-form-item label="用户" prop="dbUser">
-          <el-input v-model="editForm.dbUser" autocomplete="off" />
+        <el-form-item :label="isRedisForm ? '用户（可选）' : '用户'" prop="dbUser">
+          <el-input
+            v-model="editForm.dbUser"
+            :placeholder="isRedisForm ? 'Redis 通常无需用户名' : '用户名'"
+            autocomplete="off"
+          />
         </el-form-item>
         <el-form-item label="密码" prop="dbPassword">
           <el-input v-model="editForm.dbPassword" type="password" show-password :placeholder="editForm.id ? '留空则不修改' : '请输入密码'" autocomplete="new-password" />
@@ -114,6 +118,7 @@
 
 <script>
 import security from '@/api/security.js'
+import { isRedisDbType } from './datasecTaskLabels.js'
 import { pickImportFile } from './utils/datasecTargetExport.js'
 
 const DB_TYPES = [
@@ -141,10 +146,17 @@ export default {
       filterDbType: null,
       dialogVisible: false,
       dbTypeOptions: DB_TYPES,
-      editForm: this.emptyForm(),
-      rules: {
+      editForm: this.emptyForm()
+    }
+  },
+  computed: {
+    isRedisForm() {
+      return isRedisDbType(this.editForm.dbType)
+    },
+    rules() {
+      return {
         dbHost: [{ required: true, message: '请输入地址', trigger: 'blur' }],
-        dbUser: [{ required: true, message: '请输入用户', trigger: 'blur' }],
+        dbUser: this.isRedisForm ? [] : [{ required: true, message: '请输入用户', trigger: 'blur' }],
         dbType: [{ required: true, message: '请选择类型', trigger: 'change' }]
       }
     }
@@ -210,11 +222,11 @@ export default {
         this.$message({ message: '请先填写地址', type: 'warning' })
         return
       }
-      if (!(this.editForm.dbUser || '').trim()) {
+      if (!this.isRedisForm && !(this.editForm.dbUser || '').trim()) {
         this.$message({ message: '请先填写用户名', type: 'warning' })
         return
       }
-      if (!this.editForm.id && !this.editForm.dbPassword) {
+      if (!this.editForm.id && !this.editForm.dbPassword && !this.isRedisForm) {
         this.$message({ message: '新增目标请先填写密码', type: 'warning' })
         return
       }

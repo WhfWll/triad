@@ -109,6 +109,7 @@ func RegisterRoute() *gin.Engine {
 	smartRouterGroup.POST("/system/nodedel", rest.SystemNodeDel)                     // 节点管理 - 节点删除
 	smartRouterGroup.POST("/system/nodedisorenable", rest.SystemNodeDisOrEnable)     // 节点管理 - 节点是否启用
 	smartRouterGroup.GET("/system/nodeallenable", rest.SystemNodeAllEnable)          // 节点管理 - 所有可用节点
+	smartRouterGroup.POST("/system/cleanup", rest.SystemCleanupRuntimeData)          // 系统管理 - 清理运行数据
 
 	// 大模型管理
 	smartRouterGroup.GET("/llmmodel/list", rest.LlmModelList)              // 大模型 - 列表

@@ -150,7 +150,7 @@ func normalizeDataSecTargetConfigs(dbType int, targets, legacy []typespec.DataSe
 		if host == "" {
 			return nil, fmt.Errorf("第 %d 个目标：数据库地址不能为空", i+1)
 		}
-		if user == "" {
+		if user == "" && dbType != enums.DBSupportTypeRedis {
 			return nil, fmt.Errorf("第 %d 个目标：用户名不能为空", i+1)
 		}
 		port := item.DBPort.Int()
@@ -206,7 +206,7 @@ func (a *DataSecScan) TestDBConnection(ctx context.Context, req *typespec.DataSe
 	if cfg.DBHost == "" {
 		return &typespec.DataSecDBTestConnResp{OK: false, Message: "请填写数据库地址"}, nil
 	}
-	if cfg.DBUser == "" {
+	if cfg.DBUser == "" && cfg.DBType != enums.DBSupportTypeRedis {
 		return &typespec.DataSecDBTestConnResp{OK: false, Message: "请填写用户名"}, nil
 	}
 	if cfg.DBType < 1 {

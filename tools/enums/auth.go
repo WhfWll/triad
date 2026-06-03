@@ -31,6 +31,8 @@ const (
 	ProductIDMapSetKey         = "productID"
 	ProductAuthStateSuccess    = "1"
 	ProductAuthStateFailed     = "0"
+	// ProductSoftwareDisplayVersion 系统授权页展示的软件版本号
+	ProductSoftwareDisplayVersion = "V0.1.1.260603"
 )
 
 // AuthStatusUri 需要校验授权状态的uri
