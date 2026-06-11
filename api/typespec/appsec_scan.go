@@ -2,23 +2,23 @@ package typespec
 
 // AppSecScanRunReq 应用安全扫描任务创建（与前端 scanConfig 字段对齐）
 type AppSecScanRunReq struct {
-	Name       string `json:"name"`
-	Target     string `json:"target"`
-	TargetURL  string `json:"targetUrl"`
-	AppType    int    `json:"appType"`
-	Strategy   string `json:"strategy"`
-	TestMode   string `json:"testMode"`
-	SafeTest   bool   `json:"safeTest"`
-	VulExploit bool   `json:"vulExploit"`
-	TestIntensity int `json:"testIntensity"`
-	VulIdsConfig  []int `json:"vulIdsConfig"`
+	Name          string `json:"name"`
+	Target        string `json:"target"`
+	TargetURL     string `json:"targetUrl"`
+	AppType       int    `json:"appType"`
+	Strategy      string `json:"strategy"`
+	TestMode      string `json:"testMode"`
+	SafeTest      bool   `json:"safeTest"`
+	VulExploit    bool   `json:"vulExploit"`
+	TestIntensity int    `json:"testIntensity"`
+	VulIdsConfig  []int  `json:"vulIdsConfig"`
 
 	WebsiteLogin map[string]interface{} `json:"websiteLogin"`
-	WebCrawler map[string]interface{} `json:"webCrawler"`
-	PortScan   map[string]interface{} `json:"portScan"`
-	Proxy      map[string]interface{} `json:"proxy"`
-	WebPathScan map[string]interface{} `json:"webPathScan"`
-	WeakPass   map[string]interface{} `json:"weakPass"`
+	WebCrawler   map[string]interface{} `json:"webCrawler"`
+	PortScan     map[string]interface{} `json:"portScan"`
+	Proxy        map[string]interface{} `json:"proxy"`
+	WebPathScan  map[string]interface{} `json:"webPathScan"`
+	WeakPass     map[string]interface{} `json:"weakPass"`
 }
 
 type AppSecScanListReq struct {
@@ -77,18 +77,18 @@ type AppSecTaskItem struct {
 	AppType         int                    `json:"appType,omitempty"`
 	ScanConfig      map[string]interface{} `json:"scanConfig,omitempty"`
 	Status          int                    `json:"status"`
-	RiskLevel       int              `json:"riskLevel"`
-	PageCount       int              `json:"pageCount"`
-	VulnCount       int              `json:"vulnCount"`
-	CriticalCount   int              `json:"criticalCount"`
-	HighRiskCount   int              `json:"highRiskCount"`
-	MiddleRiskCount int              `json:"middleRiskCount"`
-	LowRiskCount    int              `json:"lowRiskCount"`
-	CreateTime      string           `json:"createTime"`
-	ScanTime        string           `json:"scanTime"`
-	ErrorMessage    string           `json:"errorMessage,omitempty"`
-	Vulns           []AppSecVulnItem `json:"vulns"`
-	Pages           []AppSecPageItem `json:"pages"`
+	RiskLevel       int                    `json:"riskLevel"`
+	PageCount       int                    `json:"pageCount"`
+	VulnCount       int                    `json:"vulnCount"`
+	CriticalCount   int                    `json:"criticalCount"`
+	HighRiskCount   int                    `json:"highRiskCount"`
+	MiddleRiskCount int                    `json:"middleRiskCount"`
+	LowRiskCount    int                    `json:"lowRiskCount"`
+	CreateTime      string                 `json:"createTime"`
+	ScanTime        string                 `json:"scanTime"`
+	ErrorMessage    string                 `json:"errorMessage,omitempty"`
+	Vulns           []AppSecVulnItem       `json:"vulns"`
+	Pages           []AppSecPageItem       `json:"pages"`
 }
 
 type AppSecScanListResp struct {
@@ -98,4 +98,13 @@ type AppSecScanListResp struct {
 
 type AppSecScanRunResp struct {
 	ID string `json:"id"`
+}
+
+type AppSecTaskStopReq struct {
+	ID   string `json:"id" binding:"required"`
+	Kind string `json:"kind"`
+}
+
+type AppSecTaskStopResp struct {
+	Stopped bool `json:"stopped"`
 }

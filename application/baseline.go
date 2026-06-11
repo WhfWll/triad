@@ -110,7 +110,29 @@ func (a *BaselineApp) RunBaselineCheck(ctx context.Context, req *typespec.Baseli
 var (
 	batchTasksMu sync.RWMutex
 	batchTasks   = make(map[int]*typespec.BaselineBatchTaskProgress)
+
+	baselineBatchCancelsMu sync.Mutex
+	baselineBatchCancels   = make(map[string]context.CancelFunc)
 )
+
+func baselineBatchTargetKey(taskID int, targetIP string, scanScene int) string {
+	return fmt.Sprintf("%d|%s|%d", taskID, targetIP, scanScene)
+}
+
+func setBaselineBatchCancel(taskID int, targetIP string, scanScene int, cancel context.CancelFunc) {
+	baselineBatchCancelsMu.Lock()
+	baselineBatchCancels[baselineBatchTargetKey(taskID, targetIP, scanScene)] = cancel
+	baselineBatchCancelsMu.Unlock()
+}
+
+func takeBaselineBatchCancel(taskID int, targetIP string, scanScene int) context.CancelFunc {
+	key := baselineBatchTargetKey(taskID, targetIP, scanScene)
+	baselineBatchCancelsMu.Lock()
+	cancel := baselineBatchCancels[key]
+	delete(baselineBatchCancels, key)
+	baselineBatchCancelsMu.Unlock()
+	return cancel
+}
 
 func registerBatchTask(taskID int, targets []typespec.BaselineCheckReq) {
 	progress := &typespec.BaselineBatchTaskProgress{
@@ -161,8 +183,34 @@ func updateBatchTargetStatus(taskID int, idx int, status, message string) {
 	if message != "" {
 		p.Targets[idx].Message = message
 	}
-	if (status == "completed" || status == "failed") && prev != "completed" && prev != "failed" {
+	if (status == "completed" || status == "failed" || status == "stopped") &&
+		prev != "completed" && prev != "failed" && prev != "stopped" {
 		p.CompletedTargets++
+	}
+	if p.CompletedTargets >= p.TotalTargets {
+		p.Status = "completed"
+	}
+}
+
+func updateHostBaselineBatchStopped(taskID int, targetIP string, scanScene int) {
+	batchTasksMu.Lock()
+	defer batchTasksMu.Unlock()
+	p, ok := batchTasks[taskID]
+	if !ok {
+		return
+	}
+	for idx := range p.Targets {
+		target := &p.Targets[idx]
+		if target.Host != targetIP {
+			continue
+		}
+		prev := target.Status
+		target.Status = "stopped"
+		target.Message = "任务已手动结束"
+		if prev != "completed" && prev != "failed" && prev != "stopped" {
+			p.CompletedTargets++
+		}
+		break
 	}
 	if p.CompletedTargets >= p.TotalTargets {
 		p.Status = "completed"
@@ -236,13 +284,18 @@ func (a *BaselineApp) runBatchChecks(ctx context.Context, batchTaskID int, targe
 		if target.ScanScene <= 0 {
 			target.ScanScene = enums.HostScanSceneBaseline
 		}
+		targetCtx, cancel := context.WithCancel(ctx)
+		setBaselineBatchCancel(batchTaskID, target.Host, target.ScanScene, cancel)
 		wg.Add(1)
-		go func(idx int, t typespec.BaselineCheckReq) {
+		go func(idx int, t typespec.BaselineCheckReq, runCtx context.Context, stop context.CancelFunc) {
 			defer wg.Done()
+			defer stop()
+			defer takeBaselineBatchCancel(batchTaskID, t.Host, t.ScanScene)
 			sem <- struct{}{}
 			defer func() { <-sem }()
 
 			updateBatchTargetStatus(batchTaskID, idx, "running", "")
+
 			checker := services.GetHostBaselineChecker()
 			task := &services.BaselineCheckTask{
 				TaskID:        t.TaskID,
@@ -260,8 +313,12 @@ func (a *BaselineApp) runBatchChecks(ctx context.Context, batchTaskID int, targe
 					appendBatchTargetItem(batchTaskID, idx, item)
 				},
 			}
-			report, err := checker.RunBaselineCheck(ctx, task)
+			report, err := checker.RunBaselineCheck(runCtx, task)
 			if err != nil {
+				if runCtx.Err() == context.Canceled {
+					updateBatchTargetStatus(batchTaskID, idx, "stopped", "任务已手动结束")
+					return
+				}
 				log.Errorf("runBatchChecks: target %s failed: %v", t.Host, err)
 				updateBatchTargetStatus(batchTaskID, idx, "failed", err.Error())
 				return
@@ -271,7 +328,7 @@ func (a *BaselineApp) runBatchChecks(ctx context.Context, batchTaskID int, targe
 				msg = fmt.Sprintf("核查完成：通过 %d，不通过 %d，异常 %d", report.PassCount, report.FailCount, report.ErrorCount)
 			}
 			updateBatchTargetStatus(batchTaskID, idx, "completed", msg)
-		}(i, target)
+		}(i, target, targetCtx, cancel)
 	}
 
 	wg.Wait()
@@ -476,33 +533,45 @@ func (a *BaselineApp) ImportBaselineRules(ctx context.Context, req *typespec.Bas
 	dbSkipped := 0
 	nextCode := maxRuleCode
 	for _, item := range req.Rules {
-		if services.RuleHasUnresolvedPlaceholder(item.Commands, item.ExpectedValue) {
-			dbSkipped++
-			continue
-		}
-		key := fmt.Sprintf("%s|%d|%d", item.Name, item.Category, item.OSType)
-		if dbExisting[key] {
-			dbSkipped++
-			continue
-		}
-		cmdsJSON := "[]"
-		if len(item.Commands) > 0 {
-			b, _ := json.Marshal(item.Commands)
-			cmdsJSON = string(b)
-		}
-		nextCode++
-		rule := &mysqls.HostBaselineRule{
-			RuleCode:        nextCode,
+		ruleForCheck, ok := services.SanitizeBaselineRuleForImport(services.BaselineRule{
 			Name:            item.Name,
 			Description:     item.Description,
 			Category:        item.Category,
 			Risk:            item.Risk,
 			OSType:          item.OSType,
-			CommandsJSON:    cmdsJSON,
+			Commands:        item.Commands,
 			ExpectedValue:   item.ExpectedValue,
 			MatchType:       item.MatchType,
 			FixSuggestion:   item.FixSuggestion,
 			RiskDescription: item.RiskDescription,
+		})
+		if !ok {
+			dbSkipped++
+			continue
+		}
+		key := fmt.Sprintf("%s|%d|%d", ruleForCheck.Name, ruleForCheck.Category, ruleForCheck.OSType)
+		if dbExisting[key] {
+			dbSkipped++
+			continue
+		}
+		cmdsJSON := "[]"
+		if len(ruleForCheck.Commands) > 0 {
+			b, _ := json.Marshal(ruleForCheck.Commands)
+			cmdsJSON = string(b)
+		}
+		nextCode++
+		rule := &mysqls.HostBaselineRule{
+			RuleCode:        nextCode,
+			Name:            ruleForCheck.Name,
+			Description:     ruleForCheck.Description,
+			Category:        ruleForCheck.Category,
+			Risk:            ruleForCheck.Risk,
+			OSType:          ruleForCheck.OSType,
+			CommandsJSON:    cmdsJSON,
+			ExpectedValue:   ruleForCheck.ExpectedValue,
+			MatchType:       ruleForCheck.MatchType,
+			FixSuggestion:   ruleForCheck.FixSuggestion,
+			RiskDescription: ruleForCheck.RiskDescription,
 			Enabled:         1,
 		}
 		if err := model.Create(ctx, rule); err != nil {
@@ -1147,4 +1216,3 @@ func (a *BaselineApp) GetEnums(ctx context.Context) interface{} {
 		},
 	}
 }
-

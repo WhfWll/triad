@@ -1,9 +1,10 @@
 <template>
-  <div class="security-container">
+  <div class="security-container mod-hub">
     <p class="page-intro">
       同一套远程连接（SSH / WinRM）能力，新建任务时区分：<strong>安全配置核查</strong>、<strong>主机漏洞检测</strong>（CVE 版本匹配）、<strong>恶意代码检测</strong>（YARA 规则引擎）。
     </p>
 
+    <div class="tab-panel">
     <div class="list_box">
       <div class="search-box">
         <div class="operationbutton">
@@ -17,35 +18,33 @@
             @click="batchDeleteTasks"
           >批量删除</el-button>
         </div>
+        <div class="serach-condition">
+          <el-input
+            v-model="searchKeyword"
+            placeholder="搜索目标 IP / 任务批次 / 任务类型"
+            size="small"
+            clearable
+            class="task-search-input"
+            @keydown.enter.native="applySearch"
+          />
+          <el-select v-model="taskTypeFilter" size="small" class="task-type-select" @change="onFilterChange">
+            <el-option label="全部任务类型" value="all" />
+            <el-option label="安全配置核查" value="baseline" />
+            <el-option label="主机漏洞检测" value="vuln" />
+            <el-option label="恶意代码检测" value="malware" />
+          </el-select>
+          <el-button type="primary" size="small" @click="applySearch">搜索</el-button>
+          <el-button type="primary" size="small" @click="resetSearch">重置</el-button>
+        </div>
       </div>
 
-      <div class="hub-filter-bar">
-        <el-input
-          v-model="searchKeyword"
-          placeholder="搜索目标 IP / 任务批次 / 任务类型"
-          size="small"
-          clearable
-          class="hub-search-input"
-          @keydown.enter.native="applySearch"
-          @clear="applySearch"
-        />
-        <el-select v-model="taskTypeFilter" size="small" class="hub-type-select" @change="onFilterChange">
-          <el-option label="全部任务类型" value="all" />
-          <el-option label="安全配置核查" value="baseline" />
-          <el-option label="主机漏洞检测" value="vuln" />
-          <el-option label="恶意代码检测" value="malware" />
-        </el-select>
-        <el-button size="small" @click="applySearch">搜索</el-button>
-      </div>
-
-      <div class="hub-table-wrap">
+      <div class="table-scroll-wrap">
       <el-table
         ref="taskTable"
         v-loading="tableLoading"
         :data="displayRows"
         :row-key="taskRowKey"
-        style="width: 100%"
-        class="myTable hub-task-table"
+        class="myTable"
         @selection-change="onSelectionChange"
       >
         <el-table-column type="selection" width="48" reserve-selection />
@@ -71,10 +70,11 @@
           </template>
         </el-table-column>
         <el-table-column prop="checkTime" label="时间" width="158" :show-overflow-tooltip="true" />
-        <el-table-column label="操作" width="156">
+        <el-table-column label="操作" width="210">
           <template slot-scope="scope">
             <el-link v-if="scope.row.source === 'baseline' || scope.row.source === 'vuln' || scope.row.source === 'malware'" :underline="false" class="link_primary" @click="openDetailPage(scope.row)">详情</el-link>
             <el-link v-else :underline="false" class="link_primary" @click="openDetail(scope.row)">详情</el-link>
+            <el-link v-if="scope.row.isRunning" :underline="false" class="link_primary" style="margin-left: 10px" @click="stopTask(scope.row)">结束</el-link>
             <el-link :underline="false" class="link_danger" style="margin-left: 10px" @click="deleteTask(scope.row)">删除</el-link>
           </template>
         </el-table-column>
@@ -90,6 +90,7 @@
         @current-change="handlecurrentchange"
         @size-change="handleSizeChange"
       />
+    </div>
     </div>
 
     <el-dialog title="新建主机检查任务" :visible.sync="createVisible" width="700px" custom-class="theme-dialog" :close-on-click-modal="false">
@@ -339,8 +340,13 @@ export default {
       progressTaskId: 0,
       progressPollType: '',
       progressTimer: null,
+      listRefreshTimer: null,
+      listLoadPromise: null,
+      lastListLoadAt: 0,
+      listAutoRefreshMs: 6000,
       selectedRows: [],
-      batchDeleteLoading: false
+      batchDeleteLoading: false,
+      stopTaskLoading: false
     }
   },
   computed: {
@@ -364,12 +370,33 @@ export default {
   mounted() {
     this.$store.state.activefirstMenu = '/hostsec/tasks'
     this.loadEnums()
-    this.loadData()
+    this.loadData({ force: true })
+    this.startListAutoRefresh()
   },
   beforeDestroy() {
     this.stopProgressPoll()
+    this.stopListAutoRefresh()
   },
   methods: {
+    startListAutoRefresh() {
+      this.stopListAutoRefresh()
+      this.listRefreshTimer = setInterval(() => {
+        if (!this.shouldAutoRefreshList()) return
+        this.loadData({ silent: true, minIntervalMs: this.listAutoRefreshMs })
+      }, this.listAutoRefreshMs)
+    },
+    stopListAutoRefresh() {
+      if (this.listRefreshTimer) {
+        clearInterval(this.listRefreshTimer)
+        this.listRefreshTimer = null
+      }
+    },
+    shouldAutoRefreshList() {
+      if (this._isDestroyed || this._isBeingDestroyed) return false
+      if (this.$route && this.$route.path !== '/hostsec/tasks') return false
+      if (this.createVisible || this.targetDialogVisible || this.detailVisible) return false
+      return !this.progressTaskId
+    },
     createTarget() {
       return {
         host: '',
@@ -540,13 +567,25 @@ export default {
       if (this.$refs.taskTable) {
         this.$refs.taskTable.clearSelection()
       }
-      this.loadData()
+      this.loadData({ force: true })
     },
     applySearch() {
       this.searchApplied = (this.searchKeyword || '').trim()
       this.formData.page = 1
       this.currentpage = 1
-      this.loadData()
+      this.loadData({ force: true })
+    },
+    resetSearch() {
+      this.searchKeyword = ''
+      this.searchApplied = ''
+      this.taskTypeFilter = 'all'
+      this.formData.page = 1
+      this.currentpage = 1
+      this.selectedRows = []
+      if (this.$refs.taskTable) {
+        this.$refs.taskTable.clearSelection()
+      }
+      this.loadData({ force: true })
     },
     progressOwnerTab(pollType) {
       const map = { baseline: 'baseline', cve: 'vuln', yara: 'malware' }
@@ -629,10 +668,20 @@ export default {
       this.progressPollType = 'baseline'
       this.pollProgressInline()
     },
-    async loadData() {
+    async loadData(options = {}) {
+      const { silent = false, force = false, minIntervalMs = 2500 } = options
+      const now = Date.now()
+      if (!force) {
+        if (this.listLoadPromise) return this.listLoadPromise
+        if (this.lastListLoadAt && now - this.lastListLoadAt < minIntervalMs) {
+          return Promise.resolve()
+        }
+      }
       const runningRows = this.filterRunningRowsForTab(this.tableRows, this.taskTypeFilter)
-      this.tableLoading = true
-      try {
+      if (!silent) {
+        this.tableLoading = true
+      }
+      const loadPromise = (async () => {
         if (this.taskTypeFilter === 'all') {
           await this.loadUnifiedList()
         } else if (this.taskTypeFilter === 'malware') {
@@ -719,8 +768,16 @@ export default {
         if (runningRows.length) {
           this.tableRows = this.mergeRowsWithRunningRows(this.tableRows, runningRows)
         }
+      })()
+      this.listLoadPromise = loadPromise
+      try {
+        await loadPromise
       } finally {
-        this.tableLoading = false
+        this.lastListLoadAt = Date.now()
+        this.listLoadPromise = null
+        if (!silent) {
+          this.tableLoading = false
+        }
       }
     },
     async loadUnifiedList() {
@@ -968,7 +1025,7 @@ export default {
         this.$refs.taskTable.clearSelection()
       }
       const runningRows = this.buildRunningRows(taskId, kind, targets)
-      this.loadData().then(() => {
+      this.loadData({ silent: true, force: true }).then(() => {
         this.tableRows = this.mergeRowsWithRunningRows(this.tableRows, runningRows)
         this.totalpage = Math.max(this.totalpage, this.tableRows.length)
         this.pollProgressInline()
@@ -1056,7 +1113,7 @@ export default {
       } catch (e) {
         console.error('pollProgressInline error:', e)
       }
-      this.progressTimer = setTimeout(() => this.pollProgressInline(), this.progressPollType === 'baseline' ? 1000 : 2000)
+      this.progressTimer = setTimeout(() => this.pollProgressInline(), this.progressPollType === 'baseline' ? 2500 : 3000)
     },
     finishProgressPoll() {
       this.stopProgressPoll()
@@ -1065,7 +1122,7 @@ export default {
       this.tableRows = this.tableRows.filter(r => !r.isRunning)
       this.formData.page = 1
       this.currentpage = 1
-      this.loadData()
+      this.loadData({ silent: true, force: true })
     },
     stopProgressPoll() {
       if (this.progressTimer) {
@@ -1138,6 +1195,39 @@ export default {
       }
       await this.doDeleteTasks([row])
     },
+    async stopTask(row) {
+      if (!row || !row.isRunning) return
+      try {
+        await this.$confirm(
+          `确定结束「${row.kindLabel}」任务吗？\n目标：${row.targetIp || '-'} · #${row.taskId}`,
+          '结束确认',
+          { type: 'warning' }
+        )
+      } catch {
+        return
+      }
+      this.stopTaskLoading = true
+      try {
+        const res = await security.stopHostSecTasks({
+          items: [this.toDeleteItem(row)]
+        })
+        if (res.code === 200) {
+          this.$message({ message: '任务已结束', type: 'success' })
+          if (this.progressTaskId === row.taskId) {
+            this.stopProgressPoll()
+            this.progressTaskId = 0
+            this.progressPollType = ''
+          }
+          await this.loadData({ force: true })
+        } else {
+          this.$message({ message: res.msg || '结束失败', type: 'error' })
+        }
+      } catch (e) {
+        this.$message({ message: e.message || '结束失败', type: 'error' })
+      } finally {
+        this.stopTaskLoading = false
+      }
+    },
     async batchDeleteTasks() {
       if (!this.selectedRows.length) return
       try {
@@ -1165,7 +1255,7 @@ export default {
           if (this.$refs.taskTable) {
             this.$refs.taskTable.clearSelection()
           }
-          this.loadData()
+          this.loadData({ force: true })
         } else {
           this.$message({ message: res.msg || '删除失败', type: 'error' })
         }
@@ -1197,12 +1287,12 @@ export default {
     handlecurrentchange(t) {
       this.formData.page = t
       this.currentpage = t
-      this.loadData()
+      this.loadData({ force: true })
     },
     handleSizeChange(t) {
       this.formData.page = 1
       this.pageSize = t
-      this.loadData()
+      this.loadData({ force: true })
     }
   }
 }
@@ -1216,39 +1306,52 @@ export default {
   color: #94a3b8;
   font-size: 13px;
   line-height: 1.55;
-  margin: 0 0 16px;
-  max-width: 960px;
+  margin: 0 0 12px;
+  max-width: 900px;
 }
 
-.hub-filter-bar {
+.tab-panel {
+  margin-top: 4px;
+}
+
+.list_box {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.search-box {
+  flex-wrap: wrap;
+  gap: 12px;
+  max-width: 100%;
+}
+
+.operationbutton {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 14px;
+  gap: 8px;
 }
 
-.hub-search-input {
-  width: 280px;
+.serach-condition {
+  flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
-.hub-type-select {
+.task-search-input {
+  width: 220px;
+}
+
+.task-type-select {
   width: 168px;
 }
 
-.hub-table-wrap {
+.table-scroll-wrap {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
-}
-
-::v-deep .hub-task-table {
-  min-width: 100%;
-
-  .el-table__body,
-  .el-table__header {
-    table-layout: fixed;
-    width: 100% !important;
-  }
 }
 
 .detail-meta {

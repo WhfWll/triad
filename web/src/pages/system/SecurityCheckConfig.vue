@@ -44,7 +44,7 @@
                 style="width:calc(100% - 190px)"
               />
               <el-tooltip class="item" effect="dark" placement="right">
-                <div slot="content">动态扫描 / 专项应用检测，默认 5</div>
+                <div slot="content">动态扫描，默认 5</div>
                 <i class="iconfont icontishi icontsstyle" style="vertical-align: middle;"></i>
               </el-tooltip>
             </el-form-item>

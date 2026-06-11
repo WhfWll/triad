@@ -150,3 +150,20 @@ func AppSecAppSpecificScanDetail(c *gin.Context) {
 	addOperateAuditf(c, ctx, "查看了应用安全专项检测详情，任务ID: %s", req.ID)
 	server.RespSuccess(c, resp)
 }
+
+func AppSecTaskStop(c *gin.Context) {
+	var req typespec.AppSecTaskStopReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		server.RespFail(c, 4000, "参数错误: "+err.Error())
+		return
+	}
+	ctx := server.NewContext(context.Background(), c)
+	var app application.AppSecScan
+	resp, err := app.StopTask(ctx, appSecUID(c), &req)
+	if err != nil {
+		server.RespFail(c, 4000, err.Error())
+		return
+	}
+	addOperateAuditf(c, ctx, "结束了应用安全任务，任务ID: %s，类型: %s", req.ID, req.Kind)
+	server.RespSuccess(c, resp)
+}

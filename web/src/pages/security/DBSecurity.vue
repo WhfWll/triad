@@ -10,17 +10,21 @@
           </el-tooltip>
         </div>
         <div class="serach-condition">
-          <div class="search-text">
-            <el-input placeholder="搜索任务名称" @keydown.enter.native="handlesearch" v-model="formData.search" class="input-with-select" size="small" clearable></el-input>
-            <el-button type="primary" size="small" @click="handlesearch">搜索</el-button>
-          </div>
-          <div>
-            <el-button type="primary" size="small" @click="handleReset">重置</el-button>
-          </div>
+          <el-input
+            v-model="formData.search"
+            placeholder="搜索任务名称"
+            size="small"
+            clearable
+            class="task-search-input"
+            @keydown.enter.native="handlesearch"
+          />
+          <el-button type="primary" size="small" @click="handlesearch">搜索</el-button>
+          <el-button type="primary" size="small" @click="handleReset">重置</el-button>
         </div>
       </div>
 
-      <el-table :data="tableData" style="width: 100%" class="myTable" @selection-change="handleSelectionChange">
+      <div class="table-scroll-wrap">
+      <el-table :data="tableData" class="myTable" @selection-change="handleSelectionChange">
         <el-table-column width="55" type="selection">
         </el-table-column>
         <el-table-column prop="name" label="任务名称" min-width="120" width="140" :show-overflow-tooltip="true">
@@ -58,16 +62,18 @@
         </el-table-column>
         <el-table-column prop="checkTime" label="扫描时间" width="150" :show-overflow-tooltip="true">
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="210">
           <template slot-scope="scope">
             <div class="row-actions">
               <el-link :underline="false" class="link_primary" @click="handleDetail(scope.row)">详情</el-link>
+              <el-link v-if="scope.row.status === 2" :underline="false" class="link_primary" @click="handleStop(scope.row)">结束</el-link>
               <el-link :underline="false" class="link_primary" @click="handleRerun(scope.row)">再次检测</el-link>
               <el-link :underline="false" class="link_danger" @click="handleDel(scope.row)">删除</el-link>
             </div>
           </template>
         </el-table-column>
       </el-table>
+      </div>
 
       <el-pagination
         :page-size="pageSize"
@@ -340,6 +346,28 @@ export default {
         this.$message({ message: '操作失败: ' + (e.message || ''), type: 'error' })
       }
     },
+    async handleStop(row) {
+      const id = row.id || row.ID
+      if (!id) return
+      try {
+        await this.$confirm(`确认结束任务「${row.name || id}」？`, '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        })
+        const res = await security.stopDataSecTask({ id, kind: 'db' })
+        if (res.code === 200) {
+          this.$message({ message: '任务已结束', type: 'success' })
+          this.getData()
+        } else {
+          this.$message({ message: res.msg || '结束失败', type: 'error' })
+        }
+      } catch (e) {
+        if (e !== 'cancel') {
+          this.$message({ message: '结束失败: ' + (e.message || ''), type: 'error' })
+        }
+      }
+    },
     async saveTargetsToLibrary() {
       const targets = this.taskForm.targets || []
       if (!targets.length) {
@@ -506,6 +534,35 @@ export default {
   color: #cbd5e1;
   font-size: 13px;
   white-space: nowrap;
+}
+
+.list_box {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.search-box {
+  flex-wrap: wrap;
+  gap: 12px;
+  max-width: 100%;
+}
+
+.serach-condition {
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.task-search-input {
+  width: 220px;
+}
+
+.table-scroll-wrap {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
 }
 
 </style>

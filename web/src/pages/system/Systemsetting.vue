@@ -152,6 +152,61 @@
                 <el-tab-pane label="安全检查配置" name="tabSec">
                     <security-check-config v-if="activeName === 'tabSec'" />
                 </el-tab-pane>
+                <el-tab-pane label="API秘钥" name="tabKey">
+                    <div v-if="activeName === 'tabKey'" class="tabsbox auth-tabs api-key-panel">
+                        <div class="panel-head">
+                            <div class="panel-head__title">
+                                <i class="el-icon-key"></i>
+                                <span>API 秘钥管理</span>
+                            </div>
+                            <p class="panel-head__desc">用于平台接口调用鉴权，支持按用户生成、查看和删除秘钥。</p>
+                        </div>
+                        <div class="list_box">
+                            <div class="search-box">
+                                <div class="operationbutton">
+                                    <el-button type="primary" size="small" @click="generateKey">生成秘钥</el-button>
+                                </div>
+                            </div>
+                            <div class="table-scroll-wrap">
+                                <el-table :data="keyTableData" class="myTable">
+                                    <el-table-column type="index" label="序号" width="72" />
+                                    <el-table-column prop="username" label="用户名" min-width="120" width="140" />
+                                    <el-table-column prop="token" label="秘钥值" min-width="320">
+                                        <template slot-scope="scope">
+                                            <div class="token-cell">
+                                                <code class="token-value" :title="scope.row.token">{{ scope.row.token }}</code>
+                                                <el-tooltip content="复制秘钥" placement="top">
+                                                    <el-button
+                                                        type="text"
+                                                        class="token-copy-btn"
+                                                        icon="el-icon-document-copy"
+                                                        @click="copyToken(scope.row.token)"
+                                                    />
+                                                </el-tooltip>
+                                            </div>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column prop="createTime" label="创建时间" width="180" :show-overflow-tooltip="true" />
+                                    <el-table-column label="操作" width="88">
+                                        <template slot-scope="scope">
+                                            <el-link :underline="false" class="link_danger" @click="confirmDeleteKey(scope.row)">删除</el-link>
+                                        </template>
+                                    </el-table-column>
+                                </el-table>
+                            </div>
+                            <el-pagination
+                                background
+                                layout="total, prev, pager, next, sizes, jumper"
+                                :current-page="currentpage"
+                                :page-sizes="[10, 20, 50, 100]"
+                                :page-size="pageSize"
+                                :total="totalpage"
+                                @size-change="handleSizeChange"
+                                @current-change="handleTokenCurrentChange"
+                            />
+                        </div>
+                    </div>
+                </el-tab-pane>
                 <el-tab-pane label="数据初始化" name="tabCleanup">
                     <system-data-cleanup v-if="activeName === 'tabCleanup'" />
                 </el-tab-pane>
@@ -320,18 +375,29 @@
         </el-dialog> -->
 
 
-        <el-dialog title="生成秘钥" :visible.sync="dialogKeyVisible" :before-close="cancelKey" :close-on-click-modal="false"
-            :show-close="false">
-            <div class="dialog_b_btn">
-                <el-button size="small" @click="submitKey">生成秘钥</el-button>
+        <el-dialog
+            title="生成秘钥"
+            :visible.sync="dialogKeyVisible"
+            width="480px"
+            custom-class="theme-dialog"
+            :close-on-click-modal="false"
+            @closed="userKey = ''"
+        >
+            <el-form label-width="80px" class="api-key-form">
+                <el-form-item label="用户名">
+                    <el-select v-model="userKey" placeholder="请选择用户" filterable style="width: 100%">
+                        <el-option
+                            v-for="(item, index) in userNames"
+                            :key="index"
+                            :label="item.username"
+                            :value="item.username"
+                        />
+                    </el-select>
+                </el-form-item>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
                 <el-button size="small" @click="cancelKey">取消</el-button>
-            </div>
-            <div style="padding:24px">
-                <label class="dialog_item_label">用户名</label>
-                <el-select v-model="userKey" placeholder="请选择">
-                    <el-option v-for="(item,index) in userNames" :key="index" :label="item.username" :value="item.username">
-                    </el-option>
-                </el-select>
+                <el-button type="primary" size="small" @click="submitKey">生成秘钥</el-button>
             </div>
         </el-dialog>
         <!-- 升级还原确定弹窗 -->
@@ -376,6 +442,7 @@
 </template>
 <style scoped lang="less">
 @import '../security/css/appsec-tokens.less';
+@import '../bas/css/bas-list-page.less';
 
     .tabsbox{
         background: #fff;
@@ -387,8 +454,10 @@
     }
 
     .tabsbox.auth-tabs {
-        background: var(--appsec-bg-surface, #1a1a2e);
-        border: 1px solid var(--appsec-bg-surface-inset, #16213e);
+        background: @appsec-bg-surface;
+        border: 1px solid @appsec-border-default;
+        border-radius: @appsec-radius-lg;
+        box-shadow: @appsec-shadow-card;
     }
 
     .totalbox{
@@ -758,6 +827,94 @@
 /deep/ .el-form-item__label{
  text-align: left;
 }
+.api-key-panel {
+    padding: @appsec-space-lg;
+    box-sizing: border-box;
+
+    .list_box {
+        background: transparent;
+        box-shadow: none;
+        padding: 0;
+        border-radius: 0;
+    }
+
+    .search-box {
+        margin-bottom: @appsec-space-md;
+    }
+
+    .table-scroll-wrap {
+        overflow-x: auto;
+        max-width: 100%;
+    }
+}
+
+.panel-head {
+    margin-bottom: @appsec-space-md;
+
+    &__title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: @appsec-font-size-lg;
+        font-weight: @appsec-font-weight-semibold;
+        color: @appsec-text-primary;
+
+        i {
+            color: @appsec-accent;
+            font-size: 18px;
+        }
+    }
+
+    &__desc {
+        margin: 8px 0 0;
+        font-size: @appsec-font-size-sm;
+        color: @appsec-text-muted;
+        line-height: 1.5;
+    }
+}
+
+.token-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.token-value {
+    flex: 1;
+    min-width: 0;
+    padding: 4px 10px;
+    border-radius: @appsec-radius-sm;
+    background: @appsec-bg-surface-inset;
+    border: 1px solid @appsec-border-subtle;
+    color: @appsec-text-strong;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/deep/ .token-copy-btn {
+    flex-shrink: 0;
+    padding: 4px;
+    color: @appsec-text-muted;
+
+    &:hover {
+        color: @appsec-accent;
+    }
+}
+
+/deep/ .api-key-form .el-form-item__label {
+    color: @appsec-text-body;
+}
+
+/deep/ .api-key-form .el-input__inner {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: @appsec-border-strong;
+    color: @appsec-text-body;
+}
 </style>
 <script> 
 import xzbutton from "../../components/XzButton.vue"; 
@@ -947,6 +1104,10 @@ export default {
                 //     date: '2021-4-26'
                 // }, 
             ],
+            tokenLoading:false,
+            tokenCurrentPage:1,
+            tokenPageSize:10,
+            tokenTotal:0,
             dialogKeyVisible:false,
             userKey:'',
             userNames:['test1','Tom'],
@@ -1060,6 +1221,8 @@ export default {
             handler(newVal) {
                 if (newVal === 'tabAuth') {
                     this.get_product_info();
+                } else if (newVal === 'tabKey') {
+                    this.fnShowTable();
                 }
             },
             immediate: false
@@ -1069,6 +1232,11 @@ export default {
     //    clearTimeout(this.timer2) 
     },
     methods:{
+           handleTokenCurrentChange(page) {
+            this.currentpage = page
+            this.page_num = page
+            this.fnShowTable()
+            },
            formatAuthDays(value) {
             const text = value === undefined || value === null ? '' : String(value).trim()
             if (!text || text === '--') {
@@ -2302,19 +2470,34 @@ export default {
             // window.open('/nowsystip')
 
         },
-        async btnDel(scope){ //
-            const res = await system.tokenDel({
-                username:scope.row.username,
-                token:scope.row.token
-            })
-            if(res.code == 200){
-                this.fnShowTable();
-                scope._self.$refs[`popover_id-${scope.row.token}`].doClose();
-            }else{
-                this.$message({
-                    message:res.error,
-                    type: 'error'
-                });
+        async copyToken(token) {
+            if (!token) return
+            try {
+                await navigator.clipboard.writeText(token)
+                this.$message({ message: '已复制到剪贴板', type: 'success' })
+            } catch (e) {
+                this.$message({ message: '复制失败，请手动选择复制', type: 'error' })
+            }
+        },
+        async confirmDeleteKey(row) {
+            try {
+                await this.$confirm('确认删除该秘钥吗？删除后不可恢复。', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                })
+                const res = await system.tokenDel({
+                    username: row.username,
+                    token: row.token
+                })
+                if (res.code === 200) {
+                    this.$message({ message: '删除成功', type: 'success' })
+                    this.fnShowTable()
+                } else {
+                    this.$message({ message: res.error || '删除失败', type: 'error' })
+                }
+            } catch (e) {
+                // 用户取消
             }
         },
 
@@ -2634,7 +2817,7 @@ export default {
 }
 
 .section-header i {
-    color: #4c7ae3;
+    color: @appsec-accent;
     font-size: 16px;
     margin-right: 8px;
 }

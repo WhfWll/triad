@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"smart/api/typespec"
@@ -26,6 +27,25 @@ const (
 
 // AppSecScan 应用安全 Web 扫描（task_task / task_target / task_vul）
 type AppSecScan struct{}
+
+var (
+	appSecTaskCancelMu sync.Mutex
+	appSecTaskCancels  = make(map[int]context.CancelFunc)
+)
+
+func setAppSecTaskCancel(taskID int, cancel context.CancelFunc) {
+	appSecTaskCancelMu.Lock()
+	appSecTaskCancels[taskID] = cancel
+	appSecTaskCancelMu.Unlock()
+}
+
+func takeAppSecTaskCancel(taskID int) context.CancelFunc {
+	appSecTaskCancelMu.Lock()
+	cancel := appSecTaskCancels[taskID]
+	delete(appSecTaskCancels, taskID)
+	appSecTaskCancelMu.Unlock()
+	return cancel
+}
 
 type appSecExtendMeta struct {
 	AppSecScanType string `json:"appsecScanType"`
@@ -58,6 +78,72 @@ func (a *AppSecScan) GetAppSpecificScanDetail(ctx context.Context, uid int, id s
 	return a.getDetailFromDB(ctx, uid, enums.TaskTypeAppSecApp, "app", id)
 }
 
+func (a *AppSecScan) StopTask(ctx context.Context, uid int, req *typespec.AppSecTaskStopReq) (*typespec.AppSecTaskStopResp, error) {
+	taskID, err := strconv.Atoi(strings.TrimSpace(req.ID))
+	if err != nil || taskID <= 0 {
+		return nil, fmt.Errorf("任务不存在")
+	}
+	wantType := enums.TaskTypeAppSecDynamic
+	kind := strings.TrimSpace(req.Kind)
+	if kind == "app" {
+		wantType = enums.TaskTypeAppSecApp
+	}
+
+	var taskModel mysqls.TaskTask
+	task, err := taskModel.GetTaskCheckTask(ctx, taskID)
+	if err != nil || task.ID == 0 || task.TaskType != wantType {
+		return nil, fmt.Errorf("任务不存在")
+	}
+	if uid > 0 && task.UserID != uid {
+		return nil, fmt.Errorf("无权操作该任务")
+	}
+
+	targets := (&mysqls.TaskTarget{}).GetTargetsByTaskId(ctx, taskID)
+	if len(targets) == 0 {
+		return nil, fmt.Errorf("任务无扫描目标")
+	}
+
+	now := time.Now()
+	if cancel := takeAppSecTaskCancel(taskID); cancel != nil {
+		cancel()
+	}
+	var targetModel mysqls.TaskTarget
+	var taskLogSrv services.TaskLog
+	stopped := false
+	for _, target := range targets {
+		if target.Status == enums.TargetStatusFinish {
+			continue
+		}
+		services.CancelTargetScan(target.ID)
+		meta := parseAppSecExtend(target.ExtendField)
+		meta.ErrorMessage = "任务已手动结束"
+		metaBytes, _ := json.Marshal(meta)
+		_ = targetModel.UpdateTargetById(ctx, target.ID, map[string]interface{}{
+			"status":       enums.TargetStatusFinish,
+			"extend_field": string(metaBytes),
+			"update_time":  now,
+			"end_time":     now,
+		})
+		_ = taskLogSrv.UpdateTaskLogStateByTargetId(ctx, target.ID, enums.TaskStatusFinish)
+		stopped = true
+	}
+
+	if !stopped && task.Status != enums.TaskStatusRunning && task.Status != enums.TaskStatusBegin && task.Status != enums.TaskStatusPausing {
+		return nil, fmt.Errorf("任务未在运行中")
+	}
+
+	_ = taskModel.UpdateTaskTaskByIds(ctx, []int{taskID}, map[string]interface{}{
+		"status":      enums.TaskStatusFinish,
+		"update_time": now,
+	})
+	var taskInfo mysqls.TaskTaskInfo
+	_ = taskInfo.UpdateTaskInfoByTaskIds(ctx, []int{taskID}, map[string]interface{}{
+		"status":      enums.TaskStatusFinish,
+		"update_time": now,
+	})
+	return &typespec.AppSecTaskStopResp{Stopped: true}, nil
+}
+
 func (a *AppSecScan) runScan(ctx context.Context, uid int, scanType string, taskType int, req *typespec.AppSecScanRunReq) (*typespec.AppSecScanRunResp, error) {
 	targetList, err := parseAppSecTargets(req)
 	if err != nil {
@@ -77,7 +163,8 @@ func (a *AppSecScan) runScan(ctx context.Context, uid int, scanType string, task
 		return nil, err
 	}
 
-	scanCtx := context.Background()
+	scanCtx, cancel := context.WithCancel(context.Background())
+	setAppSecTaskCancel(taskID, cancel)
 	sem := make(chan struct{}, services.GetAppScanConcurrent(ctx))
 	for _, row := range targets {
 		t := row
@@ -173,6 +260,15 @@ func (a *AppSecScan) createAppSecTask(ctx context.Context, uid, taskType int, sc
 }
 
 func (a *AppSecScan) startTargetScan(ctx context.Context, target mysqls.TaskTarget, configJson enums.ConfigJson) {
+	select {
+	case <-ctx.Done():
+		return
+	default:
+	}
+	current, _ := (&mysqls.TaskTarget{}).GetTaskTarget(ctx, target.ID)
+	if current.ID > 0 && current.Status == enums.TargetStatusFinish {
+		return
+	}
 	// 与创建任务时一致：未选插件则加载全部可用 yak/nuclei，并写回目标配置供 scanner 使用
 	if vulLibs, err := resolveAppSecVulLibraries(ctx, configJson); err != nil {
 		log.Errorf("appsec resolve vul libraries: %v", err)

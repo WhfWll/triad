@@ -444,6 +444,7 @@ func RegisterRoute() *gin.Engine {
 	smartRouterGroup.GET("/baseline/stat", rest.BaselineCheckStat)                    // 安全配置核查 - 检查统计
 	smartRouterGroup.GET("/baseline/tasks", rest.BaselineTaskList)                    // 安全配置核查 - 核查批次列表
 	smartRouterGroup.POST("/hostsec/tasks/delete", rest.HostSecTaskDelete)            // 主机安全检查 - 删除任务记录（支持批量）
+	smartRouterGroup.POST("/hostsec/tasks/stop", rest.HostSecTaskStop)                // 主机安全检查 - 结束运行中任务（支持批量）
 	smartRouterGroup.GET("/baseline/task/targets", rest.BaselineTaskTargets)          // 安全配置核查 - 任务目标列表
 	smartRouterGroup.GET("/baseline/rules", rest.BaselineRulesList)                   // 安全配置核查 - 规则列表
 	smartRouterGroup.POST("/baseline/rules/reload", rest.BaselineRulesReload)         // 安全配置核查 - 从库重载规则（导入 host_baseline_rule 后调用）
@@ -502,6 +503,7 @@ func RegisterRoute() *gin.Engine {
 	smartRouterGroup.POST("/appsec/appspecific/run", rest.AppSecAppSpecificScanRun)      // 应用安全 - 专项应用检测创建
 	smartRouterGroup.GET("/appsec/appspecific/list", rest.AppSecAppSpecificScanList)     // 应用安全 - 专项应用检测列表
 	smartRouterGroup.GET("/appsec/appspecific/detail", rest.AppSecAppSpecificScanDetail) // 应用安全 - 专项应用检测详情
+	smartRouterGroup.POST("/appsec/task/stop", rest.AppSecTaskStop)                      // 应用安全 - 结束运行中任务
 
 	// 数据安全（任务化：数据库基线检查 / 敏感数据发现）
 	smartRouterGroup.POST("/datasec/db/test-conn", rest.DataSecDBTestConn)                      // 数据安全 - 数据库连接测试
@@ -514,6 +516,7 @@ func RegisterRoute() *gin.Engine {
 	smartRouterGroup.GET("/datasec/task/clone-targets", rest.DataSecTaskCloneTargets)           // 数据安全 - 复制历史任务目标
 	smartRouterGroup.POST("/datasec/task/rerun", rest.DataSecTaskRerun)                         // 数据安全 - 再次检测
 	smartRouterGroup.GET("/datasec/task/delete", rest.DataSecTaskDelete)                        // 数据安全 - 删除任务
+	smartRouterGroup.POST("/datasec/task/stop", rest.DataSecTaskStop)                           // 数据安全 - 结束运行中任务
 	smartRouterGroup.GET("/datasec/target/list", rest.DataSecDBTargetList)                      // 数据安全 - 目标库列表
 	smartRouterGroup.POST("/datasec/target/save", rest.DataSecDBTargetSave)                     // 数据安全 - 目标库保存
 	smartRouterGroup.GET("/datasec/target/delete", rest.DataSecDBTargetDelete)                  // 数据安全 - 目标库删除

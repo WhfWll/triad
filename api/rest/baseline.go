@@ -154,6 +154,25 @@ func HostSecTaskDelete(c *gin.Context) {
 	server.RespSuccess(c, resp)
 }
 
+func HostSecTaskStop(c *gin.Context) {
+	var req typespec.HostSecTaskStopReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Errorf("HostSecTaskStop param error: %v", err)
+		server.RespFail(c, 4000, "参数错误: "+err.Error())
+		return
+	}
+	ctx := server.NewContext(context.Background(), c)
+	var app application.BaselineApp
+	resp, err := app.StopHostSecTasks(ctx, &req)
+	if err != nil {
+		log.Errorf("HostSecTaskStop error: %v", err)
+		server.RespFail(c, 4000, err.Error())
+		return
+	}
+	addOperateAuditf(c, ctx, "结束了主机安全任务，条目数: %d", len(req.Items))
+	server.RespSuccess(c, resp)
+}
+
 func BaselineTaskTargets(c *gin.Context) {
 	taskID, err := strconv.Atoi(c.Query("taskId"))
 	if err != nil || taskID <= 0 {

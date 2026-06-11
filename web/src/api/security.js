@@ -28,6 +28,9 @@ const security = {
   rerunDataSecTask: (data) => {
     return axios.postJson('/smart/datasec/task/rerun', data)
   },
+  stopDataSecTask: (data) => {
+    return axios.postJson('/smart/datasec/task/stop', data)
+  },
   deleteDataSecTask: (params) => {
     return axios.get('/smart/datasec/task/delete', params)
   },
@@ -132,6 +135,9 @@ const security = {
   getBaselineTaskList: (params) => {
     return axios.get('/smart/baseline/tasks', params)
   },
+  stopHostSecTasks: (data) => {
+    return axios.postJson('/smart/hostsec/tasks/stop', data)
+  },
   deleteHostSecTasks: (data) => {
     return axios.postJson('/smart/hostsec/tasks/delete', data)
   },
@@ -180,6 +186,9 @@ const security = {
   },
   runDynamicScan: (data) => {
     return axios.postJson('/smart/appsec/dynamic/run', data)
+  },
+  stopAppSecTask: (data) => {
+    return axios.postJson('/smart/appsec/task/stop', data)
   },
   getDynamicScanDetail: (params) => {
     return axios.get('/smart/appsec/dynamic/detail', params)

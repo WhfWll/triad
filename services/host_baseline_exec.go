@@ -7,6 +7,12 @@ import (
 // normalizeBaselineCommand 清理 CIS/手册类规则中带有的 shell 提示符前缀，并去掉 sudo（SSH 非交互无法输入密码）。
 func normalizeBaselineCommand(cmd string) string {
 	cmd = strings.TrimSpace(cmd)
+	for strings.HasPrefix(cmd, "# ") {
+		cmd = strings.TrimSpace(cmd[2:])
+	}
+	if strings.HasPrefix(cmd, "#") {
+		cmd = strings.TrimSpace(cmd[1:])
+	}
 	for strings.HasPrefix(cmd, "$ ") {
 		cmd = strings.TrimSpace(cmd[2:])
 	}
@@ -80,4 +86,8 @@ func isBaselineExecutionError(output string) bool {
 		}
 	}
 	return false
+}
+
+func isBaselineNotApplicableOutput(output string) bool {
+	return strings.EqualFold(strings.TrimSpace(output), "NOT_APPLICABLE")
 }

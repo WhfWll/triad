@@ -6,6 +6,7 @@ import (
 
 	"smart/api/typespec"
 	"smart/models/mysqls"
+	"smart/services"
 	"smart/tools/enums"
 )
 
@@ -73,4 +74,81 @@ func (a *BaselineApp) DeleteHostSecTasks(ctx context.Context, req *typespec.Host
 	}
 
 	return &typespec.HostSecTaskDeleteResp{Deleted: deleted}, nil
+}
+
+func (a *BaselineApp) StopHostSecTasks(ctx context.Context, req *typespec.HostSecTaskStopReq) (*typespec.HostSecTaskStopResp, error) {
+	if len(req.Items) == 0 {
+		return nil, fmt.Errorf("items is empty")
+	}
+
+	stopped := 0
+	seen := make(map[string]bool, len(req.Items))
+	for _, item := range req.Items {
+		if item.TaskID <= 0 || item.TargetIP == "" {
+			continue
+		}
+		key := fmt.Sprintf("%s|%d|%s|%d", item.Source, item.TaskID, item.TargetIP, item.ScanScene)
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+
+		switch item.Source {
+		case "baseline":
+			scene := item.ScanScene
+			if scene <= 0 {
+				scene = enums.HostScanSceneBaseline
+			}
+			if cancel := takeBaselineBatchCancel(item.TaskID, item.TargetIP, scene); cancel != nil {
+				cancel()
+			}
+			updateHostBaselineBatchStopped(item.TaskID, item.TargetIP, scene)
+			var resultModel mysqls.BaselineCheckResult
+			if _, err := resultModel.StopPendingByTaskTargetAndScene(ctx, item.TaskID, item.TargetIP, scene, "任务已手动结束"); err != nil {
+				return nil, err
+			}
+			total, err := resultModel.CountByTaskTargetAndScene(ctx, item.TaskID, item.TargetIP, scene)
+			if err != nil {
+				return nil, err
+			}
+			if total == 0 {
+				row := &mysqls.BaselineCheckResult{
+					TaskID:          item.TaskID,
+					TargetIP:        item.TargetIP,
+					ScanScene:       scene,
+					RuleID:          0,
+					RuleName:        "任务已手动结束",
+					CheckResult:     4,
+					ActualValue:     "任务已手动结束",
+					FixSuggestion:   "",
+					RiskDescription: "",
+				}
+				if err := row.Add(ctx); err != nil {
+					return nil, err
+				}
+			}
+		case "vuln":
+			if cancel := takeCveBatchCancel(item.TaskID, item.TargetIP); cancel != nil {
+				cancel()
+			}
+			updateHostCveBatchStopped(item.TaskID, item.TargetIP)
+			_ = services.PersistHostVulnScanResults(ctx, &services.VulnScanReport{
+				TaskID:   item.TaskID,
+				TargetIP: item.TargetIP,
+			}, fmt.Errorf("任务已手动结束"))
+		case "malware":
+			if cancel := takeYaraBatchCancel(item.TaskID, item.TargetIP); cancel != nil {
+				cancel()
+			}
+			updateHostYaraBatchStopped(item.TaskID, item.TargetIP)
+			_ = services.PersistHostMalwareScanResults(ctx, &services.YaraMalwareReport{
+				TaskID:   item.TaskID,
+				TargetIP: item.TargetIP,
+			}, fmt.Errorf("任务已手动结束"))
+		default:
+			return nil, fmt.Errorf("unsupported source: %s", item.Source)
+		}
+		stopped++
+	}
+	return &typespec.HostSecTaskStopResp{Stopped: stopped}, nil
 }

@@ -173,6 +173,14 @@ type HostSecTaskDeleteResp struct {
 	Deleted int `json:"deleted"`
 }
 
+type HostSecTaskStopReq struct {
+	Items []HostSecTaskDeleteItem `json:"items" binding:"required,min=1"`
+}
+
+type HostSecTaskStopResp struct {
+	Stopped int `json:"stopped"`
+}
+
 // BaselineTaskTargetItem 任务的目标列表
 type BaselineTaskTargetItem struct {
 	TargetID   int    `json:"targetId"`

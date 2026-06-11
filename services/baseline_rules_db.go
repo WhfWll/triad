@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	"smart/models/mysqls"
@@ -54,22 +53,17 @@ func (e *BaselineEngine) reloadFromDB(ctx context.Context) error {
 
 	rules := make([]BaselineRule, 0, len(rows))
 	skippedPlaceholder := 0
+	skippedInvalidJSON := 0
 	for _, row := range rows {
 		var cmds []string
 		if strings.TrimSpace(row.CommandsJSON) != "" {
 			if err := json.Unmarshal([]byte(row.CommandsJSON), &cmds); err != nil {
-				return fmt.Errorf("rule_code=%d commands_json: %w", row.RuleCode, err)
+				skippedInvalidJSON++
+				log.Warnf("skip baseline rule_code=%d due to invalid commands_json: %v", row.RuleCode, err)
+				continue
 			}
 		}
-		if RuleHasUnresolvedPlaceholder(cmds, row.ExpectedValue) {
-			skippedPlaceholder++
-			continue
-		}
-		mt := row.MatchType
-		if mt == "" {
-			mt = "contains"
-		}
-		rules = append(rules, BaselineRule{
+		rule, ok := sanitizeBaselineRule(BaselineRule{
 			ID:              row.RuleCode,
 			Name:            row.Name,
 			Description:     row.Description,
@@ -78,10 +72,15 @@ func (e *BaselineEngine) reloadFromDB(ctx context.Context) error {
 			OSType:          row.OSType,
 			Commands:        cmds,
 			ExpectedValue:   row.ExpectedValue,
-			MatchType:       mt,
+			MatchType:       row.MatchType,
 			FixSuggestion:   row.FixSuggestion,
 			RiskDescription: row.RiskDescription,
 		})
+		if !ok {
+			skippedPlaceholder++
+			continue
+		}
+		rules = append(rules, rule)
 	}
 
 	merged := mergeRulesWithBuiltin(rules)
@@ -93,6 +92,6 @@ func (e *BaselineEngine) reloadFromDB(ctx context.Context) error {
 	for _, rule := range merged {
 		e.rulesMap[rule.OSType] = append(e.rulesMap[rule.OSType], rule)
 	}
-	log.Infof("host baseline rules loaded from DB: %d enabled rows, %d skipped (placeholder), %d total after merge", len(rules), skippedPlaceholder, len(merged))
+	log.Infof("host baseline rules loaded from DB: %d enabled rows, %d skipped (placeholder/invalid), %d total after merge", len(rules), skippedPlaceholder+skippedInvalidJSON, len(merged))
 	return nil
 }

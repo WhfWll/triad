@@ -8,18 +8,18 @@ type DatasecDBTargetListReq struct {
 }
 
 type DatasecDBTargetListItem struct {
-	ID         int    `json:"id"`
-	Name       string `json:"name"`
-	GroupName  string `json:"groupName"`
-	DBType     int    `json:"dbType"`
-	DBHost     string `json:"dbHost"`
-	DBPort     int    `json:"dbPort"`
-	DBName     string `json:"dbName"`
-	DBUser     string `json:"dbUser"`
-	HasPassword bool  `json:"hasPassword"`
-	Remark     string `json:"remark"`
-	CreateTime string `json:"createTime"`
-	UpdateTime string `json:"updateTime"`
+	ID          int    `json:"id"`
+	Name        string `json:"name"`
+	GroupName   string `json:"groupName"`
+	DBType      int    `json:"dbType"`
+	DBHost      string `json:"dbHost"`
+	DBPort      int    `json:"dbPort"`
+	DBName      string `json:"dbName"`
+	DBUser      string `json:"dbUser"`
+	HasPassword bool   `json:"hasPassword"`
+	Remark      string `json:"remark"`
+	CreateTime  string `json:"createTime"`
+	UpdateTime  string `json:"updateTime"`
 }
 
 type DatasecDBTargetListResp struct {
@@ -28,16 +28,16 @@ type DatasecDBTargetListResp struct {
 }
 
 type DatasecDBTargetSaveReq struct {
-	ID         int    `json:"id"`
-	Name       string `json:"name"`
-	GroupName  string `json:"groupName"`
+	ID         int     `json:"id"`
+	Name       string  `json:"name"`
+	GroupName  string  `json:"groupName"`
 	DBType     FlexInt `json:"dbType"`
-	DBHost     string `json:"dbHost"`
+	DBHost     string  `json:"dbHost"`
 	DBPort     FlexInt `json:"dbPort"`
-	DBName     string `json:"dbName"`
-	DBUser     string `json:"dbUser"`
-	DBPassword string `json:"dbPassword"`
-	Remark     string `json:"remark"`
+	DBName     string  `json:"dbName"`
+	DBUser     string  `json:"dbUser"`
+	DBPassword string  `json:"dbPassword"`
+	Remark     string  `json:"remark"`
 }
 
 type DatasecDBTargetDeleteReq struct {
@@ -99,6 +99,11 @@ type DatasecTaskRerunReq struct {
 type DatasecTaskDeleteReq struct {
 	ID   string `form:"id" binding:"required"`
 	Kind string `form:"kind"`
+}
+
+type DatasecTaskStopReq struct {
+	ID   string `json:"id" binding:"required"`
+	Kind string `json:"kind"`
 }
 
 type DatasecDBTargetTestReq struct {

@@ -9,23 +9,23 @@ import (
 )
 
 type BaselineCheckResult struct {
-	ID               int       `gorm:"column:id;primary_key" json:"id"`
-	TaskID           int       `gorm:"column:task_id" json:"taskId"`
-	TargetID         int       `gorm:"column:target_id" json:"targetId"`
-	TargetIP         string    `gorm:"column:target_ip" json:"targetIp"`
-	OSType           int       `gorm:"column:os_type" json:"osType"`
-	ScanScene        int       `gorm:"column:scan_scene" json:"scanScene"`
-	RuleID           int       `gorm:"column:rule_id" json:"ruleId"`
-	RuleName         string    `gorm:"column:rule_name" json:"ruleName"`
-	RuleCategory     int       `gorm:"column:rule_category" json:"ruleCategory"`
-	RuleRisk         int       `gorm:"column:rule_risk" json:"ruleRisk"`
-	CheckResult      int       `gorm:"column:check_result" json:"checkResult"`
-	ExpectedValue    string    `gorm:"column:expected_value" json:"expectedValue"`
-	ActualValue      string    `gorm:"column:actual_value" json:"actualValue"`
-	CheckCommand     string    `gorm:"column:check_command" json:"checkCommand"`
-	FixSuggestion    string    `gorm:"column:fix_suggestion" json:"fixSuggestion"`
-	RiskDescription  string    `gorm:"column:risk_description" json:"riskDescription"`
-	CreateTime       time.Time `gorm:"column:create_time" json:"createTime"`
+	ID              int       `gorm:"column:id;primary_key" json:"id"`
+	TaskID          int       `gorm:"column:task_id" json:"taskId"`
+	TargetID        int       `gorm:"column:target_id" json:"targetId"`
+	TargetIP        string    `gorm:"column:target_ip" json:"targetIp"`
+	OSType          int       `gorm:"column:os_type" json:"osType"`
+	ScanScene       int       `gorm:"column:scan_scene" json:"scanScene"`
+	RuleID          int       `gorm:"column:rule_id" json:"ruleId"`
+	RuleName        string    `gorm:"column:rule_name" json:"ruleName"`
+	RuleCategory    int       `gorm:"column:rule_category" json:"ruleCategory"`
+	RuleRisk        int       `gorm:"column:rule_risk" json:"ruleRisk"`
+	CheckResult     int       `gorm:"column:check_result" json:"checkResult"`
+	ExpectedValue   string    `gorm:"column:expected_value" json:"expectedValue"`
+	ActualValue     string    `gorm:"column:actual_value" json:"actualValue"`
+	CheckCommand    string    `gorm:"column:check_command" json:"checkCommand"`
+	FixSuggestion   string    `gorm:"column:fix_suggestion" json:"fixSuggestion"`
+	RiskDescription string    `gorm:"column:risk_description" json:"riskDescription"`
+	CreateTime      time.Time `gorm:"column:create_time" json:"createTime"`
 }
 
 func (BaselineCheckResult) TableName() string {
@@ -77,6 +77,31 @@ func (b *BaselineCheckResult) DeleteByTaskTargetAndScene(ctx context.Context, ta
 		q = q.Where("scan_scene = ?", scanScene)
 	}
 	return q.Delete(nil).Error
+}
+
+func (b *BaselineCheckResult) CountByTaskTargetAndScene(ctx context.Context, taskID int, targetIP string, scanScene int) (int64, error) {
+	var total int64
+	q := mysql.FromContext(ctx).Model(b).Where("task_id = ? AND target_ip = ?", taskID, targetIP)
+	if scanScene > 0 {
+		q = q.Where("scan_scene = ?", scanScene)
+	}
+	err := q.Count(&total).Error
+	return total, err
+}
+
+func (b *BaselineCheckResult) StopPendingByTaskTargetAndScene(ctx context.Context, taskID int, targetIP string, scanScene int, actualValue string) (int64, error) {
+	q := mysql.FromContext(ctx).Model(b).
+		Where("task_id = ? AND target_ip = ? AND check_result = ?", taskID, targetIP, 0)
+	if scanScene > 0 {
+		q = q.Where("scan_scene = ?", scanScene)
+	}
+	res := q.Updates(map[string]interface{}{
+		"check_result": 4,
+		"rule_name":    "任务已手动结束",
+		"actual_value": actualValue,
+		"create_time":  time.Now(),
+	})
+	return res.RowsAffected, res.Error
 }
 
 func (b *BaselineCheckResult) GetStatByTaskID(ctx context.Context, taskID int) (passCount, failCount, total int64, err error) {
@@ -214,13 +239,13 @@ func (b *BaselineCheckResult) ListGroupedByTask(ctx context.Context, page, size,
 
 // BaselineTaskTargetRow 任务中的目标聚合行
 type BaselineTaskTargetRow struct {
-	TargetID   int       `gorm:"column:target_id"`
-	TargetIP   string    `gorm:"column:target_ip"`
-	OSType     int       `gorm:"column:os_type"`
-	TotalRules int64     `gorm:"column:total_rules"`
-	PassCount  int64     `gorm:"column:pass_count"`
-	FailCount  int64     `gorm:"column:fail_count"`
-	ErrCount   int64     `gorm:"column:err_count"`
+	TargetID   int    `gorm:"column:target_id"`
+	TargetIP   string `gorm:"column:target_ip"`
+	OSType     int    `gorm:"column:os_type"`
+	TotalRules int64  `gorm:"column:total_rules"`
+	PassCount  int64  `gorm:"column:pass_count"`
+	FailCount  int64  `gorm:"column:fail_count"`
+	ErrCount   int64  `gorm:"column:err_count"`
 }
 
 func (b *BaselineCheckResult) GetTargetsByTaskID(ctx context.Context, taskID int) ([]BaselineTaskTargetRow, error) {

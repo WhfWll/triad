@@ -33,7 +33,47 @@ var (
 	cveBatchTasks   = make(map[int]*cveBatchTask)
 	cveBatchTasksMu sync.Mutex
 	cveTaskCounter  int
+	cveBatchCancels = make(map[string]context.CancelFunc)
 )
+
+func cveBatchTargetKey(taskID int, targetIP string) string {
+	return fmt.Sprintf("%d|%s", taskID, targetIP)
+}
+
+func setCveBatchCancel(taskID int, targetIP string, cancel context.CancelFunc) {
+	cveBatchTasksMu.Lock()
+	cveBatchCancels[cveBatchTargetKey(taskID, targetIP)] = cancel
+	cveBatchTasksMu.Unlock()
+}
+
+func takeCveBatchCancel(taskID int, targetIP string) context.CancelFunc {
+	key := cveBatchTargetKey(taskID, targetIP)
+	cveBatchTasksMu.Lock()
+	cancel := cveBatchCancels[key]
+	delete(cveBatchCancels, key)
+	cveBatchTasksMu.Unlock()
+	return cancel
+}
+
+func updateHostCveBatchStopped(taskID int, targetIP string) {
+	cveBatchTasksMu.Lock()
+	bt := cveBatchTasks[taskID]
+	cveBatchTasksMu.Unlock()
+	if bt == nil {
+		return
+	}
+	bt.mu.Lock()
+	defer bt.mu.Unlock()
+	bt.Results = append(bt.Results, typespec.VulnScanCveTargetResult{
+		TargetIP: targetIP,
+		Error:    "任务已手动结束",
+	})
+	bt.Progress++
+	if bt.Progress >= bt.Total {
+		bt.Status = "completed"
+		bt.Done = true
+	}
+}
 
 func (a *VulnScanCveApp) RunCveScan(ctx context.Context, req *typespec.VulnScanCveReq) (*typespec.VulnScanCveResp, error) {
 	scanner := services.GetHostVulnScanner()
@@ -141,13 +181,17 @@ func (a *VulnScanCveApp) runBatchCveScan(taskID int, req *typespec.VulnScanCveBa
 	var wg sync.WaitGroup
 
 	for i, target := range req.Targets {
+		targetCtx, cancel := context.WithCancel(context.Background())
+		setCveBatchCancel(taskID, target.Host, cancel)
 		wg.Add(1)
 		sem <- struct{}{}
-		go func(idx int, t typespec.VulnScanCveTarget) {
+		go func(idx int, t typespec.VulnScanCveTarget, runCtx context.Context, stop context.CancelFunc) {
 			defer wg.Done()
+			defer stop()
+			defer takeCveBatchCancel(taskID, t.Host)
 			defer func() { <-sem }()
 
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+			ctx, cancel := context.WithTimeout(runCtx, 5*time.Minute)
 			defer cancel()
 
 			task := &services.VulnScanTask{
@@ -171,6 +215,23 @@ func (a *VulnScanCveApp) runBatchCveScan(taskID int, req *typespec.VulnScanCveBa
 
 			dbCtx := mysql.NewContext(context.Background(), mysql.GetDB())
 			if err != nil {
+				if ctx.Err() == context.Canceled {
+					bt.mu.Lock()
+					bt.Results = append(bt.Results, typespec.VulnScanCveTargetResult{
+						TargetIP: t.Host,
+						Error:    "任务已手动结束",
+					})
+					bt.Progress++
+					bt.mu.Unlock()
+					_ = services.PersistHostVulnScanResults(dbCtx, &services.VulnScanReport{
+						TaskID:   taskID,
+						TargetID: idx + 1,
+						TargetIP: t.Host,
+						OSType:   t.OSType,
+						EndTime:  time.Now(),
+					}, fmt.Errorf("任务已手动结束"))
+					return
+				}
 				result.Error = err.Error()
 				stub := &services.VulnScanReport{
 					TaskID:   taskID,
@@ -220,7 +281,7 @@ func (a *VulnScanCveApp) runBatchCveScan(taskID int, req *typespec.VulnScanCveBa
 			bt.mu.Unlock()
 
 			log.Infof("CVE scan completed for %s: %d vulns found", t.Host, report.MatchedVulns)
-		}(i, target)
+		}(i, target, targetCtx, cancel)
 	}
 
 	wg.Wait()

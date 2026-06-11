@@ -41,18 +41,18 @@ func GetHostBaselineChecker() *HostBaselineChecker {
 }
 
 type BaselineCheckTask struct {
-	TaskID         int
-	TargetID       int
-	Host           string
-	Port           int
-	Username       string
-	Password       string
-	Key            string
-	OSType         int
-	Transport      int  // 0=auto锛堢敱杩炴帴灞傝В鏋愶級锛?=SSH锛?=WinRM
-	WinRMUseHttps  bool
-	ScanScene      int // 1=瀹夊叏閰嶇疆鏍告煡 2=涓绘満婕忔礊妫€娴?
-	RuleProgress   func(item typespec.BatchRuleResult)
+	TaskID        int
+	TargetID      int
+	Host          string
+	Port          int
+	Username      string
+	Password      string
+	Key           string
+	OSType        int
+	Transport     int // 0=auto锛堢敱杩炴帴灞傝В鏋愶級锛?=SSH锛?=WinRM
+	WinRMUseHttps bool
+	ScanScene     int // 1=瀹夊叏閰嶇疆鏍告煡 2=涓绘満婕忔礊妫€娴?
+	RuleProgress  func(item typespec.BatchRuleResult)
 }
 
 type BaselineCheckReport struct {
@@ -193,7 +193,12 @@ func (c *HostBaselineChecker) RunBaselineCheck(ctx context.Context, task *Baseli
 		}
 
 		fmt.Printf(">>> RunBaselineCheck: rule[%d] has %d command(s), first cmd: %q\n", idx, len(rule.Commands),
-			func(cmds []string) string { if len(cmds) > 0 { return cmds[0] }; return "" }(rule.Commands))
+			func(cmds []string) string {
+				if len(cmds) > 0 {
+					return cmds[0]
+				}
+				return ""
+			}(rule.Commands))
 
 		allOutput := ""
 		execFailed := false
@@ -222,7 +227,10 @@ func (c *HostBaselineChecker) RunBaselineCheck(ctx context.Context, task *Baseli
 		result.ActualValue = truncateBaselineField(strings.TrimSpace(allOutput))
 		fmt.Printf(">>> RunBaselineCheck: rule[%d] actualValue len=%d, execFailed=%v\n", idx, len(result.ActualValue), execFailed)
 
-		if execFailed || isBaselineExecutionError(result.ActualValue) {
+		if isBaselineNotApplicableOutput(result.ActualValue) {
+			fmt.Printf(">>> RunBaselineCheck: rule[%d] -> SKIP (not applicable)\n", idx)
+			result.CheckResult = enums.BaselineCheckResultSkip
+		} else if execFailed || isBaselineExecutionError(result.ActualValue) {
 			fmt.Printf(">>> RunBaselineCheck: rule[%d] -> ERROR\n", idx)
 			result.CheckResult = enums.BaselineCheckResultError
 			report.ErrorCount++
@@ -310,5 +318,3 @@ func (c *HostBaselineChecker) updateRiskCount(report *BaselineCheckReport, risk 
 		report.LowRiskCount++
 	}
 }
-
-

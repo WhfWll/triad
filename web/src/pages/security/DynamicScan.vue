@@ -51,9 +51,10 @@
           </template>
         </el-table-column>
         <el-table-column prop="scanTime" label="扫描时间" />
-        <el-table-column label="操作" width="100">
+        <el-table-column label="操作" width="150">
           <template slot-scope="scope">
             <el-link :underline="false" class="link_primary" @click="handleDetail(scope.row)">详情</el-link>
+            <el-link v-if="scope.row.status === 2" :underline="false" class="link_primary" style="margin-left: 10px" @click="handleStop(scope.row)">结束</el-link>
           </template>
         </el-table-column>
       </el-table>
@@ -154,6 +155,24 @@ export default {
         path: '/appsec/task/detail',
         query: { id: row.id, type: 'dyn' }
       })
+    },
+    async handleStop(row) {
+      try {
+        await this.$confirm(`确定结束任务「${row.name || row.id}」？`, '结束确认', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        })
+      } catch {
+        return
+      }
+      const res = await security.stopAppSecTask({ id: row.id, kind: 'dyn' })
+      if (res.code === 200) {
+        this.$message({ message: '任务已结束', type: 'success' })
+        this.getData()
+      } else {
+        this.$message({ message: res.msg || '结束失败', type: 'error' })
+      }
     },
     handlesearch() {
       this.formData.page = 1

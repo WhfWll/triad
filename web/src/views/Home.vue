@@ -229,7 +229,7 @@ export default {
         '/malware': '恶意代码检测',
         '/dbcheck': '数据库安全',
         '/sensitive': '敏感数据发现',
-        '/appspecific': '专项应用检测',
+        '/appspecific': '动态扫描',
         '/dynamicscan': '动态扫描',
         '/reportlist': '报告清单',
         '/taskscenario': '任务场景',

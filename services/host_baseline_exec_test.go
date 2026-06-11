@@ -10,6 +10,7 @@ func TestNormalizeBaselineCommand(t *testing.T) {
 		{"grep '^Protocol' /etc/ssh/sshd_config", "grep '^Protocol' /etc/ssh/sshd_config"},
 		{"  $ echo ok  ", "echo ok"},
 		{"sudo -n cat /etc/shadow", "cat /etc/shadow"},
+		{"# grep pam_pwquality /etc/pam.d/system-auth", "grep pam_pwquality /etc/pam.d/system-auth"},
 	}
 	for _, tc := range cases {
 		got := normalizeBaselineCommand(tc.in)
@@ -35,6 +36,9 @@ func TestIsBaselineExecutionError(t *testing.T) {
 	if !isBaselineExecutionError("sudo: a terminal is required to read the password") {
 		t.Fatal("sudo password prompt should be execution error")
 	}
+	if isBaselineExecutionError("NOT_APPLICABLE") {
+		t.Fatal("NOT_APPLICABLE should not be execution error")
+	}
 }
 
 func TestHasUnresolvedPlaceholder(t *testing.T) {
@@ -43,5 +47,14 @@ func TestHasUnresolvedPlaceholder(t *testing.T) {
 	}
 	if hasUnresolvedPlaceholder("grep FAIL_DELAY /etc/login.defs") {
 		t.Fatal("expected no placeholder")
+	}
+}
+
+func TestIsBaselineNotApplicableOutput(t *testing.T) {
+	if !isBaselineNotApplicableOutput("NOT_APPLICABLE") {
+		t.Fatal("expected NOT_APPLICABLE to be detected")
+	}
+	if isBaselineNotApplicableOutput("not configured") {
+		t.Fatal("unexpected not applicable match")
 	}
 }

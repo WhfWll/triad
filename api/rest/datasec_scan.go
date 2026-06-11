@@ -52,7 +52,7 @@ func DataSecDBCheckRun(c *gin.Context) {
 		targetInfo = fmt.Sprintf("%s:%v", req.Targets[0].DBHost, req.Targets[0].DBPort)
 	}
 	_ = svc.LogAuditAdd(ctx, enums.LogAuditTypeOperate,
-		fmt.Sprintf("创建了数据库安全检查任务 %s，目标: %s", req.Name, targetInfo),
+		fmt.Sprintf("创建了数据库安全检查任务%s，目标: %s", req.Name, targetInfo),
 		fmt.Sprintf("%v", username), ip)
 	server.RespSuccess(c, resp)
 }
@@ -112,7 +112,7 @@ func DataSecSensitiveScanRun(c *gin.Context) {
 		targetInfo = fmt.Sprintf("%s:%v", req.Targets[0].DBHost, req.Targets[0].DBPort)
 	}
 	_ = svc.LogAuditAdd(ctx, enums.LogAuditTypeOperate,
-		fmt.Sprintf("创建了敏感数据扫描任务 %s，目标: %s", req.Name, targetInfo),
+		fmt.Sprintf("创建了敏感数据扫描任务%s，目标: %s", req.Name, targetInfo),
 		fmt.Sprintf("%v", username), ip)
 	server.RespSuccess(c, resp)
 }
@@ -148,4 +148,20 @@ func DataSecSensitiveScanDetail(c *gin.Context) {
 	}
 	addOperateAuditf(c, ctx, "查看了敏感数据扫描详情，任务ID: %s，目标ID: %d", req.ID, req.TargetID)
 	server.RespSuccess(c, resp)
+}
+
+func DataSecTaskStop(c *gin.Context) {
+	var req typespec.DatasecTaskStopReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		server.RespFail(c, 4000, "参数错误: "+err.Error())
+		return
+	}
+	ctx := server.NewContext(context.Background(), c)
+	var app application.DataSecScan
+	if err := app.StopTask(ctx, appSecUID(c), &req); err != nil {
+		server.RespFail(c, 4000, err.Error())
+		return
+	}
+	addOperateAuditf(c, ctx, "结束了数据安全任务，任务ID: %s，类型: %s", req.ID, req.Kind)
+	server.RespSuccess(c, map[string]bool{"stopped": true})
 }

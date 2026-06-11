@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"smart/api/typespec"
@@ -23,6 +24,25 @@ const (
 
 // DataSecScan 数据安全（数据库基线 / 敏感数据发现）
 type DataSecScan struct{}
+
+var (
+	dataSecTaskCancelMu sync.Mutex
+	dataSecTaskCancels  = make(map[int]context.CancelFunc)
+)
+
+func setDataSecTaskCancel(taskID int, cancel context.CancelFunc) {
+	dataSecTaskCancelMu.Lock()
+	dataSecTaskCancels[taskID] = cancel
+	dataSecTaskCancelMu.Unlock()
+}
+
+func takeDataSecTaskCancel(taskID int) context.CancelFunc {
+	dataSecTaskCancelMu.Lock()
+	cancel := dataSecTaskCancels[taskID]
+	delete(dataSecTaskCancels, taskID)
+	dataSecTaskCancelMu.Unlock()
+	return cancel
+}
 
 type datasecExtendMeta struct {
 	DataSecScanKind string `json:"dataSecScanKind"`
@@ -241,7 +261,8 @@ func (a *DataSecScan) runDataSecTask(ctx context.Context, uid, taskType int, sca
 		return nil, err
 	}
 
-	scanCtx := context.Background()
+	scanCtx, cancel := context.WithCancel(context.Background())
+	setDataSecTaskCancel(taskID, cancel)
 	sem := make(chan struct{}, services.GetDataScanConcurrent(ctx))
 	for _, row := range targets {
 		t := row
@@ -306,6 +327,11 @@ func (a *DataSecScan) createDataSecTask(ctx context.Context, uid, taskType int, 
 }
 
 func (a *DataSecScan) startDataSecTargetScan(ctx context.Context, target mysqls.TaskTarget, scanKind string) {
+	select {
+	case <-ctx.Done():
+		return
+	default:
+	}
 	cfg := parseDatasecConfig(target.TaskTemplateJSON)
 	var targetSrv services.TaskTarget
 	logId, err := targetSrv.UpdateTargetAndSaveTargetLog(ctx, target.TaskID, target.ID, enums.TargetStatusRunning, enums.TargetIsAliveY, target.TargetURL)
@@ -462,6 +488,7 @@ func (a *DataSecScan) maybeFinishDataSecTask(ctx context.Context, taskID int) {
 		"status":      enums.TaskStatusFinish,
 		"update_time": time.Now(),
 	})
+	takeDataSecTaskCancel(taskID)
 }
 
 // CloneTaskTargets 从历史任务复制扫描目标（含凭据，仅任务所属用户可用）
@@ -590,6 +617,61 @@ func (a *DataSecScan) DeleteTask(ctx context.Context, uid int, id, kind string) 
 	var taskTaskSrv services.TaskTask
 	_ = taskTaskSrv.DelTaskInfoByTaskId(ctx, taskIDs)
 	return taskTaskSrv.DelTaskByIds(ctx, taskIDs)
+}
+
+func (a *DataSecScan) StopTask(ctx context.Context, uid int, req *typespec.DatasecTaskStopReq) error {
+	kind := strings.TrimSpace(req.Kind)
+	if kind == "" {
+		kind = dataSecScanKindDB
+	}
+	taskID, _, err := a.resolveDataSecTask(ctx, uid, req.ID, kind)
+	if err != nil {
+		return err
+	}
+
+	var taskModel mysqls.TaskTask
+	task, err := taskModel.GetTaskCheckTask(ctx, taskID)
+	if err != nil || task.ID == 0 {
+		return fmt.Errorf("任务不存在")
+	}
+	if task.Status != enums.TaskStatusRunning && task.Status != enums.TaskStatusBegin && task.Status != enums.TaskStatusPausing {
+		return fmt.Errorf("任务未在运行中")
+	}
+
+	if cancel := takeDataSecTaskCancel(taskID); cancel != nil {
+		cancel()
+	}
+
+	targets := (&mysqls.TaskTarget{}).GetTargetsByTaskId(ctx, taskID)
+	var targetModel mysqls.TaskTarget
+	var taskLogSrv services.TaskLog
+	now := time.Now()
+	for _, target := range targets {
+		if target.Status == enums.TargetStatusFinish {
+			continue
+		}
+		meta := parseDatasecExtend(target.ExtendField)
+		meta.ErrorMessage = "任务已手动结束"
+		metaBytes, _ := json.Marshal(meta)
+		_ = targetModel.UpdateTargetById(ctx, target.ID, map[string]interface{}{
+			"status":       enums.TargetStatusFinish,
+			"extend_field": string(metaBytes),
+			"update_time":  now,
+			"end_time":     now,
+		})
+		_ = taskLogSrv.UpdateTaskLogStateByTargetId(ctx, target.ID, enums.TaskStatusFinish)
+	}
+
+	_ = taskModel.UpdateTaskTaskByIds(ctx, []int{taskID}, map[string]interface{}{
+		"status":      enums.TaskStatusFinish,
+		"update_time": now,
+	})
+	var taskInfo mysqls.TaskTaskInfo
+	_ = taskInfo.UpdateTaskInfoByTaskIds(ctx, []int{taskID}, map[string]interface{}{
+		"status":      enums.TaskStatusFinish,
+		"update_time": now,
+	})
+	return nil
 }
 
 func (a *DataSecScan) resolveDataSecTask(ctx context.Context, uid int, id, kind string) (int, int, error) {

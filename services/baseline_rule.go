@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"smart/tools/enums"
 	"strings"
 	"sync"
@@ -109,8 +110,12 @@ func (e *BaselineEngine) Init(ctx context.Context, config *BaselineEngineConfig)
 			return fmt.Errorf("parse rule file %s failed: %v", filePath, err)
 		}
 
-		e.rules = append(e.rules, fileRules...)
 		for _, rule := range fileRules {
+			rule, ok := sanitizeBaselineRule(rule)
+			if !ok {
+				continue
+			}
+			e.rules = append(e.rules, rule)
 			e.rulesMap[rule.OSType] = append(e.rulesMap[rule.OSType], rule)
 		}
 	}
@@ -127,8 +132,12 @@ func (e *BaselineEngine) LoadRules(data []byte) error {
 		return err
 	}
 
-	e.rules = append(e.rules, rules...)
 	for _, rule := range rules {
+		rule, ok := sanitizeBaselineRule(rule)
+		if !ok {
+			continue
+		}
+		e.rules = append(e.rules, rule)
 		e.rulesMap[rule.OSType] = append(e.rulesMap[rule.OSType], rule)
 	}
 	return nil
@@ -149,6 +158,11 @@ func (e *BaselineEngine) ImportRules(rules []BaselineRule) (int, int) {
 	skipped := 0
 	imported := 0
 	for _, rule := range rules {
+		rule, ok := sanitizeBaselineRule(rule)
+		if !ok {
+			skipped++
+			continue
+		}
 		if rule.Name == "" || len(rule.Commands) == 0 {
 			skipped++
 			continue
@@ -259,7 +273,14 @@ func containsIgnoreSpace(output, expected string) bool {
 }
 
 func matchRegex(output, pattern string) bool {
-	return len(output) > 0 && len(pattern) > 0
+	if len(output) == 0 || len(pattern) == 0 {
+		return false
+	}
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return false
+	}
+	return re.MatchString(output)
 }
 
 func init() {

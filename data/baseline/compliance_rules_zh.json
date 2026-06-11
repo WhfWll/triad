@@ -8024,10 +8024,10 @@
     "risk": 2,
     "osType": 1,
     "commands": [
-      "# grep -P '\\b(pam_pwquality\\.so|pam_pwhistory\\.so|pam_faillock\\.so|pam_unix\\.so)\\b' /etc/authselect/\"$(head -1 /etc/authselect/authselect.conf)\"/{system,password}-auth"
+      "profile=$(head -1 /etc/authselect/authselect.conf 2>/dev/null || true); if [ -n \"$profile\" ] && [ -f \"/etc/authselect/$profile/system-auth\" ] && [ -f \"/etc/authselect/$profile/password-auth\" ]; then grep -P '\\b(pam_pwquality\\.so|pam_pwhistory\\.so|pam_faillock\\.so|pam_unix\\.so)\\b' \"/etc/authselect/$profile\"/{system,password}-auth; else echo 'NOT_APPLICABLE'; fi"
     ],
     "expectedValue": "\\b(pam_pwquality\\.so|pam_pwhistory\\.so|pam_faillock\\.so|pam_unix\\.so)\\b",
-    "matchType": "contains",
+    "matchType": "regex",
     "fixSuggestion": "请修改密码策略配置，确保符合安全要求",
     "riskDescription": "中危风险: 确保 Active Authselect Profile Includes PAM Modules。建议在适当时候修复此安全问题。"
   },
@@ -32335,10 +32335,10 @@
     "risk": 2,
     "osType": 3,
     "commands": [
-      "# grep -P '\\b(pam_pwquality\\.so|pam_pwhistory\\.so|pam_faillock\\.so|pam_unix\\.so)\\b' /etc/authselect/\"$(head -1 /etc/authselect/authselect.conf)\"/{system,password}-auth"
+      "profile=$(head -1 /etc/authselect/authselect.conf 2>/dev/null || true); if [ -n \"$profile\" ] && [ -f \"/etc/authselect/$profile/system-auth\" ] && [ -f \"/etc/authselect/$profile/password-auth\" ]; then grep -P '\\b(pam_pwquality\\.so|pam_pwhistory\\.so|pam_faillock\\.so|pam_unix\\.so)\\b' \"/etc/authselect/$profile\"/{system,password}-auth; else echo 'NOT_APPLICABLE'; fi"
     ],
     "expectedValue": "\\b(pam_pwquality\\.so|pam_pwhistory\\.so|pam_faillock\\.so|pam_unix\\.so)\\b",
-    "matchType": "contains",
+    "matchType": "regex",
     "fixSuggestion": "请修改密码策略配置，确保符合安全要求",
     "riskDescription": "中危风险: 确保 Active Authselect Profile Includes PAM Modules。建议在适当时候修复此安全问题。"
   },
@@ -53261,10 +53261,10 @@
     "risk": 2,
     "osType": 4,
     "commands": [
-      "# grep -P '\\b(pam_pwquality\\.so|pam_pwhistory\\.so|pam_faillock\\.so|pam_unix\\.so)\\b' /etc/authselect/\"$(head -1 /etc/authselect/authselect.conf)\"/{system,password}-auth"
+      "profile=$(head -1 /etc/authselect/authselect.conf 2>/dev/null || true); if [ -n \"$profile\" ] && [ -f \"/etc/authselect/$profile/system-auth\" ] && [ -f \"/etc/authselect/$profile/password-auth\" ]; then grep -P '\\b(pam_pwquality\\.so|pam_pwhistory\\.so|pam_faillock\\.so|pam_unix\\.so)\\b' \"/etc/authselect/$profile\"/{system,password}-auth; else echo 'NOT_APPLICABLE'; fi"
     ],
     "expectedValue": "\\b(pam_pwquality\\.so|pam_pwhistory\\.so|pam_faillock\\.so|pam_unix\\.so)\\b",
-    "matchType": "contains",
+    "matchType": "regex",
     "fixSuggestion": "请修改密码策略配置，确保符合安全要求",
     "riskDescription": "中危风险: 确保 Active Authselect Profile Includes PAM Modules。建议在适当时候修复此安全问题。"
   },
