@@ -106,6 +106,8 @@ type ConfigJson struct {
 	SubdomainCollectConfig SubdomainCollectConfig `json:"subdomainCollectConfig"` // 子域名收集配置
 	WebsiteLoginConfig     WebsiteLoginConfig     `json:"websiteLoginConfig"`     // 网站登录凭证配置
 	VulIdsConfig           []int                  `json:"vulIdsConfig"`           // 关联的漏洞ID
+	VulRiskLevels          []int                  `json:"vulRiskLevels"`          // 未指定插件时按风险等级筛选（应用安全）
+	VulClassLevels         []int                  `json:"vulClassLevels"`         // 未指定插件时按漏洞分类筛选（应用安全）
 	TestIntensity          int                    `json:"testIntensity"`          // 测试强度
 	VulExploit             bool                   `json:"vulExploit"`             // 漏洞利用
 	SafeTest               bool                   `json:"safeTest"`               // 安全测试

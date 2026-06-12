@@ -279,6 +279,47 @@
       border-top: 1px solid rgba(0, 212, 170, 0.08);
       padding: 16px 24px;
     }
+
+    .el-upload {
+      width: 100%;
+    }
+
+    .el-upload-dragger {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.35);
+      border: 2px dashed rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      transition: border-color 0.2s, background 0.2s;
+
+      &:hover {
+        border-color: rgba(0, 212, 170, 0.45);
+        background: rgba(0, 212, 170, 0.06);
+      }
+
+      .el-icon-upload {
+        color: #94a3b8;
+        font-size: 48px;
+        margin: 28px 0 12px;
+        line-height: 1;
+      }
+
+      .el-upload__text {
+        color: #94a3b8;
+        font-size: 14px;
+
+        em {
+          color: #00d4aa;
+          font-style: normal;
+        }
+      }
+    }
+
+    .el-upload__tip {
+      color: #64748b;
+      font-size: 12px;
+      margin-top: 10px;
+      line-height: 1.5;
+    }
   }
 }
 

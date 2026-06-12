@@ -140,6 +140,8 @@ func RegisterRoute() *gin.Engine {
 	smartRouterGroup.GET("/tools/vuldetail", rest.ToolsVulDetail)                            // 漏洞库 - 详情
 	smartRouterGroup.POST("/tools/vuledit", rest.ToolsVulEdit)                               // 漏洞库 - 编辑
 	smartRouterGroup.POST("/tools/vuleditstatus", rest.ToolsVulEditStatus)                   // 漏洞库 - 修改状态
+	smartRouterGroup.GET("/tools/vulscriptinfo", rest.ToolsVulScriptInfo)                    // 漏洞库 - 获取脚本信息
+	smartRouterGroup.POST("/tools/vultestscript", rest.ToolsVulTestScript)                   // 漏洞库 - 单脚本测试
 	smartRouterGroup.POST("/tools/importvulnvulkit", rest.ImportVulnFromVulKit)              // 漏洞库 - 导入VulKit漏洞脚本
 	smartRouterGroup.POST("/tools/importnuclei", rest.ImportNucleiTemplates)                 // 漏洞库 - 导入Nuclei模板
 	smartRouterGroup.GET("/tools/enum", rest.ToolsDictionaryEnum)                            // 字典库 - 枚举
@@ -156,6 +158,7 @@ func RegisterRoute() *gin.Engine {
 	smartRouterGroup.GET("/tools/delfinger", rest.DelToolsFinger)                            // 指纹库 - 删除
 	smartRouterGroup.POST("/tools/testfinger", rest.TestToolsFinger)                         // 指纹库 - 测试
 	smartRouterGroup.GET("/tools/testfingerresult", rest.ToolsFingerTestResult)              // 指纹库 - 测试结果
+	smartRouterGroup.POST("/tools/importfingervulkit", rest.ImportFingerprintFromVulKit)     // 指纹库 - 导入VulKit指纹
 	smartRouterGroup.POST("/tools/supportiphostcreate", rest.ToolsIpHostBindCreate)          // 辅助工具 - IP域名绑定 - 创建/编辑
 	smartRouterGroup.GET("/tools/supportiphostlist", rest.ToolsIpHostBindList)               // 辅助工具 - IP域名绑定 - 列表
 	smartRouterGroup.POST("/tools/supportiphostdel", rest.ToolsIpHostBindDel)                // 辅助工具 - IP域名绑定 - 删除
@@ -504,6 +507,8 @@ func RegisterRoute() *gin.Engine {
 	smartRouterGroup.GET("/appsec/appspecific/list", rest.AppSecAppSpecificScanList)     // 应用安全 - 专项应用检测列表
 	smartRouterGroup.GET("/appsec/appspecific/detail", rest.AppSecAppSpecificScanDetail) // 应用安全 - 专项应用检测详情
 	smartRouterGroup.POST("/appsec/task/stop", rest.AppSecTaskStop)                      // 应用安全 - 结束运行中任务
+	smartRouterGroup.GET("/appsec/overview", rest.AppSecOverview)                        // 应用安全 - 概览统计
+	smartRouterGroup.GET("/appsec/infocollect", rest.AppSecInfoCollectList)                  // 应用安全 - 信息收集列表分页查询
 
 	// 数据安全（任务化：数据库基线检查 / 敏感数据发现）
 	smartRouterGroup.POST("/datasec/db/test-conn", rest.DataSecDBTestConn)                      // 数据安全 - 数据库连接测试

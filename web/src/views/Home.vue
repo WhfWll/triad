@@ -45,7 +45,8 @@
               </template>
               <el-menu-item index="/appsec/tasks">任务管理</el-menu-item>
               <el-menu-item index="/appsec/strategy">扫描策略</el-menu-item>
-              <el-menu-item index="/appsec/vul-db">漏洞库</el-menu-item>
+              <el-menu-item index="/appsec/vul-db">漏洞管理</el-menu-item>
+              <el-menu-item index="/appsec/finger-db">指纹管理</el-menu-item>
             </el-submenu>
 
             <el-submenu index="submenu-datasec" v-if="role != 3">
@@ -218,7 +219,8 @@ export default {
         '/appsec/task/plugins': '应用安全 · 新建扫描',
         '/appsec/strategy': '应用安全 · 扫描策略',
         '/appsec/rules': '应用安全 · 检测规则',
-        '/appsec/vul-db': '应用安全 · 漏洞库',
+        '/appsec/vul-db': '应用安全 · 漏洞管理',
+        '/appsec/finger-db': '应用安全 · 指纹管理',
         '/datasec/tasks': '数据安全 · 任务管理',
         '/datasec/targets': '数据安全 · 数据库目标库',
         '/datasec/task/detail': '数据安全 · 任务详情',

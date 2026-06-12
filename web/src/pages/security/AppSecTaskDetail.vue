@@ -40,32 +40,48 @@
         <el-tabs v-model="activeTab" class="detail-tabs list_box" @tab-click="onTabClick">
           <!-- 概览 -->
           <el-tab-pane label="概览" name="overview">
-            <div class="stat-row">
-              <div v-if="scanType === 'dyn'" class="stat-card pages">
+            <div class="overview-main-row">
+              <div class="stat-card overview-targets">
+                <div class="stat-icon"><i class="el-icon-aim"></i></div>
+                <span class="stat-label">扫描目标</span>
+                <span class="stat-value">{{ targetList.length || 1 }}</span>
+              </div>
+              <div v-if="scanType === 'dyn'" class="stat-card overview-pages">
+                <div class="stat-icon"><i class="el-icon-files"></i></div>
                 <span class="stat-label">爬取页面</span>
                 <span class="stat-value">{{ task.pageCount || 0 }}</span>
               </div>
-              <div class="stat-card critical">
-                <span class="stat-label">严重</span>
-                <span class="stat-value">{{ task.criticalCount || 0 }}</span>
+              <div class="stat-card overview-plugins">
+                <div class="stat-icon"><i class="el-icon-cpu"></i></div>
+                <span class="stat-label">检测插件</span>
+                <span class="stat-value">{{ pluginCountLabel }}</span>
               </div>
-              <div class="stat-card high">
-                <span class="stat-label">高危</span>
-                <span class="stat-value">{{ task.highRiskCount || 0 }}</span>
-              </div>
-              <div class="stat-card medium">
-                <span class="stat-label">中危</span>
-                <span class="stat-value">{{ task.middleRiskCount || 0 }}</span>
-              </div>
-              <div class="stat-card low">
-                <span class="stat-label">低危</span>
-                <span class="stat-value">{{ task.lowRiskCount || 0 }}</span>
-              </div>
-              <div class="stat-card total">
+              <div class="stat-card overview-vulns">
+                <div class="stat-icon"><i class="el-icon-warning-outline"></i></div>
                 <span class="stat-label">漏洞合计</span>
                 <span class="stat-value">{{ task.vulnCount || (task.vulns && task.vulns.length) || 0 }}</span>
               </div>
             </div>
+
+            <div class="risk-level-row">
+              <div class="risk-chip critical">
+                <span class="risk-label">严重</span>
+                <span class="risk-num">{{ task.criticalCount || 0 }}</span>
+              </div>
+              <div class="risk-chip high">
+                <span class="risk-label">高危</span>
+                <span class="risk-num">{{ task.highRiskCount || 0 }}</span>
+              </div>
+              <div class="risk-chip medium">
+                <span class="risk-label">中危</span>
+                <span class="risk-num">{{ task.middleRiskCount || 0 }}</span>
+              </div>
+              <div class="risk-chip low">
+                <span class="risk-label">低危</span>
+                <span class="risk-num">{{ task.lowRiskCount || 0 }}</span>
+              </div>
+            </div>
+
             <div class="info-panel inner-panel">
               <div class="panel-title">任务信息</div>
               <div class="info-grid">
@@ -112,6 +128,7 @@
               </div>
               <p v-if="task.errorMessage" class="error-banner">{{ task.errorMessage }}</p>
             </div>
+
             <div class="info-panel inner-panel">
               <div class="panel-title">扫描能力摘要</div>
               <div class="capability-tags">
@@ -122,6 +139,21 @@
                 <el-tag v-if="configSummary.safeTest" size="small">安全测试模式</el-tag>
                 <el-tag v-if="!configSummary.crawler && !configSummary.portScan" size="small" type="info">仅漏洞检测</el-tag>
               </div>
+            </div>
+
+            <div class="quick-tab-row">
+              <el-link class="quick-tab-link" :underline="false" @click="activeTab = 'targets'">
+                <i class="el-icon-position"></i> 查看扫描目标
+              </el-link>
+              <el-link class="quick-tab-link" :underline="false" @click="activeTab = 'vulns'">
+                <i class="el-icon-warning-outline"></i> 查看漏洞详情
+              </el-link>
+              <el-link v-if="scanType === 'dyn'" class="quick-tab-link" :underline="false" @click="activeTab = 'assets'">
+                <i class="el-icon-folder-opened"></i> 查看站点资产
+              </el-link>
+              <el-link class="quick-tab-link" :underline="false" @click="activeTab = 'logs'">
+                <i class="el-icon-document"></i> 查看执行日志
+              </el-link>
             </div>
           </el-tab-pane>
 
@@ -316,65 +348,96 @@
 
           <!-- 扫描配置 -->
           <el-tab-pane label="扫描配置" name="config">
-            <div class="config-summary info-grid">
-              <div class="info-item">
-                <span class="label">测试模式</span>
-                <span class="value">{{ configSummary.testMode }}</span>
+            <app-sec-scan-config-view
+              :config="task.scanConfig"
+              :strategy-id="task.strategyId"
+            />
+          </el-tab-pane>
+
+          <!-- 信息收集 -->
+          <el-tab-pane name="infocollect">
+            <span slot="label">信息收集 <span v-if="infoTotal" class="tab-count">({{ infoTotal }})</span></span>
+            <div v-loading="icLoading" class="infocollect-section">
+              <div class="ic-tab-bar">
+                <div class="ic-sub-tabs">
+                  <button
+                    v-for="tab in icSubTabs"
+                    :key="tab.key"
+                    type="button"
+                    class="ic-sub-tab"
+                    :class="{ active: currentSubType === tab.key }"
+                    @click="switchSubType(tab.key)"
+                  >
+                    {{ tab.label }}
+                  </button>
+                </div>
+                <div class="ic-toolbar-right">
+                  <div class="search-text">
+                    <el-input
+                      v-model="icSearch"
+                      placeholder="搜索关键字"
+                      size="small"
+                      clearable
+                      class="input-with-select ic-search"
+                      @keydown.enter.native="fetchInfoCollect"
+                    />
+                    <el-button type="primary" size="small" @click="fetchInfoCollect">搜索</el-button>
+                  </div>
+                </div>
               </div>
-              <div class="info-item">
-                <span class="label">安全测试</span>
-                <span class="value">{{ configSummary.safeTest ? '是' : '否' }}</span>
+
+              <div class="ic-table-wrap">
+                <el-table v-loading="icTableLoading" :data="infoCollectList" class="myTable" max-height="480">
+                  <template v-if="currentSubType === '1_1'">
+                    <el-table-column prop="ip" label="IP" width="160" />
+                    <el-table-column prop="port" label="端口" width="80" />
+                    <el-table-column prop="protocol" label="协议" width="80" />
+                    <el-table-column prop="service" label="服务" width="100" />
+                    <el-table-column prop="component" label="组件/指纹" min-width="200" :show-overflow-tooltip="true" />
+                    <el-table-column prop="title" label="标题" min-width="160" :show-overflow-tooltip="true" />
+                    <el-table-column prop="banner" label="Banner" min-width="280" :show-overflow-tooltip="true">
+                      <template slot-scope="scope">
+                        <span class="ic-banner" :title="scope.row.banner">{{ scope.row.banner || '-' }}</span>
+                      </template>
+                    </el-table-column>
+                  </template>
+                  <template v-else-if="currentSubType === '1_2'">
+                    <el-table-column prop="target" label="站点" min-width="240" :show-overflow-tooltip="true" />
+                    <el-table-column prop="port" label="端口" width="80" />
+                    <el-table-column prop="service" label="服务" width="140" :show-overflow-tooltip="true" />
+                    <el-table-column prop="title" label="标题" min-width="160" :show-overflow-tooltip="true" />
+                    <el-table-column prop="fingerprint" label="指纹" min-width="160" :show-overflow-tooltip="true" />
+                    <el-table-column prop="waf" label="WAF" width="100" />
+                    <el-table-column prop="response" label="响应" min-width="200" :show-overflow-tooltip="true" />
+                  </template>
+                  <template v-else-if="currentSubType === '1_3'">
+                    <el-table-column prop="url" label="URL" min-width="300" :show-overflow-tooltip="true" />
+                    <el-table-column prop="status" label="状态码" width="90" />
+                    <el-table-column prop="length" label="响应长度" width="100" />
+                    <el-table-column prop="title" label="标题" min-width="160" :show-overflow-tooltip="true" />
+                  </template>
+                  <template slot="empty">
+                    <p class="empty-hint ic-empty">{{ icEmptyHint }}</p>
+                  </template>
+                </el-table>
               </div>
-              <div class="info-item">
-                <span class="label">漏洞利用</span>
-                <span class="value">{{ configSummary.vulExploit ? '是' : '否' }}</span>
-              </div>
-              <div class="info-item">
-                <span class="label">插件 ID 数量</span>
-                <span class="value">{{ configSummary.vulIdsCount }}</span>
-              </div>
-              <div class="info-item">
-                <span class="label">Web 爬虫</span>
-                <span class="value">{{ configSummary.crawler ? '已启用' : '未启用' }}</span>
-              </div>
-              <div class="info-item">
-                <span class="label">端口扫描</span>
-                <span class="value">{{ configSummary.portScan ? '已启用' : '未启用' }}</span>
-              </div>
-              <div class="info-item">
-                <span class="label">弱口令扫描</span>
-                <span class="value">{{ configSummary.weakPass ? '已启用' : '未启用' }}</span>
-              </div>
-              <div v-if="configSummary.weakPassServiceCount" class="info-item">
-                <span class="label">弱口令协议</span>
-                <span class="value">{{ configSummary.weakPassServiceCount }} 项</span>
-              </div>
-            </div>
-            <div class="config-json-wrap">
-              <div class="panel-title">完整配置快照（TaskTemplateJSON）</div>
-              <pre class="code-block config-json">{{ scanConfigJson }}</pre>
+
+              <el-pagination
+                v-if="icTotal > 0"
+                background
+                layout="total, prev, pager, next"
+                :total="icTotal"
+                :page-size="icPageSize"
+                :current-page="icPage"
+                class="ic-pager items-pager"
+                @current-change="onIcPageChange"
+              />
             </div>
           </el-tab-pane>
 
           <!-- 执行日志 -->
           <el-tab-pane label="执行日志" name="logs">
             <app-sec-task-logs :task-id="taskId" />
-          </el-tab-pane>
-
-          <!-- 报告导出 -->
-          <el-tab-pane label="报告与导出" name="export">
-            <div class="export-panel">
-              <p class="export-desc">导出本任务的审查结果，用于留存审计记录或二次分析。</p>
-              <div class="export-actions">
-                <el-button type="primary" @click="exportCsv">导出漏洞列表 (CSV)</el-button>
-                <el-button @click="exportSummary">导出审查摘要 (TXT)</el-button>
-                <el-button @click="copySummary">复制摘要到剪贴板</el-button>
-              </div>
-              <div class="export-preview">
-                <div class="panel-title">摘要预览</div>
-                <pre class="code-block">{{ auditSummaryPreview }}</pre>
-              </div>
-            </div>
           </el-tab-pane>
         </el-tabs>
       </template>
@@ -385,6 +448,7 @@
 <script>
 import security from '@/api/security.js'
 import AppSecTaskLogs from './components/AppSecTaskLogs.vue'
+import AppSecScanConfigView from './components/AppSecScanConfigView.vue'
 import {
   exportVulnsToCsv,
   buildAuditSummaryText,
@@ -401,11 +465,17 @@ import {
   scanTypeLabel
 } from './appsecTaskLabels.js'
 
-const VALID_TABS = ['overview', 'targets', 'vulns', 'assets', 'config', 'logs', 'export']
+const VALID_TABS = ['overview', 'targets', 'vulns', 'assets', 'config', 'infocollect', 'logs', 'export']
+
+const IC_SUB_TABS = [
+  { key: '1_1', label: '端口服务' },
+  { key: '1_2', label: '站点' },
+  { key: '1_3', label: 'URL' }
+]
 
 export default {
   name: 'AppSecTaskDetail',
-  components: { AppSecTaskLogs },
+  components: { AppSecTaskLogs, AppSecScanConfigView },
   data() {
     return {
       loading: false,
@@ -422,7 +492,16 @@ export default {
       },
       selectedTargetId: null,
       vulnPage: 1,
-      vulnPageSize: 20
+      vulnPageSize: 20,
+      icLoading: false,
+      icTableLoading: false,
+      currentSubType: '1_1',
+      icSearch: '',
+      icPage: 1,
+      icPageSize: 20,
+      icTotal: 0,
+      infoTotal: 0,
+      infoCollectList: []
     }
   },
   computed: {
@@ -521,15 +600,6 @@ export default {
       const n = this.configSummary.vulIdsCount
       return n > 0 ? `${n} 个已选插件` : '未指定（按策略默认/全量规则）'
     },
-    scanConfigJson() {
-      const cfg = this.task && this.task.scanConfig
-      if (!cfg) return '{}'
-      try {
-        return JSON.stringify(cfg, null, 2)
-      } catch {
-        return String(cfg)
-      }
-    },
     auditSummaryPreview() {
       if (!this.task) return ''
       return buildAuditSummaryText(this.task, this.scanType, {
@@ -554,6 +624,18 @@ export default {
       const start = (this.vulnPage - 1) * this.vulnPageSize
       const end = start + this.vulnPageSize
       return list.slice(start, end)
+    },
+    icSubTabs() {
+      return IC_SUB_TABS
+    },
+    icEmptyHint() {
+      if (this.task && this.task.status === 3) {
+        return '暂无该类型的信息收集结果。若策略未启用端口扫描或爬虫，对应数据可能为空。'
+      }
+      if (this.task && this.task.status === 2) {
+        return '信息收集中，请稍后刷新。'
+      }
+      return '暂无数据，任务完成后将在此展示信息收集结果。'
     }
   },
   watch: {
@@ -666,11 +748,17 @@ export default {
       if (VALID_TABS.includes(tab)) {
         this.activeTab = tab
       }
+      if (this.activeTab === 'infocollect') {
+        this.fetchInfoCollect()
+      }
     },
     onTabClick() {
       const q = { ...this.$route.query, tab: this.activeTab }
       if (this.activeTab === 'overview') delete q.tab
       this.$router.replace({ path: this.$route.path, query: q }).catch(() => {})
+      if (this.activeTab === 'infocollect') {
+        this.fetchInfoCollect()
+      }
     },
     applyRouteTargetId(id) {
       if (!id) {
@@ -831,6 +919,49 @@ export default {
         clearInterval(this.pollTimer)
         this.pollTimer = null
       }
+    },
+    async fetchInfoCollect() {
+      if (!this.taskId) return
+      this.icTableLoading = true
+      try {
+        const res = await security.getAppSecInfoCollect({
+          taskId: this.taskId,
+          subObjType: this.currentSubType,
+          search: this.icSearch,
+          page: this.icPage,
+          size: this.icPageSize
+        })
+        if (res.code == 200 && res.data) {
+          this.infoCollectList = res.data.list || []
+          this.icTotal = res.data.total || 0
+          this.infoTotal = this.icTotal
+        } else {
+          this.infoCollectList = []
+          this.icTotal = 0
+          this.infoTotal = 0
+        }
+      } catch {
+        this.infoCollectList = []
+        this.icTotal = 0
+        this.infoTotal = 0
+      } finally {
+        this.icTableLoading = false
+        this.icLoading = false
+      }
+    },
+    switchSubType(key) {
+      if (this.currentSubType === key) return
+      this.currentSubType = key
+      this.onSubTypeChange()
+    },
+    onSubTypeChange() {
+      this.icPage = 1
+      this.icSearch = ''
+      this.fetchInfoCollect()
+    },
+    onIcPageChange(page) {
+      this.icPage = page
+      this.fetchInfoCollect()
     },
     onVulnPageChange(page) {
       this.vulnPage = page

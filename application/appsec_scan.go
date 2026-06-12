@@ -692,6 +692,8 @@ func resolveAppSecVulLibraries(ctx context.Context, configJson enums.ConfigJson)
 	var err error
 	if len(configJson.VulIdsConfig) > 0 {
 		out, err = lib.GetVulLibsByIds(ctx, configJson.VulIdsConfig)
+	} else if len(configJson.VulRiskLevels) > 0 || len(configJson.VulClassLevels) > 0 {
+		out, err = lib.GetAppSecVulLibrariesFiltered(ctx, configJson.SafeTest, configJson.VulRiskLevels, configJson.VulClassLevels)
 	} else {
 		out, err = lib.GetAppSecDefaultVulLibraries(ctx, configJson.SafeTest)
 	}
@@ -733,4 +735,89 @@ func firstNonEmpty(values ...string) string {
 		}
 	}
 	return ""
+}
+
+func (a *AppSecScan) GetOverview(ctx context.Context, uid int, taskType int) (*typespec.AppSecOverviewResp, error) {
+	resp := &typespec.AppSecOverviewResp{
+		VulnByRisk: make(map[string]int),
+	}
+
+	var taskModel mysqls.TaskTask
+	tasks, _, err := taskModel.GetAppSecTaskList(ctx, taskType, uid, 1, 1000, "")
+	if err != nil {
+		return nil, err
+	}
+
+	for _, t := range tasks {
+		resp.TaskTotal++
+		if t.Status == enums.TaskStatusRunning {
+			resp.TaskRunning++
+		}
+		if t.Status == enums.TaskStatusFinish {
+			resp.TaskCompleted++
+		}
+		critical, high, mid, low := countTaskVulnsByRisk(ctx, t.ID)
+		resp.VulnTotal += critical + high + mid + low
+		if critical > 0 {
+			resp.VulnByRisk["critical"] += critical
+		}
+		if high > 0 {
+			resp.VulnByRisk["high"] += high
+		}
+		if mid > 0 {
+			resp.VulnByRisk["medium"] += mid
+		}
+		if low > 0 {
+			resp.VulnByRisk["low"] += low
+		}
+	}
+
+	var fingerModel mysqls.Finger
+	resp.FingerCount = fingerModel.GetFingerCount(ctx)
+
+	var vulLibModel mysqls.VulLibraries
+	resp.ScriptCount, _ = vulLibModel.GetVulLibCount(ctx)
+
+	recentLimit := 5
+	if len(tasks) > recentLimit {
+		tasks = tasks[:recentLimit]
+	}
+	recentItems := make([]typespec.AppSecTaskItem, 0, len(tasks))
+	for _, t := range tasks {
+		item, err := a.buildTaskItem(ctx, t, "dyn", false)
+		if err != nil {
+			continue
+		}
+		recentItems = append(recentItems, *item)
+	}
+	resp.RecentTasks = recentItems
+
+	return resp, nil
+}
+
+func (a *AppSecScan) InfoCollectList(ctx context.Context, req *typespec.AppSecInfoCollectReq, resp *typespec.AppSecInfoCollectResp) error {
+	var taskResultSrv services.TaskTaskResult
+	taskResultRes, count, err := taskResultSrv.TaskResultList(ctx, enums.TaskResultObjTypeInfo, req.SubObjType, strconv.Itoa(req.TaskID), req.Search, req.Page, req.Size)
+	if err != nil {
+		return err
+	}
+	resp.Total = count
+	resp.List = make([]map[string]interface{}, 0)
+	for i := 0; i < len(taskResultRes); i++ {
+		var tmp = make(map[string]interface{}, 0)
+		tmp["id"] = taskResultRes[i].ID
+		tmp["objType"] = taskResultRes[i].ObjType
+		tmp["subObjType"] = taskResultRes[i].SubObjType
+		tmp["objId"] = taskResultRes[i].ObjID
+		tmp["subObjId"] = taskResultRes[i].SubObjID
+		tmp["identify"] = taskResultRes[i].Identify
+		tmp["field1"] = taskResultRes[i].Field1
+		tmp["field2"] = taskResultRes[i].Field2
+		tmp["field3"] = taskResultRes[i].Field3
+		tmp["field4"] = taskResultRes[i].Field4
+		tmp["createTime"] = taskResultRes[i].CreateTime
+		json.Unmarshal([]byte(taskResultRes[i].JSONResult), &tmp)
+		resp.List = append(resp.List, tmp)
+	}
+	return nil
 }

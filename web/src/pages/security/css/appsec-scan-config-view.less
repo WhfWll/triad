@@ -1,0 +1,292 @@
+@import './appsec-tokens.less';
+
+.scan-config-view {
+  display: flex;
+  flex-direction: column;
+  gap: @appsec-space-md;
+  padding: 2px 0 8px;
+}
+
+.cfg-cap-strip {
+  padding: 14px 18px;
+  border-radius: @appsec-radius-md;
+  background: linear-gradient(135deg, rgba(0, 212, 170, 0.06) 0%, rgba(0, 0, 0, 0.18) 100%);
+  border: 1px solid @appsec-border-default;
+}
+
+.cfg-cap-strip-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: @appsec-text-muted;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 10px;
+}
+
+.config-capability-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cfg-cap-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: @appsec-radius-sm;
+  font-size: 13px;
+  font-weight: 500;
+  color: @appsec-text-muted;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid @appsec-border-subtle;
+  transition: all 0.2s;
+
+  i {
+    font-size: 14px;
+    opacity: 0.85;
+  }
+
+  &.on {
+    color: @appsec-accent;
+    background: rgba(0, 212, 170, 0.1);
+    border-color: rgba(0, 212, 170, 0.35);
+    box-shadow: 0 0 12px rgba(0, 212, 170, 0.08);
+
+    i {
+      opacity: 1;
+    }
+  }
+}
+
+.config-panel {
+  padding: 18px 20px;
+  border-radius: @appsec-radius-md;
+  background: rgba(0, 0, 0, 0.16);
+  border: 1px solid @appsec-border-subtle;
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &.is-enabled {
+    border-color: @appsec-border-default;
+    box-shadow: inset 3px 0 0 @appsec-accent;
+  }
+
+  &.is-disabled {
+    opacity: 0.72;
+    box-shadow: inset 3px 0 0 rgba(148, 163, 184, 0.25);
+  }
+}
+
+.config-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.panel-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: @appsec-text-primary;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  i {
+    color: @appsec-accent;
+    font-size: 17px;
+  }
+}
+
+.cfg-status-tag {
+  flex-shrink: 0;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+
+  &.on {
+    color: @appsec-accent;
+    background: rgba(0, 212, 170, 0.14);
+    border: 1px solid rgba(0, 212, 170, 0.28);
+  }
+
+  &.off {
+    color: @appsec-text-muted;
+    background: rgba(148, 163, 184, 0.08);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+  }
+}
+
+.cfg-count-badge {
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #c4b5fd;
+  background: rgba(167, 139, 250, 0.14);
+  border: 1px solid rgba(167, 139, 250, 0.28);
+}
+
+.cfg-kv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+
+  &--basics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.cfg-kv-card {
+  padding: 10px 12px;
+  border-radius: @appsec-radius-sm;
+  background: rgba(15, 15, 26, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  min-height: 58px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+
+  &.full-width {
+    grid-column: 1 / -1;
+  }
+}
+
+.cfg-kv-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: @appsec-text-muted;
+  letter-spacing: 0.02em;
+}
+
+.cfg-kv-value {
+  font-size: 13px;
+  color: @appsec-text-primary;
+  word-break: break-all;
+  line-height: 1.45;
+
+  &.mono {
+    font-family: Consolas, 'Menlo', monospace;
+    font-size: 12px;
+    color: #cbd5e1;
+  }
+}
+
+.cfg-port-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.cfg-port-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: Consolas, 'Menlo', monospace;
+  font-size: 11px;
+  color: #7dd3fc;
+  background: rgba(96, 165, 250, 0.1);
+  border: 1px solid rgba(96, 165, 250, 0.18);
+}
+
+.cfg-port-more {
+  font-size: 11px;
+  color: @appsec-text-muted;
+  align-self: center;
+}
+
+.config-disabled-hint {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: @appsec-radius-sm;
+  color: @appsec-text-muted;
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.config-vuln-hint {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: @appsec-radius-sm;
+  color: @appsec-text-body;
+  font-size: 13px;
+  line-height: 1.6;
+  background: rgba(167, 139, 250, 0.06);
+  border: 1px solid rgba(167, 139, 250, 0.12);
+}
+
+.config-table-wrap {
+  border-radius: @appsec-radius-sm;
+  overflow: hidden;
+  border: 1px solid @appsec-border-subtle;
+}
+
+.config-raw-wrap {
+  margin-top: 4px;
+}
+
+.config-raw-toggle {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid @appsec-border-subtle;
+  border-radius: @appsec-radius-sm;
+  color: @appsec-text-body;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 10px 16px;
+  width: 100%;
+  text-align: left;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+
+  &:hover {
+    color: @appsec-accent;
+    border-color: rgba(0, 212, 170, 0.28);
+    background: rgba(0, 212, 170, 0.06);
+  }
+
+  i {
+    margin-right: 6px;
+  }
+}
+
+.config-json {
+  .appsec-code-block();
+  max-height: 360px;
+  margin-top: 10px;
+}
+
+// 表格深色覆盖（组件 scoped 内需 /deep/）
+/deep/ .config-table-wrap .el-table {
+  background: transparent;
+
+  &::before {
+    display: none;
+  }
+
+  th {
+    background: @appsec-bg-surface-header !important;
+    color: @appsec-text-body !important;
+    border-color: rgba(255, 255, 255, 0.06) !important;
+    font-weight: 600;
+    font-size: 12px;
+  }
+
+  td {
+    background: transparent !important;
+    color: @appsec-text-primary !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+    font-size: 13px;
+  }
+
+  tr:hover > td {
+    background: rgba(0, 212, 170, 0.08) !important;
+  }
+}

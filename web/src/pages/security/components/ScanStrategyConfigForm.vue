@@ -24,6 +24,12 @@
             <el-button size="small" type="text" @click="clearAllVulns">清空</el-button>
           </div>
         </div>
+        <p v-if="strategyVulnRuleLabel && strategyVulnResolving" class="vuln-rule-hint">
+          正在加载「{{ strategyVulnRuleLabel }}」策略默认插件…
+        </p>
+        <p v-else-if="strategyVulnRuleLabel && selectedVulnIds.length" class="vuln-rule-hint">
+          本策略默认包含风险等级为「{{ strategyVulnRuleLabel }}」的插件，共 {{ selectedVulnIds.length }} 个。
+        </p>
         <p v-if="vulnLoadError" class="vuln-load-error">{{ vulnLoadError }}</p>
         <el-table
           ref="vulnTable"
@@ -250,6 +256,11 @@ import {
   cloneDefaultWeakPass,
   WEAKPASS_SERVICE_FALLBACK
 } from '../appsecWeakPassDefaults.js'
+import {
+  getStrategyVulnRule,
+  getStrategyVulnRuleLabel,
+  fetchVulnIdsByRule
+} from '../appsecStrategyVuln.js'
 
 export default {
   name: 'ScanStrategyConfigForm',
@@ -279,10 +290,17 @@ export default {
       vulnLoadError: '',
       selectAllAllLoading: false,
       weakPassServiceOptions: [],
-      weakPassServicesLoading: false
+      weakPassServicesLoading: false,
+      strategyVulnResolving: false
     }
   },
   computed: {
+    strategyVulnRuleLabel() {
+      return getStrategyVulnRuleLabel(this.strategyId, this.config)
+    },
+    strategyVulnRule() {
+      return getStrategyVulnRule(this.strategyId, this.config)
+    },
     sections() {
       return getStrategySections(this.strategyId)
     },
@@ -565,11 +583,34 @@ export default {
         libRisk: this.vulnFilter.risk !== null && this.vulnFilter.risk !== '' ? this.vulnFilter.risk : undefined
       }
     },
+    async ensureStrategyVulnSelection() {
+      if (this.config.vulIdsConfig && this.config.vulIdsConfig.length) return
+      const rule = this.strategyVulnRule
+      if (!rule || this.strategyVulnResolving) return
+      this.strategyVulnResolving = true
+      try {
+        const ids = await fetchVulnIdsByRule(rule)
+        if (!ids.length) return
+        if (rule.vulRiskLevels && rule.vulRiskLevels.length &&
+          (!this.config.vulRiskLevels || !this.config.vulRiskLevels.length)) {
+          this.$set(this.config, 'vulRiskLevels', [...rule.vulRiskLevels])
+        }
+        if (rule.vulClassLevels && rule.vulClassLevels.length &&
+          (!this.config.vulClassLevels || !this.config.vulClassLevels.length)) {
+          this.$set(this.config, 'vulClassLevels', [...rule.vulClassLevels])
+        }
+        this.selectedVulnIds = ids
+        this.syncVulIdsToConfig()
+      } finally {
+        this.strategyVulnResolving = false
+      }
+    },
     async fetchVulns() {
       if (!this.showPanel('vuln')) return
       this.vulnLoading = true
       this.vulnLoadError = ''
       try {
+        await this.ensureStrategyVulnSelection()
         const res = await vulnerability.getObjectData(
           this.buildVulnQueryParams(this.vulnPage, this.vulnPageSize)
         )
@@ -758,6 +799,12 @@ export default {
   color: #64748b;
   font-size: 12px;
   margin-right: 4px;
+}
+.vuln-rule-hint {
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #94a3b8;
 }
 .vuln-load-error {
   color: #f87171;

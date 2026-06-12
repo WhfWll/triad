@@ -182,7 +182,9 @@ func (check *TaskRuntimeCheck) getRuntimeSecond(runtimePeriod string) (int, int,
 
 // 校验运行时间段是否处于当前时间，是否允许运行
 func (check *TaskRuntimeCheck) CheckIsAllowRunning(runtimePeriod []string) bool {
-	// 默认不允许运行
+	if len(runtimePeriod) == 0 {
+		return true
+	}
 	isAllowRun := false
 	currentTotalMin := (time.Now().Hour() * 60) + time.Now().Minute()
 

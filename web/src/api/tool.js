@@ -59,6 +59,10 @@ const fingerprint = {
     // 指纹测试日志
     testfingerlog(params){ 
         return axios.get('/smart/tools/testfingerresult', params)
+    },
+    // 导入指纹
+    importFingerprint(params) {
+        return axios.postFormData('/smart/tools/importfingervulkit', params)
     }
 }
 const vulnerability = {
@@ -109,6 +113,14 @@ const vulnerability = {
     },
     importNucleiTemplates(data) {
         return $ajax.post('/smart/tools/importnuclei', data)
+    },
+    // 单脚本测试
+    testScript(params) {
+        return axios.post('/smart/tools/vultestscript', params)
+    },
+    // 获取脚本信息
+    getScriptInfo(params) {
+        return axios.get('/smart/tools/vulscriptinfo', params)
     }
 }
 const dictionary = {

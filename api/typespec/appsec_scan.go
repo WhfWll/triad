@@ -12,6 +12,8 @@ type AppSecScanRunReq struct {
 	VulExploit    bool   `json:"vulExploit"`
 	TestIntensity int    `json:"testIntensity"`
 	VulIdsConfig  []int  `json:"vulIdsConfig"`
+	VulRiskLevels  []int  `json:"vulRiskLevels"`
+	VulClassLevels []int  `json:"vulClassLevels"`
 
 	WebsiteLogin map[string]interface{} `json:"websiteLogin"`
 	WebCrawler   map[string]interface{} `json:"webCrawler"`
@@ -107,4 +109,28 @@ type AppSecTaskStopReq struct {
 
 type AppSecTaskStopResp struct {
 	Stopped bool `json:"stopped"`
+}
+
+type AppSecOverviewResp struct {
+	TaskTotal     int              `json:"taskTotal"`
+	TaskRunning   int              `json:"taskRunning"`
+	TaskCompleted int              `json:"taskCompleted"`
+	VulnTotal     int              `json:"vulnTotal"`
+	VulnByRisk    map[string]int   `json:"vulnByRisk"`
+	FingerCount   int64            `json:"fingerCount"`
+	ScriptCount   int64            `json:"scriptCount"`
+	RecentTasks   []AppSecTaskItem `json:"recentTasks"`
+}
+
+type AppSecInfoCollectReq struct {
+	TaskID     int    `json:"taskId" form:"taskId"`
+	SubObjType string `json:"subObjType" form:"subObjType"`
+	Search     string `json:"search" form:"search"`
+	Page       int    `json:"page" form:"page"`
+	Size       int    `json:"size" form:"size"`
+}
+
+type AppSecInfoCollectResp struct {
+	List  []map[string]interface{} `json:"list"`
+	Total int64                    `json:"total"`
 }

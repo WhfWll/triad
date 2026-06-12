@@ -4,7 +4,15 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"os/exec"
+	"runtime"
+	"strings"
+	"sync"
+	"time"
 )
+
+const nucleiTestTimeout = 300 * time.Second
 
 // buildNucleiParam 进行nuceli脚本调用
 func (c *CallInfo) buildNucleiParam(ctx context.Context, scriptParamList []string, fname string, params []string) ([]string, []string) {
@@ -22,6 +30,92 @@ func (c *CallInfo) buildNucleiParam(ctx context.Context, scriptParamList []strin
 	scriptParamList = append(scriptParamList, fname)
 	scriptParamList = append(scriptParamList, params...)
 	return scriptParamList, tempFileList
+}
+
+// ExecuteNucleiScriptForTest 通过 yak 包装器执行 nuclei 模板测试
+func ExecuteNucleiScriptForTest(ctx context.Context, nucleiTemplatePath string, params []string) (string, error) {
+	fnuclei, err := ioutil.TempFile("", "nuclei-executor-*.yak")
+	if err != nil {
+		return "", fmt.Errorf("创建nuclei执行脚本失败: %w", err)
+	}
+	defer os.Remove(fnuclei.Name())
+
+	if _, err = fnuclei.WriteString(nucleiExecutor); err != nil {
+		return "", fmt.Errorf("写入nuclei执行脚本失败: %w", err)
+	}
+	if err = fnuclei.Close(); err != nil {
+		return "", fmt.Errorf("关闭nuclei执行脚本失败: %w", err)
+	}
+
+	var (
+		results    []string
+		resultLock sync.Mutex
+	)
+
+	yakitServer := NewYakitServer(
+		0,
+		SetYakitServer_LogHandler(func(level string, info string) {
+			if info == "end" {
+				return
+			}
+			resultLock.Lock()
+			results = append(results, info)
+			resultLock.Unlock()
+		}),
+	)
+	yakitServer.Start()
+	defer yakitServer.Shutdown()
+
+	scriptParamList := []string{
+		fnuclei.Name(),
+		"--yakit-webhook", yakitServer.Addr(),
+		"--pocFile", nucleiTemplatePath,
+	}
+	scriptParamList = append(scriptParamList, params...)
+
+	ctxTimeout, cancel := context.WithTimeout(ctx, nucleiTestTimeout)
+	defer cancel()
+
+	yakCmd := "yak"
+	if runtime.GOOS == "windows" {
+		yakCmd = "yak.exe"
+	}
+
+	cmd := exec.CommandContext(ctxTimeout, yakCmd, scriptParamList...)
+	cmd.Env = append(os.Environ(), fmt.Sprintf("YAKIT_HOME=%v", os.Getenv("YAKIT_HOME")))
+
+	fmt.Printf("[TestScript][Nuclei] 执行命令: %s %s\n", yakCmd, strings.Join(scriptParamList, " "))
+
+	cmdOutput, err := cmd.CombinedOutput()
+
+	// 等待 webhook 回调处理完成
+	time.Sleep(1 * time.Second)
+
+	resultLock.Lock()
+	output := strings.Join(results, "\n")
+	resultLock.Unlock()
+
+	if len(cmdOutput) > 0 {
+		if output != "" {
+			output += "\n"
+		}
+		output += string(cmdOutput)
+	}
+
+	if err != nil {
+		if ctxTimeout.Err() == context.DeadlineExceeded {
+			return output, fmt.Errorf("脚本执行超时（300秒）")
+		}
+		if strings.TrimSpace(output) == "" {
+			return string(cmdOutput), fmt.Errorf("命令执行出错: %w", err)
+		}
+		output += fmt.Sprintf("\n命令执行出错: %v", err)
+	}
+
+	if strings.TrimSpace(output) == "" {
+		output = "[信息] Nuclei扫描完成，未发现漏洞"
+	}
+	return output, nil
 }
 
 var nucleiExecutor = `yakit.AutoInitYakit()

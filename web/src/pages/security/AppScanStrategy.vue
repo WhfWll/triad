@@ -91,6 +91,7 @@
 <script>
 import { getBuiltinStrategiesWithConfig } from './appsecBuiltinStrategies.js'
 import { strategyCardAccentStyle, strategyIconWrapStyle } from './appsecStrategyTheme.js'
+import { getStrategyVulnRuleLabel } from './appsecStrategyVuln.js'
 
 export default {
   name: 'AppScanStrategy',
@@ -118,6 +119,8 @@ export default {
     vulnLabel(s) {
       const n = s.vulnCount || (s.config?.vulIdsConfig && s.config.vulIdsConfig.length) || 0
       if (n > 0) return `漏洞脚本 ${n}`
+      const ruleLabel = getStrategyVulnRuleLabel(s.id, s.config)
+      if (ruleLabel) return `漏洞脚本 · ${ruleLabel}`
       return s.builtin ? '漏洞脚本 · 默认全部' : '漏洞脚本 · 未指定'
     },
     loadCustomStrategies() {

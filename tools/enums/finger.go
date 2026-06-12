@@ -220,6 +220,39 @@ func (f *finger) GetFingerSoftOrHard(typeID int) string {
 	return "软件"
 }
 
+// GetFingerTypeByClass 根据app_class推导finger_type（1=Web 2=服务 3=设备）
+func (f *finger) GetFingerTypeByClass(appClass int) int {
+	switch appClass {
+	case FingerClassNetworkEquipment, FingerClassSafeEquipment,
+		FingerClassIOT, FingerClassHostOperatingSystem,
+		FingerClassOfficeEquipment:
+		return FingerTypeDevice
+	case FingerClassDatabaseSer, FingerClassMailServer,
+		FingerClassVirtualSer, FingerClassBigDataPlatform:
+		return FingerTypeService
+	default:
+		return FingerTypeWeb
+	}
+}
+
+// GetFingerLevelByClass 根据app_class推导level分层（1=硬件层 2=系统层 3=服务层 4=支撑层 5=应用层）
+func (f *finger) GetFingerLevelByClass(appClass int) string {
+	switch {
+	case appClass == FingerClassNetworkEquipment || appClass == FingerClassSafeEquipment ||
+		appClass == FingerClassIOT || appClass == FingerClassOfficeEquipment:
+		return "1"
+	case appClass == FingerClassHostOperatingSystem || appClass == FingerClassVirtualSer:
+		return "2"
+	case appClass == FingerClassDatabaseSer || appClass == FingerClassMailServer ||
+		appClass == FingerClassBigDataPlatform || appClass == FingerClassMiddleware:
+		return "3"
+	case appClass == FingerClassCloudPlatform:
+		return "4"
+	default:
+		return "5"
+	}
+}
+
 // GetFingerLevel 获取指纹等级
 func (f *finger) GetFingerLevel(level int) string {
 	if res, ok := f.AllFingerLevel()[level]; ok {

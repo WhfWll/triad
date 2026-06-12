@@ -42,3 +42,16 @@ func GetScriptsByFuzzyName(ctx context.Context, name string) ([]VulScript, error
 	}
 	return scripts, nil
 }
+
+// GetScriptByScriptName 根据脚本名称精确匹配获取单个脚本
+func GetScriptByScriptName(ctx context.Context, scriptName string) (*VulScript, error) {
+	db, err := GetScannerDB()
+	if err != nil {
+		return nil, err
+	}
+	var script VulScript
+	if err := db.WithContext(ctx).Where("script_name = ?", scriptName).First(&script).Error; err != nil {
+		return nil, err
+	}
+	return &script, nil
+}

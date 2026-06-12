@@ -78,12 +78,14 @@ const BUILTIN_CONFIGS = {
   }),
   'builtin-highrisk': withAssessmentDefaults({
     vulIdsConfig: [],
+    vulRiskLevels: [1, 2],
     webCrawler: { isOpen: true, maxDepth: 3, scanRange: 0, crawlerSpeed: 2 },
     portScan: { isOpen: true, scanPort: '80,443,3306,8080', tcpScanType: 1, timeout: 10, concurrent: 100 },
     proxy: { isOpen: false, proto: 1, addr: '', port: '' }
   }),
   'builtin-web': withAssessmentDefaults({
     vulIdsConfig: [],
+    vulClassLevels: [1, 5, 6, 7],
     webCrawler: { isOpen: true, maxDepth: 6, scanRange: 0, crawlerSpeed: 3 },
     portScan: { isOpen: false, scanPort: '', tcpScanType: 1, timeout: 10, concurrent: 100 },
     proxy: { isOpen: false, proto: 1, addr: '', port: '' }

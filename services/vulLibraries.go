@@ -50,6 +50,45 @@ func (a *VulLibraries) GetAppSecDefaultVulLibraries(ctx context.Context, safeTes
 	return out, nil
 }
 
+// GetAppSecVulLibrariesByRiskLevels 应用安全按风险等级筛选默认可用插件
+func (a *VulLibraries) GetAppSecVulLibrariesByRiskLevels(ctx context.Context, safeTest bool, riskLevels []int) ([]mysqls.VulLibraries, error) {
+	return a.GetAppSecVulLibrariesFiltered(ctx, safeTest, riskLevels, nil)
+}
+
+// GetAppSecVulLibrariesFiltered 应用安全按风险/分类筛选默认可用插件（条件为空则不过滤该维度）
+func (a *VulLibraries) GetAppSecVulLibrariesFiltered(ctx context.Context, safeTest bool, riskLevels, classLevels []int) ([]mysqls.VulLibraries, error) {
+	all, err := a.GetAppSecDefaultVulLibraries(ctx, safeTest)
+	if err != nil {
+		return nil, err
+	}
+	if len(riskLevels) == 0 && len(classLevels) == 0 {
+		return all, nil
+	}
+	riskSet := make(map[int]struct{}, len(riskLevels))
+	for _, r := range riskLevels {
+		riskSet[r] = struct{}{}
+	}
+	classSet := make(map[int]struct{}, len(classLevels))
+	for _, c := range classLevels {
+		classSet[c] = struct{}{}
+	}
+	out := make([]mysqls.VulLibraries, 0, len(all))
+	for _, v := range all {
+		if len(riskLevels) > 0 {
+			if _, ok := riskSet[v.Risk]; !ok {
+				continue
+			}
+		}
+		if len(classLevels) > 0 {
+			if _, ok := classSet[v.Class]; !ok {
+				continue
+			}
+		}
+		out = append(out, v)
+	}
+	return out, nil
+}
+
 // GetPrincipleScanVulLibraries 未指定插件 ID 时加载全部可用的 yak/nuclei 原理验证脚本
 func (a *VulLibraries) GetPrincipleScanVulLibraries(ctx context.Context, safeTest bool) ([]mysqls.VulLibraries, error) {
 	all, err := (&mysqls.VulLibraries{}).AllVulLibraries(ctx, fmt.Sprintf("status = %d", enums.VulLibrariesStatusSucess))

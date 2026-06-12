@@ -47,6 +47,12 @@ export function mergeScanConfig(base, patch) {
   if (patch.vulIdsConfig) {
     out.vulIdsConfig = [...patch.vulIdsConfig]
   }
+  if (patch.vulRiskLevels) {
+    out.vulRiskLevels = [...patch.vulRiskLevels]
+  }
+  if (patch.vulClassLevels) {
+    out.vulClassLevels = [...patch.vulClassLevels]
+  }
   ;['testMode', 'safeTest', 'vulExploit'].forEach(k => {
     if (patch[k] !== undefined) out[k] = patch[k]
   })

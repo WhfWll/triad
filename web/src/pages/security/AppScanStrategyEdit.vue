@@ -1,152 +1,122 @@
 <template>
   <div class="security-container nessus-editor">
-    <!-- 新建：先选模板 -->
-    <template v-if="step === 'pick'">
-      <div class="editor-header">
-        <div class="breadcrumb">
-          <span class="crumb-muted">扫描策略</span>
-          <span class="crumb-sep">/</span>
-          <span class="crumb-current">新建策略</span>
-        </div>
-        <a class="back-link" @click.prevent="goBack">
-          <i class="el-icon-arrow-left" /> 返回策略列表
-        </a>
+    <div class="editor-header">
+      <div class="breadcrumb">
+        <span class="crumb-muted">扫描策略</span>
+        <span class="crumb-sep">/</span>
+        <span class="crumb-current">{{ isNew ? '新建策略' : form.name || '编辑策略' }}</span>
+      </div>
+      <a class="back-link" @click.prevent="goBack">
+        <i class="el-icon-arrow-left" /> 返回策略列表
+      </a>
+    </div>
+
+    <div v-if="templateMeta" class="selected-banner list_box">
+      <div class="banner-icon-wrap" :style="iconWrapStyle(baseStrategyId)">
+        <span>{{ templateMeta.icon }}</span>
+      </div>
+      <div class="banner-text">
+        <span class="banner-label">基于模板</span>
+        <strong>{{ templateMeta.name }}</strong>
+        <span class="banner-desc">{{ templateMeta.desc }}</span>
+      </div>
+    </div>
+
+    <div class="editor-tabs">
+      <button
+        type="button"
+        class="tab-btn"
+        :class="{ active: activeTab === 'settings' }"
+        @click="switchTab('settings')"
+      >
+        配置
+      </button>
+      <button
+        v-if="strategySections.vuln"
+        type="button"
+        class="tab-btn"
+        :class="{ active: activeTab === 'plugins' }"
+        @click="switchTab('plugins')"
+      >
+        插件
+        <span v-if="pluginCount > 0" class="tab-badge">{{ pluginCount }}</span>
+      </button>
+    </div>
+
+    <div class="editor-body list_box">
+      <div v-if="activeTab === 'settings'" class="settings-layout">
+        <aside class="settings-sidebar">
+          <button
+            v-for="item in sidebarItems"
+            :key="item.key"
+            type="button"
+            class="nav-item"
+            :class="{ active: activeSection === item.key }"
+            @click="activeSection = item.key"
+          >
+            {{ item.label }}
+          </button>
+        </aside>
+
+        <main class="settings-panel">
+          <h2 class="panel-title">{{ panelTitle }}</h2>
+          <p v-if="panelHint" class="panel-hint">{{ panelHint }}</p>
+
+          <el-form label-position="top" class="nessus-form">
+            <template v-if="activeSection === 'general'">
+              <el-form-item label="策略名称" required>
+                <el-input v-model="form.name" placeholder="如：日常 Web 巡检策略" maxlength="50" />
+              </el-form-item>
+              <el-form-item label="策略描述">
+                <el-input
+                  v-model="form.desc"
+                  type="textarea"
+                  :rows="3"
+                  placeholder="简要说明该策略的适用场景"
+                  maxlength="200"
+                />
+              </el-form-item>
+            </template>
+
+            <scan-strategy-config-form
+              v-else-if="scanConfig && configSectionKey"
+              :config="scanConfig"
+              :strategy-id="baseStrategyId"
+              :section="configSectionKey"
+              page-mode="all"
+            />
+          </el-form>
+        </main>
       </div>
 
-      <div class="list_box pick-box">
-        <app-sec-strategy-picker
-          :strategies="pickStrategies"
-          intro="选择内置模板作为起点，进入下一步后可修改名称、插件与扫描参数。"
-          @select="onPickTemplate"
+      <div v-if="activeTab === 'plugins'" class="plugins-layout">
+        <h2 class="panel-title">漏洞检测插件</h2>
+        <p class="panel-hint">选择该策略默认启用的漏洞脚本（对应 vulIdsConfig）。未选择时按「默认全部」执行。</p>
+        <scan-strategy-config-form
+          v-if="scanConfig"
+          ref="pluginsForm"
+          :key="pluginsFormKey"
+          :config="scanConfig"
+          :strategy-id="baseStrategyId"
+          section="vuln"
+          page-mode="vuln"
         />
-        <div class="pick-footer">
-          <el-button size="small" @click="goBack">取消</el-button>
-        </div>
-      </div>
-    </template>
-
-    <!-- 编辑 / 新建第二步 -->
-    <template v-else>
-      <div class="editor-header">
-        <div class="breadcrumb">
-          <span class="crumb-muted">扫描策略</span>
-          <span class="crumb-sep">/</span>
-          <span class="crumb-current">{{ isNew ? '新建策略' : form.name || '编辑策略' }}</span>
-        </div>
-        <a class="back-link" @click.prevent="goBackOrPick">
-          <i class="el-icon-arrow-left" /> {{ isNew ? '重新选择模板' : '返回策略列表' }}
-        </a>
       </div>
 
-      <div v-if="templateMeta" class="selected-banner list_box">
-        <div class="banner-icon-wrap" :style="iconWrapStyle(baseStrategyId)">
-          <span>{{ templateMeta.icon }}</span>
-        </div>
-        <div class="banner-text">
-          <span class="banner-label">基于模板</span>
-          <strong>{{ templateMeta.name }}</strong>
-          <span class="banner-desc">{{ templateMeta.desc }}</span>
+      <div class="editor-footer">
+        <div class="editor-footer-inner">
+          <el-button @click="goBack">取消</el-button>
+          <el-button type="primary" :loading="saving" @click="saveStrategy">保存策略</el-button>
         </div>
       </div>
-
-      <div class="editor-tabs">
-        <button
-          type="button"
-          class="tab-btn"
-          :class="{ active: activeTab === 'settings' }"
-          @click="switchTab('settings')"
-        >
-          配置
-        </button>
-        <button
-          v-if="strategySections.vuln"
-          type="button"
-          class="tab-btn"
-          :class="{ active: activeTab === 'plugins' }"
-          @click="switchTab('plugins')"
-        >
-          插件
-          <span v-if="pluginCount > 0" class="tab-badge">{{ pluginCount }}</span>
-        </button>
-      </div>
-
-      <div class="editor-body list_box">
-        <div v-if="activeTab === 'settings'" class="settings-layout">
-          <aside class="settings-sidebar">
-            <button
-              v-for="item in sidebarItems"
-              :key="item.key"
-              type="button"
-              class="nav-item"
-              :class="{ active: activeSection === item.key }"
-              @click="activeSection = item.key"
-            >
-              {{ item.label }}
-            </button>
-          </aside>
-
-          <main class="settings-panel">
-            <h2 class="panel-title">{{ panelTitle }}</h2>
-            <p v-if="panelHint" class="panel-hint">{{ panelHint }}</p>
-
-            <el-form label-position="top" class="nessus-form">
-              <template v-if="activeSection === 'general'">
-                <el-form-item label="策略名称" required>
-                  <el-input v-model="form.name" placeholder="如：日常 Web 巡检策略" maxlength="50" />
-                </el-form-item>
-                <el-form-item label="策略描述">
-                  <el-input
-                    v-model="form.desc"
-                    type="textarea"
-                    :rows="3"
-                    placeholder="简要说明该策略的适用场景"
-                    maxlength="200"
-                  />
-                </el-form-item>
-              </template>
-
-              <scan-strategy-config-form
-                v-else-if="scanConfig && configSectionKey"
-                :config="scanConfig"
-                :strategy-id="baseStrategyId"
-                :section="configSectionKey"
-                page-mode="all"
-              />
-            </el-form>
-          </main>
-        </div>
-
-        <div v-if="activeTab === 'plugins'" class="plugins-layout">
-          <h2 class="panel-title">漏洞检测插件</h2>
-          <p class="panel-hint">选择该策略默认启用的漏洞脚本（对应 vulIdsConfig）。未选择时按「默认全部」执行。</p>
-          <scan-strategy-config-form
-            v-if="scanConfig"
-            ref="pluginsForm"
-            :key="pluginsFormKey"
-            :config="scanConfig"
-            :strategy-id="baseStrategyId"
-            section="vuln"
-            page-mode="vuln"
-          />
-        </div>
-
-        <div class="editor-footer">
-          <div class="editor-footer-inner">
-            <el-button @click="goBackOrPick">取消</el-button>
-            <el-button type="primary" :loading="saving" @click="saveStrategy">保存策略</el-button>
-          </div>
-        </div>
-      </div>
-    </template>
+    </div>
   </div>
 </template>
 
 <script>
 import ScanStrategyConfigForm from './components/ScanStrategyConfigForm.vue'
-import AppSecStrategyPicker from './components/AppSecStrategyPicker.vue'
 import { strategyIconWrapStyle } from './appsecStrategyTheme.js'
 import {
-  BUILTIN_STRATEGIES,
   getBuiltinStrategy,
   cloneBuiltinConfig,
   getStrategySections,
@@ -173,10 +143,9 @@ const PANEL_META = {
 
 export default {
   name: 'AppScanStrategyEdit',
-  components: { ScanStrategyConfigForm, AppSecStrategyPicker },
+  components: { ScanStrategyConfigForm },
   data() {
     return {
-      step: 'edit',
       saving: false,
       activeTab: 'settings',
       activeSection: 'general',
@@ -194,9 +163,6 @@ export default {
     isNew() {
       const id = this.$route.query.id
       return !id || id === 'new'
-    },
-    pickStrategies() {
-      return BUILTIN_STRATEGIES.map(s => ({ ...s, builtin: true }))
     },
     strategySections() {
       return getStrategySections(this.baseStrategyId)
@@ -236,7 +202,6 @@ export default {
     '$route.query.tab': {
       immediate: true,
       handler(tab) {
-        if (this.step !== 'edit') return
         if (tab === 'plugins' && this.strategySections.vuln) {
           this.activeTab = 'plugins'
         } else if (tab !== 'plugins') {
@@ -249,20 +214,29 @@ export default {
     this.$store.state.activefirstMenu = '/appsec/tasks'
     if (this.isNew) {
       const tpl = this.$route.query.template
-      const meta = tpl && getBuiltinStrategy(tpl)
+      const meta = tpl && tpl !== 'custom' && getBuiltinStrategy(tpl)
       if (meta) {
-        this.onPickTemplate({ ...meta, id: tpl, builtin: true })
+        this.applyTemplate({ ...meta, id: tpl, builtin: true })
         return
       }
-      this.step = 'pick'
+      this.initBlankStrategy()
       return
     }
-    this.step = 'edit'
     this.loadStrategy()
   },
   methods: {
     iconWrapStyle: strategyIconWrapStyle,
-    onPickTemplate(s) {
+    initBlankStrategy() {
+      this.baseStrategyId = 'builtin-full'
+      this.templateMeta = null
+      this.form.name = ''
+      this.form.desc = ''
+      this.form.icon = '⚙'
+      this.scanConfig = cloneBuiltinConfig('builtin-full')
+      this.activeTab = 'settings'
+      this.activeSection = 'general'
+    },
+    applyTemplate(s) {
       this.baseStrategyId = s.id
       this.templateMeta = { name: s.name, desc: s.desc, icon: s.icon }
       this.form.name = ''
@@ -271,8 +245,6 @@ export default {
       this.scanConfig = cloneBuiltinConfig(s.id)
       this.activeTab = 'settings'
       this.activeSection = 'general'
-      this.step = 'edit'
-      this.$router.replace({ path: '/appsec/strategy/new', query: { template: s.id } }).catch(() => {})
     },
     loadStrategy() {
       const id = this.$route.query.id
@@ -330,14 +302,6 @@ export default {
     },
     goBack() {
       this.$router.push('/appsec/strategy')
-    },
-    goBackOrPick() {
-      if (this.isNew && this.step === 'edit') {
-        this.step = 'pick'
-        this.$router.replace({ path: '/appsec/strategy/new' }).catch(() => {})
-        return
-      }
-      this.goBack()
     },
     async saveStrategy() {
       if (!this.form.name || !String(this.form.name).trim()) {
@@ -421,19 +385,6 @@ export default {
 <style lang="less" scoped>
 @import '../bas/css/bas-list-page.less';
 @import './css/appsec-strategy-editor.less';
-
-.pick-box {
-  padding: 24px;
-  margin-top: 16px;
-}
-
-.pick-footer {
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  display: flex;
-  justify-content: flex-end;
-}
 
 .selected-banner {
   display: flex;

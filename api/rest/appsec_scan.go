@@ -58,6 +58,23 @@ func AppSecDynamicScanRun(c *gin.Context) {
 	server.RespSuccess(c, resp)
 }
 
+func AppSecInfoCollectList(c *gin.Context) {
+	var req typespec.AppSecInfoCollectReq
+	if err := c.ShouldBindQuery(&req); err != nil {
+		server.RespFail(c, 4000, "参数错误: "+err.Error())
+		return
+	}
+	ctx := server.NewContext(context.Background(), c)
+	var app application.AppSecScan
+	var resp typespec.AppSecInfoCollectResp
+	if err := app.InfoCollectList(ctx, &req, &resp); err != nil {
+		log.Errorf("AppSecInfoCollectList: %v", err)
+		server.RespFail(c, 4000, err.Error())
+		return
+	}
+	server.RespSuccess(c, resp)
+}
+
 func AppSecDynamicScanList(c *gin.Context) {
 	var req typespec.AppSecScanListReq
 	if err := c.ShouldBind(&req); err != nil {
@@ -165,5 +182,21 @@ func AppSecTaskStop(c *gin.Context) {
 		return
 	}
 	addOperateAuditf(c, ctx, "结束了应用安全任务，任务ID: %s，类型: %s", req.ID, req.Kind)
+	server.RespSuccess(c, resp)
+}
+
+func AppSecOverview(c *gin.Context) {
+	kind := c.Query("kind")
+	taskType := enums.TaskTypeAppSecDynamic
+	if kind == "app" {
+		taskType = enums.TaskTypeAppSecApp
+	}
+	ctx := server.NewContext(context.Background(), c)
+	var app application.AppSecScan
+	resp, err := app.GetOverview(ctx, appSecUID(c), taskType)
+	if err != nil {
+		server.RespFail(c, 4000, err.Error())
+		return
+	}
 	server.RespSuccess(c, resp)
 }

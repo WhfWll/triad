@@ -193,6 +193,12 @@ const security = {
   getDynamicScanDetail: (params) => {
     return axios.get('/smart/appsec/dynamic/detail', params)
   },
+  getAppSecOverview: (params) => {
+    return axios.get('/smart/appsec/overview', params)
+  },
+  getAppSecInfoCollect: (params) => {
+    return axios.get('/smart/appsec/infocollect', params)
+  },
   getAppSpecificScanDetail: (params) => {
     return axios.get('/smart/appsec/appspecific/detail', params)
   },

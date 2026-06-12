@@ -858,51 +858,48 @@ func generatePortScanConfig(ctx context.Context, configJson enums.ConfigJson) *P
 	var rulesFile string
 	if len(fingerList) > 0 {
 		enable = true
-		// 构建指纹内容，确保每条规则以 YAML 列表项形式保存
-		var ruleContent string
+		var methodsContent string
 		for _, item := range fingerList {
 			if item.Flag == "" {
 				continue
 			}
 			lines := strings.Split(item.Flag, "\n")
-			for i, line := range lines {
-				if i == 0 {
-					trimmed := strings.TrimLeft(line, " \t")
-					if trimmed == "" {
+			foundMethods := false
+			for _, line := range lines {
+				trimmed := strings.TrimSpace(line)
+				if trimmed == "" && !foundMethods {
+					continue
+				}
+				if !foundMethods {
+					if strings.HasPrefix(trimmed, "methods:") {
+						foundMethods = true
 						continue
 					}
-					if !strings.HasPrefix(trimmed, "- ") {
-						line = "- " + trimmed
-					} else {
-						line = trimmed
-					}
-				} else {
-					if strings.TrimSpace(line) != "" {
-						line = "  " + line
-					}
 				}
-				ruleContent += line + "\n"
+				if foundMethods {
+					methodsContent += line + "\n"
+				}
 			}
 		}
 
-		// 创建临时指纹规则文件
+		ruleContent := "methods:\n" + methodsContent
+
 		tempFile, err := os.CreateTemp("", "fingerprint-rules-*.yml")
 		if err != nil {
 			log.Errorf("创建临时指纹规则文件失败: %v", err)
-			rulesFile = "fingerprint-rules.yml" // 使用默认文件名作为备选
+			rulesFile = "fingerprint-rules.yml"
 		} else {
 			defer tempFile.Close()
-			// 写入指纹内容到临时文件
 			if _, err := tempFile.WriteString(ruleContent); err != nil {
 				log.Errorf("写入指纹规则内容失败: %v", err)
-				rulesFile = "fingerprint-rules.yml" // 使用默认文件名作为备选
+				rulesFile = "fingerprint-rules.yml"
 			} else {
 				rulesFile = pathForYAML(tempFile.Name())
 				log.Infof("指纹规则文件已创建: %s, 包含 %d 条规则", rulesFile, len(fingerList))
 			}
 		}
 	} else {
-		rulesFile = "fingerprint-rules.yml" // 没有指纹规则时使用默认文件名
+		rulesFile = "fingerprint-rules.yml"
 	}
 
 	// 构建端口扫描配置结果

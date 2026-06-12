@@ -563,6 +563,11 @@ const routes = [
         component: () => import('@/pages/security/AppVulnerabilityDB.vue'),
       },
       {
+        path: '/appsec/finger-db',
+        name: 'appsecFingerDB',
+        component: () => import('@/pages/security/AppFingerDB.vue'),
+      },
+      {
         path: '/appsec/strategy',
         name: 'appsecStrategy',
         component: () => import('@/pages/security/AppScanStrategy.vue'),

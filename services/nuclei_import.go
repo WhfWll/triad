@@ -477,15 +477,17 @@ func normalizeNucleiPocname(relativePath, templateID string) string {
 	relativePath = filepath.ToSlash(strings.TrimSpace(relativePath))
 	relativePath = strings.TrimPrefix(relativePath, "./")
 	if relativePath != "" {
-		return relativePath
+		base := filepath.Base(relativePath)
+		base = strings.TrimSuffix(base, ".yaml")
+		base = strings.TrimSuffix(base, ".yml")
+		return base
 	}
 	templateID = strings.TrimSpace(templateID)
 	if templateID == "" {
 		templateID = fmt.Sprintf("nuclei-%d", time.Now().UnixNano())
 	}
-	if !strings.HasSuffix(strings.ToLower(templateID), ".yaml") && !strings.HasSuffix(strings.ToLower(templateID), ".yml") {
-		templateID += ".yaml"
-	}
+	templateID = strings.TrimSuffix(templateID, ".yaml")
+	templateID = strings.TrimSuffix(templateID, ".yml")
 	return strings.ReplaceAll(templateID, "\\", "/")
 }
 
